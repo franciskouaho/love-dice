@@ -6,17 +6,17 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  Modal,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    Dimensions,
+    Modal,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { AnimatedDice } from "../../components/AnimatedDice";
 import BottomDrawer from "../../components/ui/BottomDrawer";
@@ -38,7 +38,7 @@ import { getLastRoll, saveLastRoll } from "../../utils/quota";
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, grantUnlimitedAccess } = useAuth();
   const { logDiceRoll, logFreeLimitHit } = useAnalytics();
   const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } =
     useQuota();
@@ -770,6 +770,23 @@ export default function HomeScreen() {
             <Text style={styles.bottomButtonText}>💎</Text>
           </View>
         </TouchableOpacity>
+
+        {/* 🧪 BOUTON TEST TEMPORAIRE : Accès illimité */}
+        {user && (
+          <TouchableOpacity
+            style={[styles.bottomButton, { backgroundColor: 'rgba(0, 255, 0, 0.3)' }]}
+            onPress={async () => {
+              console.log("🧪 Activation accès illimité pour test...");
+              await grantUnlimitedAccess(user.uid);
+              await refreshQuota();
+              console.log("✅ Accès illimité activé ! Quotas rafraîchis.");
+            }}
+          >
+            <View style={styles.bottomBlur}>
+              <Text style={styles.bottomButtonText}>🧪</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
 
         {/* Bouton Noms au milieu */}

@@ -1,9 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getConfigValue } from "../services/config";
 import {
+  getCurrentUserId,
   getUserProfile,
   updateDailyQuota,
-  getCurrentUserId,
   updateLifetimeStatus as updateFirebaseLifetimeStatus,
 } from "../services/firestore";
 
@@ -291,7 +291,7 @@ export const clearAllData = async (): Promise<void> => {
   }
 };
 
-// Obtenir un résumé du quota actuel (cache local + Firebase)
+// Obtenir un résumé du quota actuel - NOUVEAU SYSTÈME user_settings
 export const getQuotaSummary = async (hasLifetime: boolean = false) => {
   try {
     // Vérifier le lifetime (paramètre ou cache)
@@ -309,8 +309,7 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
       };
     }
 
-    // OBLIGATOIRE : Vérifier via Firebase
-    // Essayer Firebase pour les utilisateurs gratuits
+    // 🔥 NOUVEAU : Utiliser le système user_settings 
     const userId = getCurrentUserId();
     if (!userId) {
       return {
@@ -323,39 +322,44 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
       };
     }
 
-    // Récupérer le profil Firebase
-    const profile = await getUserProfile(userId);
-    if (!profile) {
+    // 🔥 Importer la fonction de vérification du nouveau système
+    const { canUserRoll } = await import("../hooks/useFirebase");
+    const rollResult = await canUserRoll(userId);
+
+    if (!rollResult.canRoll) {
       return {
         hasLifetime: false,
         unlimited: false,
         used: 0,
-        limit: 1,
-        remaining: 0,
+        limit: 0,
+        remaining: rollResult.remainingRolls || 0,
         canRoll: false,
       };
     }
 
-    const currentDayKey = getCurrentDayKey();
-    const limit = await getDailyLimit();
-
-    // Si nouveau jour, considérer 0 utilisé
-    let used = profile.freeRollsUsedToday;
-    if (profile.freeDayKey !== currentDayKey) {
-      used = 0;
+    // Si accès illimité (-1)
+    if (rollResult.remainingRolls === -1) {
+      return {
+        hasLifetime: true,
+        unlimited: true,
+        used: 0,
+        limit: -1,
+        remaining: -1,
+        canRoll: true,
+      };
     }
 
-    const remaining = Math.max(0, limit - used);
-
+    // Quotas normaux
     return {
       hasLifetime: false,
       unlimited: false,
-      used,
-      limit,
-      remaining,
-      canRoll: remaining > 0,
+      used: 0, // On ne track plus l'used avec le nouveau système
+      limit: rollResult.remainingRolls || 0,
+      remaining: rollResult.remainingRolls || 0,
+      canRoll: rollResult.canRoll,
     };
   } catch (error) {
+    console.error("❌ Erreur getQuotaSummary:", error);
     // En cas d'erreur, bloquer l'accès
     return {
       hasLifetime: false,
@@ -367,6 +371,3 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
     };
   }
 };
-
-// Fonction supprimée : plus de synchronisation, tout passe par Firebase obligatoirement
-// L'app ne fonctionne plus en mode hors ligne pour les quotas

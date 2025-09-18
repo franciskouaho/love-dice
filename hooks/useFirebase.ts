@@ -1,20 +1,20 @@
 import {
-    onAuthStateChanged,
-    signInAnonymously,
-    signOut,
-    User,
+  onAuthStateChanged,
+  signInAnonymously,
+  signOut,
+  User,
 } from 'firebase/auth';
 import {
-    addDoc,
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    orderBy,
-    query,
-    setDoc,
-    Timestamp,
-    where,
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+  Timestamp,
+  where,
 } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { auth, db } from '../config/firebase';
@@ -48,20 +48,20 @@ export function useAuth() {
     }
   };
 
-  // Fonction pour attribuer un quota de 2 lancers à un utilisateur
+  // Fonction pour attribuer un quota de lancers à un utilisateur (AUGMENTÉ POUR TEST)
   const grantStarterQuota = async (userId: string) => {
     try {
       const docRef = doc(db, 'user_settings', userId);
       await setDoc(docRef, {
         hasLifetime: false,
         unlimited: false,
-        dailyQuota: 2,
-        remainingRolls: 2,
+        dailyQuota: 50, // 🧪 AUGMENTÉ POUR TEST (était 2)
+        remainingRolls: 50, // 🧪 AUGMENTÉ POUR TEST (était 2)
         lastReset: Timestamp.now(),
         grantedAt: Timestamp.now(),
         source: 'anonymous_signup',
       }, { merge: true });
-      console.log('✅ Quota de 2 lancers attribué à:', userId);
+      console.log('✅ Quota de 50 lancers attribué à:', userId);
     } catch (error) {
       console.error('❌ Erreur attribution quota:', error);
     }
@@ -120,6 +120,25 @@ export function useAuth() {
     }
   };
 
+  // 🧪 FONCTION DE TEST : Donner l'accès illimité à un utilisateur
+  const grantUnlimitedAccess = async (userId: string) => {
+    try {
+      const docRef = doc(db, 'user_settings', userId);
+      await setDoc(docRef, {
+        hasLifetime: true,
+        unlimited: true,
+        dailyQuota: 999999,
+        remainingRolls: 999999,
+        lastReset: Timestamp.now(),
+        grantedAt: Timestamp.now(),
+        source: 'test_unlimited',
+      }, { merge: true });
+      console.log('🧪 Accès illimité accordé pour test à:', userId);
+    } catch (error) {
+      console.error('❌ Erreur accès illimité:', error);
+    }
+  };
+
   return {
     user,
     loading,
@@ -128,6 +147,7 @@ export function useAuth() {
     initAuth,
     createNewUser,
     grantStarterQuota,
+    grantUnlimitedAccess, // 🧪 FONCTION DE TEST
   };
 }
 

@@ -48,15 +48,17 @@ export function useAuth() {
     }
   };
 
-  // Fonction pour attribuer un quota de lancers à un utilisateur (AUGMENTÉ POUR TEST)
+  // Fonction pour attribuer un quota de 50 lancers à un utilisateur
   const grantStarterQuota = async (userId: string) => {
     try {
+      console.log('🔧 grantStarterQuota - Début pour:', userId);
       const docRef = doc(db, 'user_settings', userId);
+      console.log('🔧 grantStarterQuota - DocRef créé, écriture en cours...');
       await setDoc(docRef, {
         hasLifetime: false,
         unlimited: false,
-        dailyQuota: 50, // 🧪 AUGMENTÉ POUR TEST (était 2)
-        remainingRolls: 50, // 🧪 AUGMENTÉ POUR TEST (était 2)
+        dailyQuota: 50,
+        remainingRolls: 50,
         lastReset: Timestamp.now(),
         grantedAt: Timestamp.now(),
         source: 'anonymous_signup',
@@ -120,24 +122,6 @@ export function useAuth() {
     }
   };
 
-  // 🧪 FONCTION DE TEST : Donner l'accès illimité à un utilisateur
-  const grantUnlimitedAccess = async (userId: string) => {
-    try {
-      const docRef = doc(db, 'user_settings', userId);
-      await setDoc(docRef, {
-        hasLifetime: true,
-        unlimited: true,
-        dailyQuota: 999999,
-        remainingRolls: 999999,
-        lastReset: Timestamp.now(),
-        grantedAt: Timestamp.now(),
-        source: 'test_unlimited',
-      }, { merge: true });
-      console.log('🧪 Accès illimité accordé pour test à:', userId);
-    } catch (error) {
-      console.error('❌ Erreur accès illimité:', error);
-    }
-  };
 
   return {
     user,
@@ -147,7 +131,6 @@ export function useAuth() {
     initAuth,
     createNewUser,
     grantStarterQuota,
-    grantUnlimitedAccess, // 🧪 FONCTION DE TEST
   };
 }
 
@@ -270,19 +253,17 @@ export function useFirestore() {
       if (docSnap.exists()) {
         return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
       } else {
-        // Retourner des paramètres par défaut avec quota de base
-        return { 
-          success: true, 
-          data: { 
-            customFaces: [], 
-            playerNames: { player1: '', player2: '' },
-            preferences: {},
-            hasLifetime: false,
-            unlimited: false,
-            dailyQuota: 2,
-            remainingRolls: 2
-          } 
-        };
+        // Si l'utilisateur n'existe pas, créer son quota avec grantStarterQuota
+        console.log("🔧 Utilisateur pas trouvé dans user_settings, création du quota...");
+        await grantStarterQuota(userId);
+        
+        // Relire après création
+        const newDocSnap = await getDoc(docRef);
+        if (newDocSnap.exists()) {
+          return { success: true, data: { id: newDocSnap.id, ...newDocSnap.data() } };
+        } else {
+          return { success: false, error: "Impossible de créer les paramètres utilisateur" };
+        }
       }
     } catch (error: any) {
       return { success: false, error: error.message };

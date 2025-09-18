@@ -1,12 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   canRollDice,
   consumeFreeRoll,
+  getLifetimeStatus,
   getQuotaSummary,
   saveLifetimeStatus,
-  getLifetimeStatus,
 } from "../utils/quota";
-import { getCurrentUserId } from "../services/firestore";
 
 export interface QuotaState {
   hasLifetime: boolean;
@@ -37,7 +36,7 @@ const useQuota = (): QuotaState & QuotaActions => {
     hasLifetime: false,
     unlimited: false,
     used: 0,
-    limit: 1,
+    limit: 50,
     remaining: 0,
     canRoll: false,
     isLoading: true,
@@ -47,6 +46,7 @@ const useQuota = (): QuotaState & QuotaActions => {
   // Initialiser et charger l'état du quota
   const loadQuotaState = useCallback(async () => {
     try {
+      console.log("🔄 useQuota: Chargement des quotas...");
       setQuotaState((prev) => ({ ...prev, isLoading: true, error: undefined }));
 
       // Récupérer le statut lifetime (cache local + Firebase si possible)

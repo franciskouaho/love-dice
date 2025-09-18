@@ -1,10 +1,10 @@
 import { getApps, initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { doc, getFirestore, setDoc, Timestamp } from "firebase/firestore";
 import {
-  fetchAndActivate,
-  getRemoteConfig,
-  getValue,
+    fetchAndActivate,
+    getRemoteConfig,
+    getValue,
 } from "firebase/remote-config";
 
 // Configuration Firebase - Expo va automatiquement utiliser les credentials natifs
@@ -178,6 +178,22 @@ export const createAnonymousUser = async () => {
       isAnonymous: result.user.isAnonymous,
       providerId: result.user.providerId
     });
+
+    // 🔥 CRÉER LE QUOTA IMMÉDIATEMENT
+    console.log("🔧 Création du quota pour:", result.user.uid);
+    const db = getFirestore();
+    const docRef = doc(db, 'user_settings', result.user.uid);
+    await setDoc(docRef, {
+      hasLifetime: false,
+      unlimited: false,
+      dailyQuota: 50,
+      remainingRolls: 50,
+      lastReset: Timestamp.now(),
+      grantedAt: Timestamp.now(),
+      source: 'anonymous_signup',
+    }, { merge: true });
+    console.log("✅ Quota de 50 lancers créé pour:", result.user.uid);
+
     return result.user;
   } catch (error) {
     console.error("❌ Erreur création utilisateur anonyme:", error);

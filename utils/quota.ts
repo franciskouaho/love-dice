@@ -1,10 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getConfigValue } from "../services/config";
 import {
-  getCurrentUserId,
-  getUserProfile,
-  updateDailyQuota,
-  updateLifetimeStatus as updateFirebaseLifetimeStatus,
+  getCurrentUserId
 } from "../services/firestore";
 
 // Clés pour le stockage local (cache + lifetime status)
@@ -74,7 +71,7 @@ const setCachedLifetimeStatus = async (hasLifetime: boolean): Promise<void> => {
   }
 };
 
-// Vérifier si l'utilisateur peut encore lancer le dé
+// Vérifier si l'utilisateur peut encore lancer le dé - NOUVEAU SYSTÈME user_settings
 export const canRollDice = async (
   hasLifetime: boolean = false,
 ): Promise<{ canRoll: boolean; remaining: number; error?: string }> => {
@@ -90,119 +87,75 @@ export const canRollDice = async (
   }
 
   try {
-    // Essayer Firebase, sinon utiliser cache/défaut
+    // 🔥 NOUVEAU : Utiliser le système user_settings via canUserRoll
     const userId = getCurrentUserId();
     if (!userId) {
-      // Pas de connexion, vérifier cache local ou bloquer
       return {
         canRoll: false,
         remaining: 0,
       };
     }
 
-    // Récupérer le profil Firebase
-    const profile = await getUserProfile(userId);
-    if (!profile) {
-      return {
-        canRoll: false,
-        remaining: 0,
-      };
-    }
-
-    // Vérifier si c'est un nouveau jour
-    const currentDayKey = getCurrentDayKey();
-    const limit = await getDailyLimit();
-
-    // Si nouveau jour, réinitialiser le quota
-    if (profile.freeDayKey !== currentDayKey) {
-      await updateDailyQuota(userId, 0, currentDayKey);
-      return { canRoll: limit > 0, remaining: limit };
-    }
-
-    // Calculer les lancers restants
-    const remaining = Math.max(0, limit - profile.freeRollsUsedToday);
+    // Importer et utiliser la fonction du nouveau système
+    const { canUserRoll } = await import("../hooks/useFirebase");
+    const result = await canUserRoll(userId);
 
     return {
-      canRoll: remaining > 0,
-      remaining,
+      canRoll: result.canRoll,
+      remaining: result.remainingRolls || 0,
+      error: result.reason === 'error' ? result.reason : undefined,
     };
   } catch (error) {
     // En cas d'erreur, bloquer l'accès pour les gratuits
     return {
       canRoll: false,
       remaining: 0,
+      error: "Erreur de connexion",
     };
   }
 };
 
-// Consommer un lancer gratuit
+// Consommer un lancer gratuit - NOUVEAU SYSTÈME user_settings
 export const consumeFreeRoll = async (): Promise<{
   success: boolean;
   remaining: number;
   error?: string;
 }> => {
   try {
-    // Essayer Firebase
+    // 🔥 NOUVEAU : Utiliser decrementQuota du système user_settings
     const userId = getCurrentUserId();
     if (!userId) {
       return {
         success: false,
         remaining: 0,
+        error: "Utilisateur non connecté",
       };
     }
 
-    // Récupérer le profil Firebase
-    const profile = await getUserProfile(userId);
-    if (!profile) {
-      return {
-        success: false,
-        remaining: 0,
-      };
-    }
+    // Importer et utiliser la fonction du nouveau système
+    const { useFirestore } = await import("../hooks/useFirebase");
+    
+    // Créer une instance temporaire pour accéder à decrementQuota
+    const firestore = useFirestore();
+    const result = await firestore.decrementQuota(userId);
 
-    const currentDayKey = getCurrentDayKey();
-    const limit = await getDailyLimit();
-
-    // Si nouveau jour, réinitialiser
-    let currentUsed = profile.freeRollsUsedToday;
-    if (profile.freeDayKey !== currentDayKey) {
-      currentUsed = 0;
-    }
-
-    if (currentUsed >= limit) {
-      return {
-        success: false,
-        remaining: 0,
-      };
-    }
-
-    // Incrémenter le compteur dans Firebase
-    const newUsed = currentUsed + 1;
-    const updateSuccess = await updateDailyQuota(
-      userId,
-      newUsed,
-      currentDayKey,
-    );
-
-    if (!updateSuccess) {
-      return {
-        success: false,
-        remaining: 0,
-      };
-    }
-
-    const remaining = Math.max(0, limit - newUsed);
-    return { success: true, remaining };
+    return {
+      success: result.success,
+      remaining: result.remainingRolls || 0,
+      error: result.error,
+    };
   } catch (error) {
+    console.error("❌ Erreur consumeFreeRoll:", error);
     // En cas d'erreur, bloquer l'accès
     return {
       success: false,
       remaining: 0,
+      error: "Erreur de connexion",
     };
   }
 };
 
-// Sauvegarder le statut lifetime (Firebase + cache local)
+// Sauvegarder le statut lifetime - NOUVEAU SYSTÈME user_settings
 export const saveLifetimeStatus = async (
   hasLifetime: boolean,
 ): Promise<{ success: boolean; error?: string }> => {
@@ -210,25 +163,32 @@ export const saveLifetimeStatus = async (
     // Toujours sauvegarder en cache local d'abord
     await setCachedLifetimeStatus(hasLifetime);
 
-    // Essayer de sauvegarder dans Firebase si possible
+    // 🔥 NOUVEAU : Utiliser grantLifetimeAccess du système user_settings
     const userId = getCurrentUserId();
-    if (userId) {
-      const success = await updateFirebaseLifetimeStatus(userId, hasLifetime);
-      if (success) {
+    if (userId && hasLifetime) {
+      const { grantLifetimeAccess } = await import("../hooks/useFirebase");
+      const result = await grantLifetimeAccess(userId);
+      if (result.success) {
         return { success: true };
       }
+    } else if (userId) {
+      // Si on retire le lifetime, il faudrait une fonction pour ça
+      // Pour l'instant on met juste le cache local
+      return { success: true };
     }
 
     // Cache local OK dans tous les cas
     return { success: true };
   } catch (error) {
+    console.error("❌ Erreur saveLifetimeStatus:", error);
     return {
       success: false,
+      error: "Erreur de sauvegarde",
     };
   }
 };
 
-// Récupérer le statut lifetime (cache local + Firebase sync)
+// Récupérer le statut lifetime - NOUVEAU SYSTÈME user_settings
 export const getLifetimeStatus = async (): Promise<boolean> => {
   try {
     // D'abord vérifier le cache local
@@ -239,14 +199,17 @@ export const getLifetimeStatus = async (): Promise<boolean> => {
       return true;
     }
 
-    // Si pas de cache lifetime, essayer Firebase
+    // 🔥 NOUVEAU : Vérifier user_settings via canUserRoll
     const userId = getCurrentUserId();
     if (!userId) {
       return false; // Pas de connexion, pas de cache = pas de lifetime
     }
 
-    const profile = await getUserProfile(userId);
-    const firebaseStatus = profile?.hasLifetime || false;
+    const { canUserRoll } = await import("../hooks/useFirebase");
+    const result = await canUserRoll(userId);
+    
+    // Si remainingRolls = -1, c'est l'accès illimité
+    const firebaseStatus = result.remainingRolls === -1 || result.reason === "Accès illimité";
 
     // Mettre à jour le cache si Firebase dit true
     if (firebaseStatus) {
@@ -255,6 +218,7 @@ export const getLifetimeStatus = async (): Promise<boolean> => {
 
     return firebaseStatus;
   } catch (error) {
+    console.error("❌ Erreur getLifetimeStatus:", error);
     // En cas d'erreur Firebase, retourner le cache local
     return await getCachedLifetimeStatus();
   }
@@ -311,12 +275,14 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
 
     // 🔥 NOUVEAU : Utiliser le système user_settings 
     const userId = getCurrentUserId();
+    console.log("🔍 getQuotaSummary - UserId:", userId);
     if (!userId) {
+      console.log("❌ getQuotaSummary - Pas d'utilisateur, retour remaining: 0");
       return {
         hasLifetime: false,
         unlimited: false,
         used: 0,
-        limit: 1,
+        limit: 50,
         remaining: 0,
         canRoll: false,
       };
@@ -324,7 +290,9 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
 
     // 🔥 Importer la fonction de vérification du nouveau système
     const { canUserRoll } = await import("../hooks/useFirebase");
+    console.log("🔍 getQuotaSummary - Appel canUserRoll pour:", userId);
     const rollResult = await canUserRoll(userId);
+    console.log("📊 getQuotaSummary - Résultat canUserRoll:", rollResult);
 
     if (!rollResult.canRoll) {
       return {
@@ -365,7 +333,7 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
       hasLifetime: false,
       unlimited: false,
       used: 0,
-      limit: 1,
+      limit: 50,
       remaining: 0,
       canRoll: false,
     };

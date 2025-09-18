@@ -146,7 +146,7 @@ export default function HistoryScreen() {
 
       <TouchableOpacity
         style={styles.startButton}
-        onPress={() => router.push("/(tabs)/")}
+        onPress={() => router.push("/(tabs)")}
         activeOpacity={0.8}
       >
         <LinearGradient

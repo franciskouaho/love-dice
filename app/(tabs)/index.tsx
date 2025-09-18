@@ -64,6 +64,34 @@ export default function HomeScreen() {
   const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [firebaseDebug, setFirebaseDebug] = useState<string>("");
+  const safetyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Diagnostic Firebase
+  const checkFirebaseAuth = async () => {
+    try {
+      const authInstance = getAuthInstance();
+      const userId = FirestoreService.getCurrentUserId();
+
+      let debugInfo = "";
+      debugInfo += `Auth Instance: ${authInstance ? "✅" : "❌"}\n`;
+      debugInfo += `Current User: ${userId ? "✅" + userId.slice(0, 8) : "❌"}\n`;
+      debugInfo += `Time: ${new Date().toLocaleTimeString()}`;
+
+      setFirebaseDebug(debugInfo);
+
+      // Si pas d'utilisateur, essayer de forcer l'init
+      if (!userId && authInstance) {
+        console.log("🔧 Tentative de réinitialisation Firebase Auth...");
+        await import("../../services/firebase").then(async (firebase) => {
+          await firebase.initAuth();
+          const newUserId = FirestoreService.getCurrentUserId();
+          console.log("🔧 Nouveau userId:", newUserId);
+        });
+      }
+    } catch (error) {
+      setFirebaseDebug(`❌ Erreur: ${error}`);
+    }
+  };
 
   // Animation refs
   const diceRotation = useRef(new Animated.Value(0)).current;
@@ -175,33 +203,6 @@ export default function HomeScreen() {
       }
     };
 
-    // Diagnostic Firebase
-    const checkFirebaseAuth = async () => {
-      try {
-        const authInstance = getAuthInstance();
-        const userId = FirestoreService.getCurrentUserId();
-
-        let debugInfo = "";
-        debugInfo += `Auth Instance: ${authInstance ? "✅" : "❌"}\n`;
-        debugInfo += `Current User: ${userId ? "✅" + userId.slice(0,8) : "❌"}\n`;
-        debugInfo += `Time: ${new Date().toLocaleTimeString()}`;
-
-        setFirebaseDebug(debugInfo);
-
-        // Si pas d'utilisateur, essayer de forcer l'init
-        if (!userId && authInstance) {
-          console.log("🔧 Tentative de réinitialisation Firebase Auth...");
-          await import("../../services/firebase").then(async (firebase) => {
-            await firebase.initAuth();
-            const newUserId = FirestoreService.getCurrentUserId();
-            console.log("🔧 Nouveau userId:", newUserId);
-          });
-        }
-      } catch (error) {
-        setFirebaseDebug(`❌ Erreur: ${error}`);
-      }
-    };
-
     checkFirstLaunch();
     checkFirebaseAuth();
 
@@ -232,6 +233,8 @@ export default function HomeScreen() {
     }
   }, [hasPermissions, notificationsInitialized, requestPermissions]);
 
+  // Animation effects
+  useEffect(() => {
     // Start floating animation
     Animated.loop(
       Animated.sequence([
@@ -396,7 +399,7 @@ export default function HomeScreen() {
       setIsRolling(true);
 
       // Timeout de sécurité pour débloquer isRolling
-      const safetyTimeout = setTimeout(() => {
+      safetyTimeoutRef.current = setTimeout(() => {
         setIsRolling(false);
       }, 5000);
 
@@ -503,7 +506,9 @@ export default function HomeScreen() {
             duration: 400,
             useNativeDriver: true,
           }).start(() => {
-            clearTimeout(safetyTimeout);
+            if (safetyTimeoutRef.current) {
+              clearTimeout(safetyTimeoutRef.current);
+            }
             setIsRolling(false);
           });
         }, 200);
@@ -549,7 +554,9 @@ export default function HomeScreen() {
         triggerReviewAfterSuccess();
       });
     } catch (error) {
-      clearTimeout(safetyTimeout);
+      if (safetyTimeoutRef.current) {
+        clearTimeout(safetyTimeoutRef.current);
+      }
       setIsRolling(false);
     }
   };

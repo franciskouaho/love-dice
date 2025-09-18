@@ -1,18 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { getConfigValue } from "../services/config";
 import {
   canRollDice,
   consumeFreeRoll,
   getQuotaSummary,
   saveLifetimeStatus,
   getLifetimeStatus,
-  syncWithFirestore,
 } from "../utils/quota";
-import {
-  updateDailyQuota,
-  getCurrentUserId,
-  getUserProfile,
-} from "../services/firestore";
+import { getCurrentUserId } from "../services/firestore";
 
 export interface QuotaState {
   hasLifetime: boolean;
@@ -22,14 +16,20 @@ export interface QuotaState {
   remaining: number;
   canRoll: boolean;
   isLoading: boolean;
+  error?: string;
 }
 
 export interface QuotaActions {
   checkCanRoll: () => Promise<boolean>;
-  consumeRoll: () => Promise<{ success: boolean; remaining: number }>;
-  setLifetimeStatus: (hasLifetime: boolean) => Promise<void>;
+  consumeRoll: () => Promise<{
+    success: boolean;
+    remaining: number;
+    error?: string;
+  }>;
+  setLifetimeStatus: (
+    hasLifetime: boolean,
+  ) => Promise<{ success: boolean; error?: string }>;
   refreshQuota: () => Promise<void>;
-  syncWithServer: () => Promise<void>;
 }
 
 const useQuota = (): QuotaState & QuotaActions => {
@@ -37,19 +37,35 @@ const useQuota = (): QuotaState & QuotaActions => {
     hasLifetime: false,
     unlimited: false,
     used: 0,
-    limit: 3,
+    limit: 1,
     remaining: 0,
     canRoll: false,
     isLoading: true,
+    error: undefined,
   });
 
   // Initialiser et charger l'état du quota
   const loadQuotaState = useCallback(async () => {
     try {
-      setQuotaState((prev) => ({ ...prev, isLoading: true }));
+      setQuotaState((prev) => ({ ...prev, isLoading: true, error: undefined }));
 
-      // Récupérer le statut lifetime depuis le stockage local
+      // Récupérer le statut lifetime (cache local + Firebase si possible)
       const hasLifetime = await getLifetimeStatus();
+
+      // Si l'utilisateur a le lifetime, pas besoin de connexion stricte
+      if (hasLifetime) {
+        setQuotaState({
+          hasLifetime: true,
+          unlimited: true,
+          used: 0,
+          limit: -1,
+          remaining: -1,
+          canRoll: true,
+          isLoading: false,
+          error: undefined,
+        });
+        return;
+      }
 
       // Obtenir le résumé complet du quota
       const summary = await getQuotaSummary(hasLifetime);
@@ -62,20 +78,37 @@ const useQuota = (): QuotaState & QuotaActions => {
         remaining: summary.remaining,
         canRoll: summary.canRoll,
         isLoading: false,
+        error: summary.error,
       });
     } catch (error) {
-      // Erreur chargement quota ignorée
-      setQuotaState((prev) => ({ ...prev, isLoading: false }));
+      setQuotaState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: "Erreur de connexion",
+        canRoll: false,
+      }));
     }
   }, []);
 
   // Vérifier si l'utilisateur peut lancer le dé
   const checkCanRoll = useCallback(async (): Promise<boolean> => {
     try {
-      const { canRoll } = await canRollDice(quotaState.hasLifetime);
-      return canRoll;
+      const result = await canRollDice(quotaState.hasLifetime);
+      if (result.error) {
+        setQuotaState((prev) => ({
+          ...prev,
+          error: result.error,
+          canRoll: false,
+        }));
+        return false;
+      }
+      return result.canRoll;
     } catch (error) {
-      // Erreur vérification quota ignorée
+      setQuotaState((prev) => ({
+        ...prev,
+        error: "Erreur de vérification",
+        canRoll: false,
+      }));
       return false;
     }
   }, [quotaState.hasLifetime]);
@@ -84,6 +117,7 @@ const useQuota = (): QuotaState & QuotaActions => {
   const consumeRoll = useCallback(async (): Promise<{
     success: boolean;
     remaining: number;
+    error?: string;
   }> => {
     try {
       // Si l'utilisateur a l'accès à vie, toujours autoriser
@@ -91,7 +125,7 @@ const useQuota = (): QuotaState & QuotaActions => {
         return { success: true, remaining: -1 };
       }
 
-      // Consommer un lancer gratuit
+      // Consommer un lancer gratuit via Firebase
       const result = await consumeFreeRoll();
 
       if (result.success) {
@@ -101,98 +135,81 @@ const useQuota = (): QuotaState & QuotaActions => {
           used: prev.used + 1,
           remaining: result.remaining,
           canRoll: result.remaining > 0,
+          error: undefined,
         }));
-
-        // Synchroniser avec Firestore si possible
-        await syncWithServer();
+      } else {
+        // Mettre à jour l'erreur
+        setQuotaState((prev) => ({
+          ...prev,
+          error: result.error,
+          canRoll: false,
+        }));
       }
 
       return result;
     } catch (error) {
-      // Erreur consommation roll ignorée
-      return { success: false, remaining: 0 };
+      const errorMsg = "Erreur lors de la consommation du lancer";
+      setQuotaState((prev) => ({ ...prev, error: errorMsg, canRoll: false }));
+      return { success: false, remaining: 0, error: errorMsg };
     }
   }, [quotaState.hasLifetime]);
 
   // Définir le statut lifetime
   const setLifetimeStatus = useCallback(
-    async (hasLifetime: boolean): Promise<void> => {
+    async (
+      hasLifetime: boolean,
+    ): Promise<{ success: boolean; error?: string }> => {
       try {
-        // Sauvegarder localement
-        await saveLifetimeStatus(hasLifetime);
+        // Sauvegarder dans Firebase
+        const result = await saveLifetimeStatus(hasLifetime);
 
-        // Mettre à jour l'état
-        setQuotaState((prev) => ({
-          ...prev,
-          hasLifetime,
-          unlimited: hasLifetime,
-          canRoll: hasLifetime || prev.remaining > 0,
-        }));
+        if (result.success) {
+          // Mettre à jour l'état local
+          setQuotaState((prev) => ({
+            ...prev,
+            hasLifetime,
+            unlimited: hasLifetime,
+            canRoll: hasLifetime || prev.remaining > 0,
+            error: undefined,
+          }));
+        } else {
+          setQuotaState((prev) => ({
+            ...prev,
+            error: result.error,
+          }));
+        }
 
-        // Synchroniser avec Firestore si possible
-        await syncWithServer();
+        return result;
       } catch (error) {
-        // Erreur mise à jour statut lifetime ignorée
+        const errorMsg = "Erreur lors de la mise à jour du statut";
+        setQuotaState((prev) => ({ ...prev, error: errorMsg }));
+        return { success: false, error: errorMsg };
       }
     },
     [],
   );
 
-  // Rafraîchir le quota depuis le stockage local
+  // Rafraîchir le quota depuis Firebase
   const refreshQuota = useCallback(async (): Promise<void> => {
     await loadQuotaState();
   }, [loadQuotaState]);
-
-  // Synchroniser avec le serveur Firestore
-  const syncWithServer = useCallback(async (): Promise<void> => {
-    try {
-      const userId = getCurrentUserId();
-      if (!userId) return;
-
-      // Récupérer le profil depuis Firestore
-      const profile = await getUserProfile(userId);
-      if (!profile) return;
-
-      // Synchroniser avec les données Firestore
-      await syncWithFirestore({
-        hasLifetime: profile.hasLifetime,
-        freeRollsUsedToday: profile.freeRollsUsedToday,
-        freeDayKey: profile.freeDayKey,
-        prefs: profile.prefs,
-      });
-
-      // Mettre à jour Firestore avec les données locales si nécessaire
-      const currentDayKey = new Date().toISOString().split("T")[0];
-      if (
-        profile.freeDayKey !== currentDayKey ||
-        profile.freeRollsUsedToday !== quotaState.used
-      ) {
-        await updateDailyQuota(userId, quotaState.used, currentDayKey);
-      }
-
-      // Recharger l'état après la sync
-      await loadQuotaState();
-    } catch (error) {
-      // Erreur synchronisation serveur ignorée
-    }
-  }, [quotaState.used, loadQuotaState]);
 
   // Charger l'état initial
   useEffect(() => {
     loadQuotaState();
   }, [loadQuotaState]);
 
-  // Synchroniser périodiquement avec le serveur (toutes les 5 minutes)
+  // Rafraîchir périodiquement depuis Firebase (toutes les 2 minutes)
   useEffect(() => {
     const interval = setInterval(
       () => {
-        syncWithServer();
+        loadQuotaState();
       },
-      5 * 60 * 1000,
-    ); // 5 minutes
+      2 * 60 * 1000,
+    ); // 2 minutes
 
     return () => clearInterval(interval);
-  }, [syncWithServer]);
+  }, [loadQuotaState]);
 
   return {
     // État
@@ -203,7 +220,6 @@ const useQuota = (): QuotaState & QuotaActions => {
     consumeRoll,
     setLifetimeStatus,
     refreshQuota,
-    syncWithServer,
   };
 };
 

@@ -236,6 +236,20 @@ export default function PaywallScreen() {
           {/* Titre principal */}
           <Text style={styles.title}>{paywallTitle}</Text>
 
+          {/* Message d'information système strict */}
+          <View style={styles.infoCard}>
+            <View style={styles.cardGlass}>
+              <View style={styles.cardHighlight} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoIcon}>ℹ️</Text>
+                <Text style={styles.infoText}>
+                  1 seul lancer gratuit par jour. Sans abonnement, l&apos;accès
+                  est bloqué après utilisation.
+                </Text>
+              </View>
+            </View>
+          </View>
+
           {/* Liste des avantages */}
           <View style={styles.benefitsContainer}>
             {paywallBullets.map((benefit, index) => (
@@ -525,5 +539,28 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 16,
     fontFamily: "System",
+  },
+  infoCard: {
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  infoContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  infoIcon: {
+    fontSize: 20,
+    marginRight: 12,
+  },
+  infoText: {
+    fontSize: 14,
+    color: "#F4C869",
+    fontFamily: "System",
+    fontWeight: "600",
+    flex: 1,
+    lineHeight: 18,
   },
 });

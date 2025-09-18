@@ -1,13 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getConfigValue } from "../services/config";
+import {
+  getUserProfile,
+  updateDailyQuota,
+  getCurrentUserId,
+  updateLifetimeStatus as updateFirebaseLifetimeStatus,
+} from "../services/firestore";
 
-// Clés pour le stockage local
+// Clés pour le stockage local (cache + lifetime status)
 const STORAGE_KEYS = {
-  FREE_ROLLS_USED: "free_rolls_used_today",
-  FREE_DAY_KEY: "free_day_key",
   LAST_ROLL: "last_roll",
-  HAS_LIFETIME: "has_lifetime",
-  USER_PREFS: "user_preferences",
+  HAS_LIFETIME_CACHE: "has_lifetime_cache",
+  LAST_FIREBASE_SYNC: "last_firebase_sync",
 } as const;
 
 // Interface pour les préférences utilisateur
@@ -39,49 +43,6 @@ export const getCurrentDayKey = (): string => {
   return new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
 };
 
-// Vérifier si c'est un nouveau jour
-export const isNewDay = async (): Promise<boolean> => {
-  try {
-    const storedDayKey = await AsyncStorage.getItem(STORAGE_KEYS.FREE_DAY_KEY);
-    const currentDayKey = getCurrentDayKey();
-    return storedDayKey !== currentDayKey;
-  } catch (error) {
-    // Erreur vérification nouveau jour ignorée
-    return true; // En cas d'erreur, considérer comme nouveau jour
-  }
-};
-
-// Réinitialiser le quota quotidien
-export const resetDailyQuota = async (): Promise<void> => {
-  try {
-    const currentDayKey = getCurrentDayKey();
-    await AsyncStorage.multiSet([
-      [STORAGE_KEYS.FREE_ROLLS_USED, "0"],
-      [STORAGE_KEYS.FREE_DAY_KEY, currentDayKey],
-    ]);
-    // Quota quotidien réinitialisé
-  } catch (error) {
-    // Erreur réinitialisation quota ignorée
-  }
-};
-
-// Obtenir le nombre de lancers gratuits utilisés aujourd'hui
-export const getFreeRollsUsed = async (): Promise<number> => {
-  try {
-    // Vérifier si c'est un nouveau jour
-    if (await isNewDay()) {
-      await resetDailyQuota();
-      return 0;
-    }
-
-    const used = await AsyncStorage.getItem(STORAGE_KEYS.FREE_ROLLS_USED);
-    return used ? parseInt(used, 10) : 0;
-  } catch (error) {
-    // Erreur récupération rolls utilisés ignorée
-    return 0;
-  }
-};
-
 // Obtenir la limite quotidienne depuis la configuration
 export const getDailyLimit = async (): Promise<number> => {
   try {
@@ -92,26 +53,85 @@ export const getDailyLimit = async (): Promise<number> => {
   }
 };
 
+// Cache local pour le statut lifetime
+const getCachedLifetimeStatus = async (): Promise<boolean> => {
+  try {
+    const cached = await AsyncStorage.getItem(STORAGE_KEYS.HAS_LIFETIME_CACHE);
+    return cached === "true";
+  } catch (error) {
+    return false;
+  }
+};
+
+const setCachedLifetimeStatus = async (hasLifetime: boolean): Promise<void> => {
+  try {
+    await AsyncStorage.multiSet([
+      [STORAGE_KEYS.HAS_LIFETIME_CACHE, hasLifetime.toString()],
+      [STORAGE_KEYS.LAST_FIREBASE_SYNC, Date.now().toString()],
+    ]);
+  } catch (error) {
+    // Erreur cache ignorée
+  }
+};
+
 // Vérifier si l'utilisateur peut encore lancer le dé
 export const canRollDice = async (
   hasLifetime: boolean = false,
-): Promise<{ canRoll: boolean; remaining: number }> => {
+): Promise<{ canRoll: boolean; remaining: number; error?: string }> => {
+  // Si lifetime passé en paramètre, autoriser directement
   if (hasLifetime) {
     return { canRoll: true, remaining: -1 }; // -1 = illimité
   }
 
+  // Vérifier le cache local pour le lifetime
+  const cachedLifetime = await getCachedLifetimeStatus();
+  if (cachedLifetime) {
+    return { canRoll: true, remaining: -1 }; // -1 = illimité
+  }
+
   try {
-    const used = await getFreeRollsUsed();
+    // Essayer Firebase, sinon utiliser cache/défaut
+    const userId = getCurrentUserId();
+    if (!userId) {
+      // Pas de connexion, vérifier cache local ou bloquer
+      return {
+        canRoll: false,
+        remaining: 0,
+      };
+    }
+
+    // Récupérer le profil Firebase
+    const profile = await getUserProfile(userId);
+    if (!profile) {
+      return {
+        canRoll: false,
+        remaining: 0,
+      };
+    }
+
+    // Vérifier si c'est un nouveau jour
+    const currentDayKey = getCurrentDayKey();
     const limit = await getDailyLimit();
-    const remaining = Math.max(0, limit - used);
+
+    // Si nouveau jour, réinitialiser le quota
+    if (profile.freeDayKey !== currentDayKey) {
+      await updateDailyQuota(userId, 0, currentDayKey);
+      return { canRoll: limit > 0, remaining: limit };
+    }
+
+    // Calculer les lancers restants
+    const remaining = Math.max(0, limit - profile.freeRollsUsedToday);
 
     return {
       canRoll: remaining > 0,
       remaining,
     };
   } catch (error) {
-    // Erreur vérification quota ignorée
-    return { canRoll: false, remaining: 0 };
+    // En cas d'erreur, bloquer l'accès pour les gratuits
+    return {
+      canRoll: false,
+      remaining: 0,
+    };
   }
 };
 
@@ -119,83 +139,131 @@ export const canRollDice = async (
 export const consumeFreeRoll = async (): Promise<{
   success: boolean;
   remaining: number;
+  error?: string;
 }> => {
   try {
-    const used = await getFreeRollsUsed();
-    const limit = await getDailyLimit();
-
-    if (used >= limit) {
-      return { success: false, remaining: 0 };
+    // Essayer Firebase
+    const userId = getCurrentUserId();
+    if (!userId) {
+      return {
+        success: false,
+        remaining: 0,
+      };
     }
 
-    const newUsed = used + 1;
-    await AsyncStorage.setItem(
-      STORAGE_KEYS.FREE_ROLLS_USED,
-      newUsed.toString(),
+    // Récupérer le profil Firebase
+    const profile = await getUserProfile(userId);
+    if (!profile) {
+      return {
+        success: false,
+        remaining: 0,
+      };
+    }
+
+    const currentDayKey = getCurrentDayKey();
+    const limit = await getDailyLimit();
+
+    // Si nouveau jour, réinitialiser
+    let currentUsed = profile.freeRollsUsedToday;
+    if (profile.freeDayKey !== currentDayKey) {
+      currentUsed = 0;
+    }
+
+    if (currentUsed >= limit) {
+      return {
+        success: false,
+        remaining: 0,
+      };
+    }
+
+    // Incrémenter le compteur dans Firebase
+    const newUsed = currentUsed + 1;
+    const updateSuccess = await updateDailyQuota(
+      userId,
+      newUsed,
+      currentDayKey,
     );
+
+    if (!updateSuccess) {
+      return {
+        success: false,
+        remaining: 0,
+      };
+    }
 
     const remaining = Math.max(0, limit - newUsed);
     return { success: true, remaining };
   } catch (error) {
-    // Erreur consommation roll gratuit ignorée
-    return { success: false, remaining: 0 };
+    // En cas d'erreur, bloquer l'accès
+    return {
+      success: false,
+      remaining: 0,
+    };
   }
 };
 
-// Sauvegarder le statut lifetime
+// Sauvegarder le statut lifetime (Firebase + cache local)
 export const saveLifetimeStatus = async (
   hasLifetime: boolean,
-): Promise<void> => {
+): Promise<{ success: boolean; error?: string }> => {
   try {
-    await AsyncStorage.setItem(
-      STORAGE_KEYS.HAS_LIFETIME,
-      hasLifetime.toString(),
-    );
+    // Toujours sauvegarder en cache local d'abord
+    await setCachedLifetimeStatus(hasLifetime);
+
+    // Essayer de sauvegarder dans Firebase si possible
+    const userId = getCurrentUserId();
+    if (userId) {
+      const success = await updateFirebaseLifetimeStatus(userId, hasLifetime);
+      if (success) {
+        return { success: true };
+      }
+    }
+
+    // Cache local OK dans tous les cas
+    return { success: true };
   } catch (error) {
-    // Erreur sauvegarde statut lifetime ignorée
+    return {
+      success: false,
+    };
   }
 };
 
-// Récupérer le statut lifetime
+// Récupérer le statut lifetime (cache local + Firebase sync)
 export const getLifetimeStatus = async (): Promise<boolean> => {
   try {
-    const status = await AsyncStorage.getItem(STORAGE_KEYS.HAS_LIFETIME);
-    return status === "true";
-  } catch (error) {
-    // Erreur récupération statut lifetime ignorée
-    return false;
-  }
-};
+    // D'abord vérifier le cache local
+    const cachedStatus = await getCachedLifetimeStatus();
 
-// Sauvegarder les préférences utilisateur
-export const saveUserPreferences = async (
-  preferences: UserPreferences,
-): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(
-      STORAGE_KEYS.USER_PREFS,
-      JSON.stringify(preferences),
-    );
-  } catch (error) {
-    // Erreur sauvegarde préférences ignorée
-  }
-};
-
-// Récupérer les préférences utilisateur
-export const getUserPreferences = async (): Promise<UserPreferences> => {
-  try {
-    const prefs = await AsyncStorage.getItem(STORAGE_KEYS.USER_PREFS);
-    if (prefs) {
-      return { ...defaultPreferences, ...JSON.parse(prefs) };
+    // Si cached = true, pas besoin de vérifier Firebase
+    if (cachedStatus) {
+      return true;
     }
-    return defaultPreferences;
+
+    // Si pas de cache lifetime, essayer Firebase
+    const userId = getCurrentUserId();
+    if (!userId) {
+      return false; // Pas de connexion, pas de cache = pas de lifetime
+    }
+
+    const profile = await getUserProfile(userId);
+    const firebaseStatus = profile?.hasLifetime || false;
+
+    // Mettre à jour le cache si Firebase dit true
+    if (firebaseStatus) {
+      await setCachedLifetimeStatus(true);
+    }
+
+    return firebaseStatus;
   } catch (error) {
-    // Erreur récupération préférences ignorée
-    return defaultPreferences;
+    // En cas d'erreur Firebase, retourner le cache local
+    return await getCachedLifetimeStatus();
   }
 };
 
-// Sauvegarder le dernier lancer (pour anti-répétition)
+// Préférences utilisateur maintenant gérées via Firebase uniquement
+// Ces fonctions sont supprimées pour forcer l'utilisation de Firebase
+
+// Sauvegarder le dernier lancer (pour anti-répétition) - Cache local uniquement
 export const saveLastRoll = async (rollId: string): Promise<void> => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.LAST_ROLL, rollId);
@@ -204,7 +272,7 @@ export const saveLastRoll = async (rollId: string): Promise<void> => {
   }
 };
 
-// Récupérer le dernier lancer
+// Récupérer le dernier lancer - Cache local uniquement
 export const getLastRoll = async (): Promise<string | null> => {
   try {
     return await AsyncStorage.getItem(STORAGE_KEYS.LAST_ROLL);
@@ -214,20 +282,22 @@ export const getLastRoll = async (): Promise<string | null> => {
   }
 };
 
-// Nettoyer toutes les données locales (pour déconnexion/reset)
+// Nettoyer le cache local (garde seulement LAST_ROLL)
 export const clearAllData = async (): Promise<void> => {
   try {
-    await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
-    // Toutes les données locales supprimées
+    await AsyncStorage.multiRemove([STORAGE_KEYS.LAST_ROLL]);
   } catch (error) {
     // Erreur suppression données ignorée
   }
 };
 
-// Obtenir un résumé du quota actuel
+// Obtenir un résumé du quota actuel (cache local + Firebase)
 export const getQuotaSummary = async (hasLifetime: boolean = false) => {
   try {
-    if (hasLifetime) {
+    // Vérifier le lifetime (paramètre ou cache)
+    const actualLifetime = hasLifetime || (await getCachedLifetimeStatus());
+
+    if (actualLifetime) {
       return {
         hasLifetime: true,
         unlimited: true,
@@ -235,11 +305,46 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
         limit: -1,
         remaining: -1,
         canRoll: true,
+        error: null,
       };
     }
 
-    const used = await getFreeRollsUsed();
+    // OBLIGATOIRE : Vérifier via Firebase
+    // Essayer Firebase pour les utilisateurs gratuits
+    const userId = getCurrentUserId();
+    if (!userId) {
+      return {
+        hasLifetime: false,
+        unlimited: false,
+        used: 0,
+        limit: 1,
+        remaining: 0,
+        canRoll: false,
+      };
+    }
+
+    // Récupérer le profil Firebase
+    const profile = await getUserProfile(userId);
+    if (!profile) {
+      return {
+        hasLifetime: false,
+        unlimited: false,
+        used: 0,
+        limit: 1,
+        remaining: 0,
+        canRoll: false,
+      };
+    }
+
+    const currentDayKey = getCurrentDayKey();
     const limit = await getDailyLimit();
+
+    // Si nouveau jour, considérer 0 utilisé
+    let used = profile.freeRollsUsedToday;
+    if (profile.freeDayKey !== currentDayKey) {
+      used = 0;
+    }
+
     const remaining = Math.max(0, limit - used);
 
     return {
@@ -251,52 +356,17 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
       canRoll: remaining > 0,
     };
   } catch (error) {
-    // Erreur résumé quota ignorée
+    // En cas d'erreur, bloquer l'accès
     return {
       hasLifetime: false,
       unlimited: false,
       used: 0,
-      limit: 3,
+      limit: 1,
       remaining: 0,
       canRoll: false,
     };
   }
 };
 
-// Synchroniser les données locales avec Firestore (si connecté)
-export const syncWithFirestore = async (firestoreData: any): Promise<void> => {
-  try {
-    // Cette fonction sera appelée quand les données Firestore sont disponibles
-    if (firestoreData.hasLifetime !== undefined) {
-      await saveLifetimeStatus(firestoreData.hasLifetime);
-    }
-
-    if (firestoreData.prefs) {
-      await saveUserPreferences(firestoreData.prefs);
-    }
-
-    // Sync quota seulement si les données Firestore sont plus récentes
-    if (
-      firestoreData.freeDayKey &&
-      firestoreData.freeRollsUsedToday !== undefined
-    ) {
-      const localDayKey = await AsyncStorage.getItem(STORAGE_KEYS.FREE_DAY_KEY);
-      const currentDayKey = getCurrentDayKey();
-
-      // Si Firestore a des données du jour actuel, les utiliser
-      if (firestoreData.freeDayKey === currentDayKey) {
-        await AsyncStorage.multiSet([
-          [
-            STORAGE_KEYS.FREE_ROLLS_USED,
-            firestoreData.freeRollsUsedToday.toString(),
-          ],
-          [STORAGE_KEYS.FREE_DAY_KEY, firestoreData.freeDayKey],
-        ]);
-      }
-    }
-
-    // Synchronisation avec Firestore réussie
-  } catch (error) {
-    // Erreur synchronisation Firestore ignorée
-  }
-};
+// Fonction supprimée : plus de synchronisation, tout passe par Firebase obligatoirement
+// L'app ne fonctionne plus en mode hors ligne pour les quotas

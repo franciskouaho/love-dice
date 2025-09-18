@@ -19,7 +19,7 @@ export interface AppConfig {
 
 // Configuration par défaut
 const DEFAULT_CONFIG: AppConfig = {
-  FREE_ROLLS_PER_DAY: 3,
+  FREE_ROLLS_PER_DAY: 1,
   LIFETIME_PRICE: "12,99 €",
   PAYWALL_TITLE: "Accès à vie 💕",
   PAYWALL_BULLETS: "Lancers illimités|Dés personnalisables|Aucune pub",

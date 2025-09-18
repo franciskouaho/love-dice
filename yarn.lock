@@ -17,6 +17,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@3d-dice/dice-box@npm:^1.1.4":
+  version: 1.1.4
+  resolution: "@3d-dice/dice-box@npm:1.1.4"
+  dependencies:
+    "@babylonjs/core": "npm:5.57.1"
+    "@babylonjs/loaders": "npm:5.57.1"
+    "@babylonjs/materials": "npm:5.57.1"
+    copy-dir: "npm:^1.3.0"
+    node-abort-controller: "npm:^3.1.1"
+  checksum: 10c0/964883d006920187711cf12c941c64120db17fda1272829ff408e579e4900cfd063235d287b9f30f98872dc8e6a3c431f285bb4f218a70f6c19da0ff69d9f013
+  languageName: node
+  linkType: hard
+
 "@babel/code-frame@npm:7.10.4, @babel/code-frame@npm:~7.10.4":
   version: 7.10.4
   resolution: "@babel/code-frame@npm:7.10.4"
@@ -1102,6 +1115,32 @@ __metadata:
     "@babel/helper-string-parser": "npm:^7.27.1"
     "@babel/helper-validator-identifier": "npm:^7.27.1"
   checksum: 10c0/ac6f909d6191319e08c80efbfac7bd9a25f80cc83b43cd6d82e7233f7a6b9d6e7b90236f3af7400a3f83b576895bcab9188a22b584eb0f224e80e6d4e95f4517
+  languageName: node
+  linkType: hard
+
+"@babylonjs/core@npm:5.57.1":
+  version: 5.57.1
+  resolution: "@babylonjs/core@npm:5.57.1"
+  checksum: 10c0/e3c9a2e005321642e0acafe5e75f60c15b8a1bd5a7481f67095aec3391dd4eb780f4e0bb8ad30bef3e6ff65328459da5f31daf5dc926026228e2a9a8ea943950
+  languageName: node
+  linkType: hard
+
+"@babylonjs/loaders@npm:5.57.1":
+  version: 5.57.1
+  resolution: "@babylonjs/loaders@npm:5.57.1"
+  peerDependencies:
+    "@babylonjs/core": ^5.22.0
+    babylonjs-gltf2interface: ^5.22.0
+  checksum: 10c0/981847e63a7596569826a695fde9607a49a96f6a2a4943e983682de6410dca89622a6e370e5cfb71a52c7c5350c792d660e94c509fcb54d6f314eddd5931fd17
+  languageName: node
+  linkType: hard
+
+"@babylonjs/materials@npm:5.57.1":
+  version: 5.57.1
+  resolution: "@babylonjs/materials@npm:5.57.1"
+  peerDependencies:
+    "@babylonjs/core": ^5.22.0
+  checksum: 10c0/211d923d965e43fdf6f9820030de59bb0d9434c2bee208d15ca8e05548ed143e30a57c323aba7746a59d7b98f834487e13d6337ce644f4b98c82f9cde82de37f
   languageName: node
   linkType: hard
 
@@ -4887,6 +4926,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"copy-dir@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "copy-dir@npm:1.3.0"
+  checksum: 10c0/59f785a88f5c32b07434898127d9bf868ddaf9978e7186aa9928ecd89f8c24eb63a9330d370580a5a2d88969263fde6d510fc1ef387e82d3650f00913a08bf6b
+  languageName: node
+  linkType: hard
+
 "core-js-compat@npm:^3.43.0":
   version: 3.45.1
   resolution: "core-js-compat@npm:3.45.1"
@@ -5753,7 +5799,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-blur@npm:^15.0.7":
+"expo-blur@npm:~15.0.7":
   version: 15.0.7
   resolution: "expo-blur@npm:15.0.7"
   peerDependencies:
@@ -5998,6 +6044,18 @@ __metadata:
     react-server-dom-webpack:
       optional: true
   checksum: 10c0/4ddf2f2db679c66283c26cca6737beff9b22801be53ae33d16ef1358454d0705ede287c2d68da96675c1ddfca59fb534fae6ebc0e9d1d2dbd6bb8bdf8e91832b
+  languageName: node
+  linkType: hard
+
+"expo-sensors@npm:~15.0.7":
+  version: 15.0.7
+  resolution: "expo-sensors@npm:15.0.7"
+  dependencies:
+    invariant: "npm:^2.2.4"
+  peerDependencies:
+    expo: "*"
+    react-native: "*"
+  checksum: 10c0/554ffbe70afda42a7cf9a403145afcff640c8cb689d39f0b52172140d24a8778c21b45dd63d8553d7ac86373c82ae7154e79bd056f1bf909c059bb8725ba38bb
   languageName: node
   linkType: hard
 
@@ -7825,6 +7883,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "love-dice@workspace:."
   dependencies:
+    "@3d-dice/dice-box": "npm:^1.1.4"
     "@expo/vector-icons": "npm:^15.0.2"
     "@react-native-async-storage/async-storage": "npm:2.2.0"
     "@react-navigation/bottom-tabs": "npm:^7.4.0"
@@ -7835,7 +7894,7 @@ __metadata:
     eslint: "npm:^9.25.0"
     eslint-config-expo: "npm:~10.0.0"
     expo: "npm:~54.0.8"
-    expo-blur: "npm:^15.0.7"
+    expo-blur: "npm:~15.0.7"
     expo-build-properties: "npm:~1.0.8"
     expo-constants: "npm:~18.0.9"
     expo-crypto: "npm:~15.0.1"
@@ -7847,6 +7906,7 @@ __metadata:
     expo-linking: "npm:~8.0.8"
     expo-notifications: "npm:^0.32.11"
     expo-router: "npm:~6.0.6"
+    expo-sensors: "npm:~15.0.7"
     expo-sharing: "npm:~14.0.4"
     expo-splash-screen: "npm:~31.0.10"
     expo-status-bar: "npm:~3.0.8"
@@ -8442,6 +8502,13 @@ __metadata:
   version: 2.0.1
   resolution: "nested-error-stacks@npm:2.0.1"
   checksum: 10c0/125049632bc3ca2252e994ca07f27d795c0e6decc4077f0f4163348d30d7cb95409ceff6184284c95396aa5ea8ff5010673063db7674058b966b4f0228d4981c
+  languageName: node
+  linkType: hard
+
+"node-abort-controller@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "node-abort-controller@npm:3.1.1"
+  checksum: 10c0/f7ad0e7a8e33809d4f3a0d1d65036a711c39e9d23e0319d80ebe076b9a3b4432b4d6b86a7fab65521de3f6872ffed36fc35d1327487c48eb88c517803403eda3
   languageName: node
   linkType: hard
 

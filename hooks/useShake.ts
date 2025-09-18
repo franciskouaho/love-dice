@@ -25,16 +25,13 @@ export const useShake = ({
     const startListening = async () => {
       // Vérifier si l'accéléromètre est disponible
       const isAvailable = await Accelerometer.isAvailableAsync();
-      console.log("📱 Accelerometer available:", isAvailable);
 
       if (!isAvailable) {
-        console.warn("❌ Accelerometer is not available on this device");
         return;
       }
 
       // Configurer la fréquence de mise à jour (40 fois par seconde pour capturer tous les mouvements)
       Accelerometer.setUpdateInterval(25);
-      console.log("✅ Accelerometer listener started");
 
       subscription = Accelerometer.addListener(({ x, y, z }) => {
         const currentTime = Date.now();
@@ -97,20 +94,7 @@ export const useShake = ({
           (isMultiDirectional ? 0.5 : 0);
 
         // Log périodique pour débugger (toutes les 3 secondes environ)
-        if (currentTime % 3000 < 100) {
-          console.log(
-            "📊 Accelerometer data - Instant:",
-            instantForce.toFixed(3),
-            "Cumulative:",
-            cumulativeForce.toFixed(3),
-            "Final:",
-            finalForce.toFixed(3),
-            "MultiDir:",
-            isMultiDirectional,
-            "Threshold:",
-            threshold,
-          );
-        }
+        // Logging périodique des données (commenté pour la production)
 
         // Détecter une secousse si la force dépasse le seuil OU si mouvement multidirectionnel intense
         if (
@@ -118,31 +102,10 @@ export const useShake = ({
           (isMultiDirectional && instantForce > threshold * 0.8)
         ) {
           const timeSinceLastShake = currentTime - lastShakeTime.current;
-          console.log(
-            "⚡ Shake detected:",
-            "Instant:",
-            instantForce.toFixed(3),
-            "Cumulative:",
-            cumulativeForce.toFixed(3),
-            "Final:",
-            finalForce.toFixed(3),
-            "MultiDir:",
-            isMultiDirectional,
-            "vs threshold:",
-            threshold,
-            "Time since last:",
-            timeSinceLastShake,
-            "ms",
-          );
+          // Shake detected - logging removed for production
 
           // Vérifier que suffisamment de temps s'est écoulé depuis la dernière secousse
           if (timeSinceLastShake > timeWindow) {
-            console.log(
-              "🔄 SHAKE DETECTED! Final Force:",
-              finalForce.toFixed(2),
-              "MultiDir:",
-              isMultiDirectional,
-            );
             setIsShaking(true);
             lastShakeTime.current = currentTime;
 
@@ -150,23 +113,14 @@ export const useShake = ({
             accelerationHistory.current = [];
 
             if (onShake) {
-              console.log("📞 Calling onShake callback...");
               // Délai léger pour permettre à l'animation de se déclencher
               setTimeout(() => onShake(), 50);
-            } else {
-              console.log("❌ No onShake callback provided");
             }
 
             // Réinitialiser l'état après un court délai
             setTimeout(() => setIsShaking(false), 400);
           } else {
-            console.log(
-              "⏰ Shake ignored - too soon after last shake (",
-              timeSinceLastShake,
-              "ms < ",
-              timeWindow,
-              "ms)",
-            );
+            // Shake ignored - too soon after last shake
           }
         }
 

@@ -122,13 +122,8 @@ export const useNotifications = (): NotificationState & NotificationActions => {
         scheduledNotifications: scheduled,
       }));
 
-      // Logger l'initialisation
-      console.log("Notifications initialisées", {
-        hasPermissions,
-        scheduledCount: scheduled.length,
-      });
+      // Notifications initialisées
     } catch (error) {
-      console.error("Erreur initialisation notifications:", error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -143,9 +138,6 @@ export const useNotifications = (): NotificationState & NotificationActions => {
       // Vérifier que Firebase est initialisé avant d'accéder à l'auth
       const userId = getCurrentUserId();
       if (!userId) {
-        console.log(
-          "📱 Pas d'utilisateur connecté, utilisation des préférences par défaut",
-        );
         // Utiliser les préférences par défaut si pas d'utilisateur
         setState((prev) => ({
           ...prev,
@@ -161,7 +153,6 @@ export const useNotifications = (): NotificationState & NotificationActions => {
         preferences: defaultPreferences,
       }));
     } catch (error) {
-      console.error("Erreur chargement préférences notifications:", error);
       // En cas d'erreur, utiliser les préférences par défaut
       setState((prev) => ({
         ...prev,
@@ -179,7 +170,7 @@ export const useNotifications = (): NotificationState & NotificationActions => {
         scheduledNotifications: scheduled,
       }));
     } catch (error) {
-      console.error("Erreur rafraîchissement notifications:", error);
+      // Erreur rafraîchissement notifications ignorée
     }
   }, []);
 
@@ -188,7 +179,6 @@ export const useNotifications = (): NotificationState & NotificationActions => {
     async (time?: string): Promise<void> => {
       try {
         if (!state.hasPermissions) {
-          console.log("Pas de permissions pour programmer rappel");
           return;
         }
 
@@ -197,12 +187,7 @@ export const useNotifications = (): NotificationState & NotificationActions => {
 
         // Rafraîchir la liste des notifications programmées
         await refreshScheduled();
-
-        console.log("Rappel programmé", {
-          time: reminderTime,
-        });
       } catch (error) {
-        console.error("Erreur programmation rappel:", error);
         setState((prev) => ({
           ...prev,
           error: "Impossible de programmer le rappel",
@@ -224,7 +209,7 @@ export const useNotifications = (): NotificationState & NotificationActions => {
           }));
         })
         .catch((error) => {
-          console.error("Erreur rafraîchissement notifications:", error);
+          // Erreur rafraîchissement notifications ignorée
         });
     }
   }, []);
@@ -248,14 +233,8 @@ export const useNotifications = (): NotificationState & NotificationActions => {
         await scheduleReminder();
       }
 
-      console.log("Permissions demandées", {
-        granted,
-        status,
-      });
-
       return granted;
     } catch (error) {
-      console.error("Erreur demande permissions:", error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -274,12 +253,8 @@ export const useNotifications = (): NotificationState & NotificationActions => {
         }
 
         await scheduleMilestoneNotification(rollCount);
-
-        console.log("Notification milestone envoyée", {
-          rollCount,
-        });
       } catch (error) {
-        console.error("Erreur notification milestone:", error);
+        // Erreur notification milestone ignorée
       }
     },
     [state.hasPermissions, state.preferences.milestoneAlerts],
@@ -312,12 +287,7 @@ export const useNotifications = (): NotificationState & NotificationActions => {
             await cancelNotificationsByType("evening_reminder");
           }
         }
-
-        console.log("Préférences notifications mises à jour", {
-          ...prefs,
-        });
       } catch (error) {
-        console.error("Erreur mise à jour préférences:", error);
         setState((prev) => ({
           ...prev,
           error: "Impossible de sauvegarder les préférences",
@@ -336,10 +306,7 @@ export const useNotifications = (): NotificationState & NotificationActions => {
         ...prev,
         scheduledNotifications: [],
       }));
-
-      console.log("Toutes les notifications annulées");
     } catch (error) {
-      console.error("Erreur annulation notifications:", error);
       setState((prev) => ({
         ...prev,
         error: "Impossible d'annuler les notifications",

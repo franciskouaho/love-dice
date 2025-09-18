@@ -79,7 +79,7 @@ export const useFaces = (): UseFacesReturn => {
           ? err.message
           : "Erreur lors du chargement des faces";
       setError(errorMessage);
-      console.error("❌ Erreur lors du chargement des faces:", err);
+      // Erreur lors du chargement des faces ignorée
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export const useFaces = (): UseFacesReturn => {
             ? err.message
             : "Erreur lors de l'ajout de la face";
         setError(errorMessage);
-        console.error("Erreur lors de l'ajout de la face:", err);
+        // Erreur lors de l'ajout de la face ignorée
         return false;
       }
     },
@@ -141,7 +141,7 @@ export const useFaces = (): UseFacesReturn => {
             ? err.message
             : "Erreur lors de la mise à jour de la face";
         setError(errorMessage);
-        console.error("Erreur lors de la mise à jour de la face:", err);
+        // Erreur lors de la mise à jour de la face ignorée
         return false;
       }
     },
@@ -168,7 +168,7 @@ export const useFaces = (): UseFacesReturn => {
             ? err.message
             : "Erreur lors de la suppression de la face";
         setError(errorMessage);
-        console.error("Erreur lors de la suppression de la face:", err);
+        // Erreur lors de la suppression de la face ignorée
         return false;
       }
     },

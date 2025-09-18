@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,13 +9,17 @@ import {
   FlatList,
   RefreshControl,
   Share,
-} from 'react-native';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
-import useAnalytics from '../hooks/useAnalytics';
-import { getHistory, getCurrentUserId, HistoryEntry } from '../services/firestore';
-import { formatRollDate } from '../utils/dice';
+} from "react-native";
+import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Haptics from "expo-haptics";
+import useAnalytics from "../hooks/useAnalytics";
+import {
+  getHistory,
+  getCurrentUserId,
+  HistoryEntry,
+} from "../services/firestore";
+import { formatRollDate } from "../utils/dice";
 
 export default function HistoryScreen() {
   const { logHistoryViewed, logShareResult } = useAnalytics();
@@ -38,7 +42,7 @@ export default function HistoryScreen() {
 
       const userId = getCurrentUserId();
       if (!userId) {
-        console.warn('Utilisateur non connecté');
+        // Utilisateur non connecté
         return;
       }
 
@@ -50,7 +54,7 @@ export default function HistoryScreen() {
         logHistoryViewed(historyData.length);
       }
     } catch (error) {
-      console.error('Erreur chargement historique:', error);
+      // Erreur chargement historique ignorée
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -76,15 +80,17 @@ export default function HistoryScreen() {
         message: shareText,
       });
 
-      logShareResult(entry.category, entry.label, 'text');
+      logShareResult(entry.category, entry.label, "text");
     } catch (error) {
-      console.error('Erreur partage:', error);
+      // Erreur partage ignorée
     }
   };
 
   const formatEntryDate = (entry: HistoryEntry) => {
     try {
-      const date = entry.createdAt?.toDate ? entry.createdAt.toDate() : new Date(entry.createdAt);
+      const date = entry.createdAt?.toDate
+        ? entry.createdAt.toDate()
+        : new Date(entry.createdAt);
       return formatRollDate({
         id: entry.id,
         face: {
@@ -92,13 +98,13 @@ export default function HistoryScreen() {
           label: entry.label,
           category: entry.category as any,
           emoji: entry.emoji,
-          weight: 1
+          weight: 1,
         },
         timestamp: date.getTime(),
-        date: date.toISOString().split('T')[0]
+        date: date.toISOString().split("T")[0],
       });
     } catch (error) {
-      return 'Date inconnue';
+      return "Date inconnue";
     }
   };
 
@@ -110,9 +116,9 @@ export default function HistoryScreen() {
           <View style={styles.historyInfo}>
             <Text style={styles.historyLabel}>{item.label}</Text>
             <Text style={styles.historyCategory}>
-              {item.category === 'payer' && '💳 Qui paie'}
-              {item.category === 'repas' && '🍽️ Repas'}
-              {item.category === 'activite' && '🎬 Activité'}
+              {item.category === "payer" && "💳 Qui paie"}
+              {item.category === "repas" && "🍽️ Repas"}
+              {item.category === "activite" && "🎬 Activité"}
             </Text>
           </View>
         </View>
@@ -134,16 +140,17 @@ export default function HistoryScreen() {
       <Text style={styles.emptyIcon}>🎲</Text>
       <Text style={styles.emptyTitle}>Aucun lancer enregistré</Text>
       <Text style={styles.emptySubtext}>
-        Vos lancers de dé apparaîtront ici une fois que vous aurez commencé à jouer.
+        Vos lancers de dé apparaîtront ici une fois que vous aurez commencé à
+        jouer.
       </Text>
 
       <TouchableOpacity
         style={styles.startButton}
-        onPress={() => router.push('/(tabs)/')}
+        onPress={() => router.push("/(tabs)/")}
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={['#E0115F', '#FF4F7B']}
+          colors={["#E0115F", "#FF4F7B"]}
           style={styles.startGradient}
         >
           <Text style={styles.startButtonText}>Commencer à jouer</Text>
@@ -155,7 +162,7 @@ export default function HistoryScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <LinearGradient colors={['#FFF3F6', '#FFFFFF']} style={styles.gradient}>
+        <LinearGradient colors={["#FFF3F6", "#FFFFFF"]} style={styles.gradient}>
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Chargement...</Text>
           </View>
@@ -168,10 +175,14 @@ export default function HistoryScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF3F6" />
 
-      <LinearGradient colors={['#FFF3F6', '#FFFFFF']} style={styles.gradient}>
+      <LinearGradient colors={["#FFF3F6", "#FFFFFF"]} style={styles.gradient}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleBack}
+            activeOpacity={0.7}
+          >
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Historique</Text>
@@ -187,19 +198,19 @@ export default function HistoryScreen() {
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>
-                {history.filter(h => h.category === 'activite').length}
+                {history.filter((h) => h.category === "activite").length}
               </Text>
               <Text style={styles.statLabel}>Activités</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>
-                {history.filter(h => h.category === 'repas').length}
+                {history.filter((h) => h.category === "repas").length}
               </Text>
               <Text style={styles.statLabel}>Repas</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>
-                {history.filter(h => h.category === 'payer').length}
+                {history.filter((h) => h.category === "payer").length}
               </Text>
               <Text style={styles.statLabel}>Paiements</Text>
             </View>
@@ -213,7 +224,7 @@ export default function HistoryScreen() {
           renderItem={renderHistoryItem}
           contentContainerStyle={[
             styles.listContainer,
-            history.length === 0 && styles.emptyListContainer
+            history.length === 0 && styles.emptyListContainer,
           ]}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -221,7 +232,7 @@ export default function HistoryScreen() {
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
               tintColor="#E0115F"
-              colors={['#E0115F']}
+              colors={["#E0115F"]}
             />
           }
           ListEmptyComponent={renderEmptyState}
@@ -234,76 +245,76 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF3F6',
+    backgroundColor: "#FFF3F6",
   },
   gradient: {
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(224, 17, 95, 0.1)',
+    borderBottomColor: "rgba(224, 17, 95, 0.1)",
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(224, 17, 95, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(224, 17, 95, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   backIcon: {
     fontSize: 20,
-    color: '#E0115F',
-    fontWeight: 'bold',
+    color: "#E0115F",
+    fontWeight: "bold",
   },
   headerTitle: {
     flex: 1,
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#0E0E10',
-    textAlign: 'center',
-    fontFamily: 'System',
+    fontWeight: "bold",
+    color: "#0E0E10",
+    textAlign: "center",
+    fontFamily: "System",
   },
   headerSpacer: {
     width: 40,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 18,
-    color: '#A50848',
-    fontFamily: 'System',
+    color: "#A50848",
+    fontFamily: "System",
   },
   statsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(224, 17, 95, 0.1)',
+    borderBottomColor: "rgba(224, 17, 95, 0.1)",
   },
   statItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#E0115F',
-    fontFamily: 'System',
+    fontWeight: "bold",
+    color: "#E0115F",
+    fontFamily: "System",
   },
   statLabel: {
     fontSize: 12,
-    color: '#A50848',
+    color: "#A50848",
     marginTop: 4,
-    fontFamily: 'System',
+    fontFamily: "System",
     opacity: 0.7,
   },
   listContainer: {
@@ -314,16 +325,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(224, 17, 95, 0.1)',
+    borderColor: "rgba(224, 17, 95, 0.1)",
     elevation: 2,
-    shadowColor: '#A50848',
+    shadowColor: "#A50848",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -335,8 +346,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   historyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   historyEmoji: {
@@ -348,30 +359,30 @@ const styles = StyleSheet.create({
   },
   historyLabel: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0E0E10',
+    fontWeight: "bold",
+    color: "#0E0E10",
     marginBottom: 2,
-    fontFamily: 'System',
+    fontFamily: "System",
   },
   historyCategory: {
     fontSize: 14,
-    color: '#A50848',
+    color: "#A50848",
     opacity: 0.7,
-    fontFamily: 'System',
+    fontFamily: "System",
   },
   historyDate: {
     fontSize: 12,
-    color: '#A50848',
+    color: "#A50848",
     opacity: 0.6,
-    fontFamily: 'System',
+    fontFamily: "System",
   },
   shareButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(224, 17, 95, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(224, 17, 95, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 12,
   },
   shareIcon: {
@@ -379,8 +390,8 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 32,
   },
   emptyIcon: {
@@ -389,34 +400,34 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0E0E10',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#0E0E10",
+    textAlign: "center",
     marginBottom: 16,
-    fontFamily: 'System',
+    fontFamily: "System",
   },
   emptySubtext: {
     fontSize: 16,
-    color: '#A50848',
-    textAlign: 'center',
+    color: "#A50848",
+    textAlign: "center",
     lineHeight: 24,
     marginBottom: 32,
     opacity: 0.7,
-    fontFamily: 'System',
+    fontFamily: "System",
   },
   startButton: {
     borderRadius: 24,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   startGradient: {
     paddingVertical: 16,
     paddingHorizontal: 32,
-    alignItems: 'center',
+    alignItems: "center",
   },
   startButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    fontFamily: 'System',
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontFamily: "System",
   },
 });

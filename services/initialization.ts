@@ -31,20 +31,14 @@ export const initializeApp = async (): Promise<boolean> => {
  */
 const performInitialization = async (): Promise<boolean> => {
   try {
-    console.log("🚀 Initialisation des services Firebase...");
-
     const firebaseInitialized = await initFirebase();
     if (!firebaseInitialized) {
-      console.error("Les services Firebase n'ont pas pu être initialisés");
       return false;
     }
 
     isInitialized = true;
-    console.log("✅ Services Firebase initialisés");
     return true;
   } catch (error) {
-    console.error("❌ Erreur initialisation des services Firebase:", error);
-
     // Reset l'état en cas d'erreur
     isInitialized = false;
     initializationPromise = null;
@@ -66,7 +60,6 @@ export const isAppInitialized = (): boolean => {
 export const resetInitialization = (): void => {
   isInitialized = false;
   initializationPromise = null;
-  console.log("🔄 État d'initialisation réinitialisé");
 };
 
 /**
@@ -87,11 +80,10 @@ export const initializeAppWithRetry = async (
         return true;
       }
     } catch (error) {
-      console.error(`Tentative ${attempts}/${maxRetries} échouée:`, error);
+      // Tentative échouée, retry automatique
     }
 
     if (attempts < maxRetries) {
-      console.log(`⏳ Nouvelle tentative dans ${retryDelay}ms...`);
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
 
       // Reset pour permettre une nouvelle tentative
@@ -99,7 +91,6 @@ export const initializeAppWithRetry = async (
     }
   }
 
-  console.error(`❌ Échec de l'initialisation après ${maxRetries} tentatives`);
   return false;
 };
 
@@ -123,9 +114,6 @@ export const waitForFirebaseInitialization = async (
   // Sinon, démarrer l'initialisation et l'attendre
   return new Promise((resolve) => {
     const timeout = setTimeout(() => {
-      console.warn(
-        "⚠️ Timeout en attendant l'initialisation des services Firebase",
-      );
       resolve(false);
     }, timeoutMs);
 
@@ -136,7 +124,6 @@ export const waitForFirebaseInitialization = async (
       })
       .catch((error) => {
         clearTimeout(timeout);
-        console.error("❌ Erreur en attendant l'initialisation:", error);
         resolve(false);
       });
   });

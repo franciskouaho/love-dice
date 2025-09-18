@@ -46,7 +46,7 @@ export const isNewDay = async (): Promise<boolean> => {
     const currentDayKey = getCurrentDayKey();
     return storedDayKey !== currentDayKey;
   } catch (error) {
-    console.error("Erreur vérification nouveau jour:", error);
+    // Erreur vérification nouveau jour ignorée
     return true; // En cas d'erreur, considérer comme nouveau jour
   }
 };
@@ -59,9 +59,9 @@ export const resetDailyQuota = async (): Promise<void> => {
       [STORAGE_KEYS.FREE_ROLLS_USED, "0"],
       [STORAGE_KEYS.FREE_DAY_KEY, currentDayKey],
     ]);
-    console.log("Quota quotidien réinitialisé");
+    // Quota quotidien réinitialisé
   } catch (error) {
-    console.error("Erreur réinitialisation quota:", error);
+    // Erreur réinitialisation quota ignorée
   }
 };
 
@@ -77,7 +77,7 @@ export const getFreeRollsUsed = async (): Promise<number> => {
     const used = await AsyncStorage.getItem(STORAGE_KEYS.FREE_ROLLS_USED);
     return used ? parseInt(used, 10) : 0;
   } catch (error) {
-    console.error("Erreur récupération rolls utilisés:", error);
+    // Erreur récupération rolls utilisés ignorée
     return 0;
   }
 };
@@ -87,7 +87,7 @@ export const getDailyLimit = async (): Promise<number> => {
   try {
     return await getConfigValue("FREE_ROLLS_PER_DAY");
   } catch (error) {
-    console.error("Erreur récupération limite quotidienne:", error);
+    // Erreur récupération limite quotidienne ignorée
     return 3; // Valeur par défaut
   }
 };
@@ -110,7 +110,7 @@ export const canRollDice = async (
       remaining,
     };
   } catch (error) {
-    console.error("Erreur vérification quota:", error);
+    // Erreur vérification quota ignorée
     return { canRoll: false, remaining: 0 };
   }
 };
@@ -137,7 +137,7 @@ export const consumeFreeRoll = async (): Promise<{
     const remaining = Math.max(0, limit - newUsed);
     return { success: true, remaining };
   } catch (error) {
-    console.error("Erreur consommation roll gratuit:", error);
+    // Erreur consommation roll gratuit ignorée
     return { success: false, remaining: 0 };
   }
 };
@@ -152,7 +152,7 @@ export const saveLifetimeStatus = async (
       hasLifetime.toString(),
     );
   } catch (error) {
-    console.error("Erreur sauvegarde statut lifetime:", error);
+    // Erreur sauvegarde statut lifetime ignorée
   }
 };
 
@@ -162,7 +162,7 @@ export const getLifetimeStatus = async (): Promise<boolean> => {
     const status = await AsyncStorage.getItem(STORAGE_KEYS.HAS_LIFETIME);
     return status === "true";
   } catch (error) {
-    console.error("Erreur récupération statut lifetime:", error);
+    // Erreur récupération statut lifetime ignorée
     return false;
   }
 };
@@ -177,7 +177,7 @@ export const saveUserPreferences = async (
       JSON.stringify(preferences),
     );
   } catch (error) {
-    console.error("Erreur sauvegarde préférences:", error);
+    // Erreur sauvegarde préférences ignorée
   }
 };
 
@@ -190,7 +190,7 @@ export const getUserPreferences = async (): Promise<UserPreferences> => {
     }
     return defaultPreferences;
   } catch (error) {
-    console.error("Erreur récupération préférences:", error);
+    // Erreur récupération préférences ignorée
     return defaultPreferences;
   }
 };
@@ -200,7 +200,7 @@ export const saveLastRoll = async (rollId: string): Promise<void> => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.LAST_ROLL, rollId);
   } catch (error) {
-    console.error("Erreur sauvegarde dernier roll:", error);
+    // Erreur sauvegarde dernier roll ignorée
   }
 };
 
@@ -209,7 +209,7 @@ export const getLastRoll = async (): Promise<string | null> => {
   try {
     return await AsyncStorage.getItem(STORAGE_KEYS.LAST_ROLL);
   } catch (error) {
-    console.error("Erreur récupération dernier roll:", error);
+    // Erreur récupération dernier roll ignorée
     return null;
   }
 };
@@ -218,9 +218,9 @@ export const getLastRoll = async (): Promise<string | null> => {
 export const clearAllData = async (): Promise<void> => {
   try {
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
-    console.log("Toutes les données locales supprimées");
+    // Toutes les données locales supprimées
   } catch (error) {
-    console.error("Erreur suppression données:", error);
+    // Erreur suppression données ignorée
   }
 };
 
@@ -251,7 +251,7 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
       canRoll: remaining > 0,
     };
   } catch (error) {
-    console.error("Erreur résumé quota:", error);
+    // Erreur résumé quota ignorée
     return {
       hasLifetime: false,
       unlimited: false,
@@ -295,8 +295,8 @@ export const syncWithFirestore = async (firestoreData: any): Promise<void> => {
       }
     }
 
-    console.log("Synchronisation avec Firestore réussie");
+    // Synchronisation avec Firestore réussie
   } catch (error) {
-    console.error("Erreur synchronisation Firestore:", error);
+    // Erreur synchronisation Firestore ignorée
   }
 };

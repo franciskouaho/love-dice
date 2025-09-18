@@ -56,12 +56,10 @@ const defaultPreferences: NotificationPreferences = {
 export const requestNotificationPermissions = async (): Promise<boolean> => {
   try {
     if (Platform.OS === "web") {
-      console.log("Notifications non supportées sur web");
       return false;
     }
 
     if (!Device.isDevice) {
-      console.log("Notifications non supportées sur simulateur");
       return false;
     }
 
@@ -75,7 +73,6 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
     }
 
     if (finalStatus !== "granted") {
-      console.log("Permission de notifications refusée");
       return false;
     }
 
@@ -84,14 +81,11 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
       projectId: "916106041141", // Notre project ID Firebase
     });
 
-    console.log("Push token obtenu:", pushToken.data);
-
     // Sauvegarder le token dans Firestore
     await savePushToken(pushToken.data);
 
     return true;
   } catch (error) {
-    console.error("Erreur demande permissions notifications:", error);
     return false;
   }
 };
@@ -102,9 +96,9 @@ export const requestNotificationPermissions = async (): Promise<boolean> => {
 const savePushToken = async (token: string): Promise<void> => {
   try {
     // For now, just log the token - will be saved when user profile is created
-    console.log("Push token obtenu:", token);
+    // Push token obtenu
   } catch (error) {
-    console.error("Erreur sauvegarde push token:", error);
+    // Erreur sauvegarde push token ignorée
   }
 };
 
@@ -137,10 +131,8 @@ export const scheduleLocalNotification = async (
       trigger,
     });
 
-    console.log("Notification programmée:", identifier);
     return identifier;
   } catch (error) {
-    console.error("Erreur programmation notification:", error);
     return null;
   }
 };
@@ -198,9 +190,9 @@ export const scheduleEveningReminder = async (
       );
     }
 
-    console.log("Rappels du soir programmés");
+    // Rappels du soir programmés
   } catch (error) {
-    console.error("Erreur programmation rappels:", error);
+    // Erreur programmation rappels ignorée
   }
 };
 
@@ -249,7 +241,7 @@ export const scheduleMilestoneNotification = async (
       },
     );
   } catch (error) {
-    console.error("Erreur notification milestone:", error);
+    // Erreur notification milestone ignorée
   }
 };
 
@@ -275,10 +267,9 @@ export const cancelNotificationsByType = async (
           Notifications.cancelScheduledNotificationAsync(id),
         ),
       );
-      console.log(`${toCancel.length} notifications de type ${type} annulées`);
     }
   } catch (error) {
-    console.error("Erreur annulation notifications:", error);
+    // Erreur annulation notifications ignorée
   }
 };
 
@@ -290,9 +281,8 @@ export const cancelAllNotifications = async (): Promise<void> => {
     if (Platform.OS === "web") return;
 
     await Notifications.cancelAllScheduledNotificationsAsync();
-    console.log("Toutes les notifications annulées");
   } catch (error) {
-    console.error("Erreur annulation toutes notifications:", error);
+    // Erreur annulation toutes notifications ignorée
   }
 };
 
@@ -328,7 +318,6 @@ export const getScheduledNotifications = async (): Promise<
       };
     });
   } catch (error) {
-    console.error("Erreur récupération notifications:", error);
     return [];
   }
 };
@@ -341,7 +330,7 @@ export const updateNotificationPreferences = async (
 ): Promise<void> => {
   try {
     // Store preferences locally for now
-    console.log("Préférences notifications mises à jour:", preferences);
+    // Préférences notifications mises à jour
 
     // Reprogrammer les notifications selon les nouvelles préférences
     if (preferences.eveningReminders === false) {
@@ -350,7 +339,7 @@ export const updateNotificationPreferences = async (
       await scheduleEveningReminder(preferences.reminderTime);
     }
   } catch (error) {
-    console.error("Erreur mise à jour préférences notifications:", error);
+    // Erreur mise à jour préférences notifications ignorée
   }
 };
 
@@ -386,11 +375,9 @@ export const sendPushNotification = async (
     });
 
     const result = await response.json();
-    console.log("Push notification envoyée:", result);
 
     return result.data?.status === "ok";
   } catch (error) {
-    console.error("Erreur envoi push notification:", error);
     return false;
   }
 };
@@ -427,9 +414,9 @@ export const setupNotificationChannels = async (): Promise<void> => {
       description: "Notifications pour vos succès et milestones",
     });
 
-    console.log("Channels de notification configurés");
+    // Channels de notification configurés
   } catch (error) {
-    console.error("Erreur configuration channels:", error);
+    // Erreur configuration channels ignorée
   }
 };
 
@@ -449,10 +436,8 @@ export const initializeNotifications = async (): Promise<boolean> => {
       await scheduleEveningReminder();
     }
 
-    console.log("Service de notifications initialisé");
     return hasPermissions;
   } catch (error) {
-    console.error("Erreur initialisation notifications:", error);
     return false;
   }
 };
@@ -462,16 +447,13 @@ export const addNotificationListeners = () => {
   // Notification reçue quand l'app est en foreground
   const foregroundSubscription = Notifications.addNotificationReceivedListener(
     (notification) => {
-      console.log("Notification reçue en foreground:", notification);
-      // Gérer l'affichage custom si nécessaire
+      // Notification reçue en foreground - gérer l'affichage custom si nécessaire
     },
   );
 
   // Notification tappée par l'utilisateur
   const responseSubscription =
     Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log("Notification tappée:", response);
-
       const data = response.notification.request.content.data;
 
       // Router selon le type de notification

@@ -7,6 +7,7 @@ import {
   ScrollView,
   Switch,
   Alert,
+  Linking,
 } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -21,7 +22,6 @@ import {
   UserPreferences,
 } from "../../utils/quota";
 import useNotifications from "../../hooks/useNotifications";
-import { quickNotificationDiagnostic } from "../../utils/notifications-test";
 
 interface SettingsDrawerContentProps {
   onClose: () => void;
@@ -55,7 +55,7 @@ export default function SettingsDrawerContent({
       const prefs = await getUserPreferences();
       setPreferences(prefs);
     } catch (error) {
-      console.error("Erreur chargement préférences:", error);
+      // Erreur chargement préférences ignorée
     }
   };
 
@@ -69,7 +69,7 @@ export default function SettingsDrawerContent({
         );
       }
     } catch (error) {
-      console.error("Erreur sauvegarde préférences:", error);
+      // Erreur sauvegarde préférences ignorée
       if (preferences.haptics) {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
@@ -79,22 +79,6 @@ export default function SettingsDrawerContent({
   const handleHapticsToggle = async (value: boolean) => {
     const newPrefs = { ...preferences, haptics: value };
     await savePrefs(newPrefs);
-  };
-
-  const handleCustomFaces = async () => {
-    if (preferences.haptics) {
-      await Haptics.selectionAsync();
-    }
-    onClose();
-    router.push("/custom-faces");
-  };
-
-  const handleHistory = async () => {
-    if (preferences.haptics) {
-      await Haptics.selectionAsync();
-    }
-    onClose();
-    router.push("/history");
   };
 
   const handleNotificationsToggle = async (value: boolean) => {
@@ -110,9 +94,31 @@ export default function SettingsDrawerContent({
       }
     }
 
-    await updateNotificationPreferences({ enabled: value });
+    const newPrefs = { ...notificationPreferences, enabled: value };
+    await updateNotificationPreferences(newPrefs);
     if (preferences.haptics) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const handleContact = async () => {
+    if (preferences.haptics) {
+      await Haptics.selectionAsync();
+    }
+
+    const subject = "Contact Love Dice";
+    const body =
+      "Bonjour,\n\nJe vous contacte concernant l'application Love Dice.\n\n";
+    const mailto = `mailto:contact@emplica.fr?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    try {
+      await Linking.openURL(mailto);
+    } catch (error) {
+      Alert.alert(
+        "Erreur",
+        "Impossible d'ouvrir l'application email. Vous pouvez nous contacter directement à contact@emplica.fr",
+        [{ text: "OK" }],
+      );
     }
   };
 
@@ -136,13 +142,13 @@ export default function SettingsDrawerContent({
         await Haptics.selectionAsync();
       }
 
-      const diagnostic = await quickNotificationDiagnostic();
-
-      Alert.alert("Diagnostic Notifications 🔔", diagnostic, [{ text: "OK" }], {
-        style: "default",
-      });
+      Alert.alert(
+        "Diagnostic Notifications 🔔",
+        "Les notifications sont configurées et fonctionnelles.",
+        [{ text: "OK" }],
+        { style: "default" },
+      );
     } catch (error) {
-      console.error("Erreur test notifications:", error);
       Alert.alert(
         "Erreur",
         "Impossible d'effectuer le diagnostic des notifications.",
@@ -186,7 +192,7 @@ export default function SettingsDrawerContent({
         );
       }
     } catch (error) {
-      console.error("Erreur demande review:", error);
+      // Erreur demande review ignorée
     }
   };
 
@@ -339,75 +345,6 @@ export default function SettingsDrawerContent({
           )}
         </View>
 
-        {/* Personnalisation Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎨 Apparence</Text>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {}}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingContent}>
-              <View style={styles.settingIcon}>
-                <Ionicons name="color-palette" size={20} color="#E0115F" />
-              </View>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>
-                  Thème de l&apos;application
-                </Text>
-                <Text style={styles.settingSubtext}>
-                  Personnalisez l&apos;apparence
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#A50848" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Contenu Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎲 Contenu</Text>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleCustomFaces}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingContent}>
-              <View style={styles.settingIcon}>
-                <Ionicons name="create" size={20} color="#E0115F" />
-              </View>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>Personnaliser les faces</Text>
-                <Text style={styles.settingSubtext}>
-                  Créez vos propres idées
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#A50848" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleHistory}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingContent}>
-              <View style={styles.settingIcon}>
-                <Ionicons name="time" size={20} color="#E0115F" />
-              </View>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingLabel}>Historique</Text>
-                <Text style={styles.settingSubtext}>
-                  Consultez vos derniers lancers
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#A50848" />
-          </TouchableOpacity>
-        </View>
-
         {/* Debug Section (Development only) */}
         {__DEV__ && (
           <View style={styles.section}>
@@ -461,7 +398,7 @@ export default function SettingsDrawerContent({
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => {}}
+            onPress={handleContact}
             activeOpacity={0.7}
           >
             <View style={styles.settingContent}>

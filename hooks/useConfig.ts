@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   fetchConfig,
   getConfigValue,
   getFeatureFlags,
   isFeatureEnabled,
   refreshConfig,
-  AppConfig
-} from '../services/config';
+  AppConfig,
+} from "../services/config";
 
 export interface UseConfigReturn {
   config: AppConfig | null;
@@ -15,8 +15,10 @@ export interface UseConfigReturn {
 
   // Getters
   getValue: <K extends keyof AppConfig>(key: K) => Promise<AppConfig[K]>;
-  getFeatureFlags: () => Promise<AppConfig['FEATURE_FLAGS']>;
-  isFeatureEnabled: (feature: keyof AppConfig['FEATURE_FLAGS']) => Promise<boolean>;
+  getFeatureFlags: () => Promise<AppConfig["FEATURE_FLAGS"]>;
+  isFeatureEnabled: (
+    feature: keyof AppConfig["FEATURE_FLAGS"],
+  ) => Promise<boolean>;
 
   // Actions
   refresh: () => Promise<void>;
@@ -26,7 +28,7 @@ export interface UseConfigReturn {
   lifetimePrice: string;
   paywallTitle: string;
   paywallBullets: string[];
-  features: AppConfig['FEATURE_FLAGS'] | null;
+  features: AppConfig["FEATURE_FLAGS"] | null;
 }
 
 export const useConfig = (): UseConfigReturn => {
@@ -47,24 +49,31 @@ export const useConfig = (): UseConfigReturn => {
       const freshConfig = await fetchConfig();
       setConfig(freshConfig);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erreur lors du chargement de la configuration';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Erreur lors du chargement de la configuration";
       setError(errorMessage);
-      console.error('Erreur chargement config:', err);
+      // Erreur chargement config ignorée
     } finally {
       setLoading(false);
     }
   };
 
   // Wrapper functions
-  const getValue = async <K extends keyof AppConfig>(key: K): Promise<AppConfig[K]> => {
+  const getValue = async <K extends keyof AppConfig>(
+    key: K,
+  ): Promise<AppConfig[K]> => {
     return await getConfigValue(key);
   };
 
-  const getFlags = async (): Promise<AppConfig['FEATURE_FLAGS']> => {
+  const getFlags = async (): Promise<AppConfig["FEATURE_FLAGS"]> => {
     return await getFeatureFlags();
   };
 
-  const checkFeature = async (feature: keyof AppConfig['FEATURE_FLAGS']): Promise<boolean> => {
+  const checkFeature = async (
+    feature: keyof AppConfig["FEATURE_FLAGS"],
+  ): Promise<boolean> => {
     return await isFeatureEnabled(feature);
   };
 
@@ -76,9 +85,10 @@ export const useConfig = (): UseConfigReturn => {
       const freshConfig = await refreshConfig();
       setConfig(freshConfig);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erreur lors du rafraîchissement';
+      const errorMessage =
+        err instanceof Error ? err.message : "Erreur lors du rafraîchissement";
       setError(errorMessage);
-      console.error('Erreur refresh config:', err);
+      // Erreur refresh config ignorée
     } finally {
       setLoading(false);
     }
@@ -88,7 +98,11 @@ export const useConfig = (): UseConfigReturn => {
   const freeRollsPerDay = config?.FREE_ROLLS_PER_DAY || 3;
   const lifetimePrice = config?.LIFETIME_PRICE || "12,99 €";
   const paywallTitle = config?.PAYWALL_TITLE || "Accès à vie 💕";
-  const paywallBullets = config?.PAYWALL_BULLETS?.split('|') || ["Lancers illimités", "Dés personnalisables", "Aucune pub"];
+  const paywallBullets = config?.PAYWALL_BULLETS?.split("|") || [
+    "Lancers illimités",
+    "Dés personnalisables",
+    "Aucune pub",
+  ];
   const features = config?.FEATURE_FLAGS || null;
 
   return {

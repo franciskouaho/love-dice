@@ -121,9 +121,7 @@ export function normalizePath(path: AnyPath): AppPath {
   // 4. Fallback: attempt soft inference (avoid throwing in production)
   // You can tighten this if you prefer hard failures.
   if (__DEV__) {
-    console.warn(
-      `[navigation] Unknown path "${path}" — falling back to root "/". Add it to Routes if intentional.`,
-    );
+    // Unknown path - falling back to root
   }
   return Routes.root;
 }

@@ -25,8 +25,7 @@ export default function SplashScreen() {
           router.replace("/(onboarding)/welcome");
         }
       } catch (error) {
-        console.error("Error during app initialization:", error);
-        // Default to onboarding on error
+        // Error during app initialization - default to onboarding on error
         router.replace("/(onboarding)/welcome");
       } finally {
         setIsLoading(false);

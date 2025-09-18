@@ -47,22 +47,16 @@ export const initializeConfig = async (): Promise<boolean> => {
     const configDoc = await getDoc(configRef);
 
     if (!configDoc.exists()) {
-      console.log("Initialisation de la configuration par défaut...");
       await setDoc(configRef, {
         ...DEFAULT_CONFIG,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         platform: Platform.OS,
       });
-      console.log("Configuration par défaut initialisée");
     }
 
     return true;
   } catch (error) {
-    console.error(
-      "Erreur lors de l'initialisation de la configuration:",
-      error,
-    );
     return false;
   }
 };
@@ -99,7 +93,6 @@ export const fetchConfig = async (): Promise<AppConfig> => {
       return configCache;
     }
   } catch (error) {
-    console.error("Erreur lors de la récupération de la configuration:", error);
     // Retourner la configuration en cache ou par défaut
     return configCache || DEFAULT_CONFIG;
   }
@@ -113,7 +106,6 @@ export const getConfigValue = async <K extends keyof AppConfig>(
     const config = await fetchConfig();
     return config[key];
   } catch (error) {
-    console.error(`Erreur récupération config ${key}:`, error);
     return DEFAULT_CONFIG[key];
   }
 };
@@ -126,7 +118,6 @@ export const getFeatureFlags = async (): Promise<
     const config = await fetchConfig();
     return config.FEATURE_FLAGS;
   } catch (error) {
-    console.error("Erreur récupération feature flags:", error);
     return DEFAULT_CONFIG.FEATURE_FLAGS;
   }
 };
@@ -139,7 +130,6 @@ export const isFeatureEnabled = async (
     const flags = await getFeatureFlags();
     return flags[featureName] || false;
   } catch (error) {
-    console.error(`Erreur vérification feature ${featureName}:`, error);
     return DEFAULT_CONFIG.FEATURE_FLAGS[featureName] || false;
   }
 };
@@ -164,10 +154,8 @@ export const updateConfig = async (
     configCache = null;
     lastFetchTime = 0;
 
-    console.log("Configuration mise à jour");
     return true;
   } catch (error) {
-    console.error("Erreur mise à jour configuration:", error);
     return false;
   }
 };
@@ -196,7 +184,7 @@ export const useConfig = () => {
         const freshConfig = await fetchConfig();
         setConfig(freshConfig);
       } catch (error) {
-        console.error("Erreur chargement config:", error);
+        // Erreur chargement config ignorée
       } finally {
         setLoading(false);
       }

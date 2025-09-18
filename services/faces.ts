@@ -213,8 +213,6 @@ export const initializeDefaultFaces = async (): Promise<boolean> => {
     const existingFaces = await getDocs(defaultFacesRef);
 
     if (existingFaces.empty) {
-      console.log("Initialisation des faces par défaut...");
-
       DEFAULT_FACES.forEach((face, index) => {
         const faceRef = doc(defaultFacesRef, `default_${index}`);
         batch.set(faceRef, {
@@ -225,17 +223,10 @@ export const initializeDefaultFaces = async (): Promise<boolean> => {
       });
 
       await batch.commit();
-      console.log("Faces par défaut initialisées avec succès");
-    } else {
-      console.log("Faces par défaut déjà présentes");
     }
 
     return true;
   } catch (error) {
-    console.error(
-      "Erreur lors de l'initialisation des faces par défaut:",
-      error,
-    );
     return false;
   }
 };
@@ -264,10 +255,6 @@ export const getDefaultFaces = async (): Promise<DiceFace[]> => {
     });
     return faces;
   } catch (error) {
-    console.error(
-      "❌ Erreur lors de la récupération des faces par défaut:",
-      error,
-    );
     // Fallback vers les faces locales en cas d'erreur
     return DEFAULT_FACES.map((face, index) => ({
       id: `fallback_${index}`,
@@ -304,10 +291,6 @@ export const getUserFaces = async (uid: string): Promise<DiceFace[]> => {
 
     return faces;
   } catch (error) {
-    console.error(
-      "Erreur lors de la récupération des faces utilisateur:",
-      error,
-    );
     return [];
   }
 };
@@ -322,7 +305,6 @@ export const getAllActiveFaces = async (uid: string): Promise<DiceFace[]> => {
 
     return [...defaultFaces, ...userFaces];
   } catch (error) {
-    console.error("Erreur lors de la récupération de toutes les faces:", error);
     return [];
   }
 };
@@ -344,10 +326,8 @@ export const addUserFace = async (
     };
 
     const docRef = await addDoc(userFacesRef, faceData);
-    console.log("Face personnalisée ajoutée:", face.label);
     return docRef.id;
   } catch (error) {
-    console.error("Erreur lors de l'ajout de la face personnalisée:", error);
     return null;
   }
 };
@@ -367,10 +347,8 @@ export const updateUserFace = async (
     };
 
     await setDoc(faceRef, updateData, { merge: true });
-    console.log("Face personnalisée mise à jour:", faceId);
     return true;
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de la face:", error);
     return false;
   }
 };
@@ -393,10 +371,8 @@ export const deleteUserFace = async (
       { merge: true },
     );
 
-    console.log("Face personnalisée désactivée:", faceId);
     return true;
   } catch (error) {
-    console.error("Erreur lors de la suppression de la face:", error);
     return false;
   }
 };
@@ -410,13 +386,8 @@ export const permanentlyDeleteUserFace = async (
     const faceRef = doc(db, getUserFacesCollection(uid), faceId);
 
     await deleteDoc(faceRef);
-    console.log("Face personnalisée supprimée définitivement:", faceId);
     return true;
   } catch (error) {
-    console.error(
-      "Erreur lors de la suppression définitive de la face:",
-      error,
-    );
     return false;
   }
 };
@@ -489,7 +460,6 @@ export const getFaceById = async (
 
     return null;
   } catch (error) {
-    console.error("Erreur lors de la récupération de la face:", error);
     return null;
   }
 };
@@ -539,13 +509,8 @@ export const syncDefaultFaces = async (): Promise<boolean> => {
     });
 
     await batch.commit();
-    console.log("Synchronisation des faces par défaut terminée");
     return true;
   } catch (error) {
-    console.error(
-      "Erreur lors de la synchronisation des faces par défaut:",
-      error,
-    );
     return false;
   }
 };
@@ -553,18 +518,14 @@ export const syncDefaultFaces = async (): Promise<boolean> => {
 // Fonction d'initialisation complète du service faces
 export const initializeFacesService = async (): Promise<boolean> => {
   try {
-    console.log("Initialisation du service faces...");
-
     // Initialiser les faces par défaut
     await initializeDefaultFaces();
 
     // Synchroniser les faces par défaut (au cas où il y aurait eu des mises à jour)
     await syncDefaultFaces();
 
-    console.log("Service faces initialisé avec succès");
     return true;
   } catch (error) {
-    console.error("Erreur lors de l'initialisation du service faces:", error);
     return false;
   }
 };

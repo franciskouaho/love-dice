@@ -43,7 +43,7 @@ const getSecureRandom = (): number => {
       return view.getUint32(0) / (0xffffffff + 1);
     }
   } catch (error) {
-    console.warn("Erreur crypto random, fallback Math.random:", error);
+    // Erreur crypto random, fallback Math.random
     return Math.random();
   }
 };
@@ -79,9 +79,6 @@ export const rollCompleteDice = (
   const activite = rollFromCategory(activiteFaces, lastResult?.activite);
 
   // FORCER ABSOLUMENT la personnalisation des noms - PAS DE CONDITIONS
-  console.log("🏷️ Original payer label:", payer.label);
-  console.log("👥 Player names for personalization:", playerNames);
-
   // TOUJOURS forcer les noms, même si ils sont vides (utiliser des défauts)
   let name1 = "Mon cœur";
   let name2 = "Mon amour";
@@ -95,7 +92,6 @@ export const rollCompleteDice = (
 
   // FORCER TOUJOURS un nom personnalisé - AUCUNE EXCEPTION
   payer.label = Math.random() < 0.5 ? `${name1} paie` : `${name2} paie`;
-  console.log("🔥 FORCED ABSOLUTE personalization applied:", payer.label);
 
   const now = new Date();
   return {

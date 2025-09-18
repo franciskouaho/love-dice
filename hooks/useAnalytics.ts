@@ -56,15 +56,9 @@ const useAnalytics = () => {
   const logAnalyticsEvent = useCallback(
     (eventName: AnalyticsEvent, parameters?: AnalyticsParams) => {
       try {
-        // Log en développement pour debugging
-        if (__DEV__) {
-          console.log("📊 Analytics Event:", eventName, parameters);
-        }
-
-        // Analytics désactivé - remplacé par console logs
-        console.log("Analytics Event:", eventName, parameters);
+        // Analytics désactivé pour la production
       } catch (error) {
-        console.error("Erreur envoi analytics:", error);
+        // Erreur analytics ignorée
       }
     },
     [],
@@ -289,17 +283,9 @@ const useAnalytics = () => {
   const logCustomEvent = useCallback(
     (eventName: string, parameters?: AnalyticsParams) => {
       try {
-        if (__DEV__) {
-          console.log("📊 Custom Analytics Event:", eventName, parameters);
-        }
-
-        // Analytics désactivé - remplacé par console logs
-        console.log("Custom Analytics Event:", eventName, {
-          ...parameters,
-          timestamp: Date.now(),
-        });
+        // Analytics désactivé pour la production
       } catch (error) {
-        console.error("Erreur événement analytics personnalisé:", error);
+        // Erreur analytics ignorée
       }
     },
     [],

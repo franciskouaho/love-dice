@@ -2,7 +2,7 @@
   "expo": {
     "name": "Love Dice",
     "slug": "love-dice",
-    "version": "1.0.0",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "lovedice",
@@ -70,6 +70,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2282da77-fecc-45b9-9147-0bfd288281fb"
+      }
+    },
+    "owner": "iamfrancisco"
   }
 }

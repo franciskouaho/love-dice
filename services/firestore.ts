@@ -92,7 +92,6 @@ export const createUserProfile = async (
       };
 
       await setDoc(userRef, newProfile);
-      console.log("Profil utilisateur créé:", uid);
 
       return { uid, ...newProfile };
     } else {
@@ -101,7 +100,6 @@ export const createUserProfile = async (
       return { uid, ...profileData };
     }
   } catch (error) {
-    console.error("Erreur création profil utilisateur:", error);
     return null;
   }
 };
@@ -122,7 +120,6 @@ export const getUserProfile = async (
       return await createUserProfile(uid);
     }
   } catch (error) {
-    console.error("Erreur récupération profil:", error);
     return null;
   }
 };
@@ -140,7 +137,6 @@ export const updateUserProfile = async (
     });
     return true;
   } catch (error) {
-    console.error("Erreur mise à jour profil:", error);
     return false;
   }
 };
@@ -156,10 +152,8 @@ export const updateLifetimeStatus = async (
       hasLifetime,
       lastSyncAt: serverTimestamp(),
     });
-    console.log("Statut lifetime mis à jour:", hasLifetime);
     return true;
   } catch (error) {
-    console.error("Erreur mise à jour lifetime:", error);
     return false;
   }
 };
@@ -179,7 +173,6 @@ export const updateDailyQuota = async (
     });
     return true;
   } catch (error) {
-    console.error("Erreur mise à jour quota:", error);
     return false;
   }
 };
@@ -200,10 +193,8 @@ export const addToHistory = async (
     };
 
     await addDoc(historyRef, historyEntry);
-    console.log("Lancer ajouté à l'historique");
     return true;
   } catch (error) {
-    console.error("Erreur ajout historique:", error);
     return false;
   }
 };
@@ -229,7 +220,6 @@ export const getHistory = async (
 
     return history;
   } catch (error) {
-    console.error("Erreur récupération historique:", error);
     return [];
   }
 };
@@ -243,10 +233,8 @@ export const clearHistory = async (uid: string): Promise<boolean> => {
     const deletePromises = querySnapshot.docs.map((doc) => deleteDoc(doc.ref));
     await Promise.all(deletePromises);
 
-    console.log("Historique vidé");
     return true;
   } catch (error) {
-    console.error("Erreur suppression historique:", error);
     return false;
   }
 };
@@ -269,7 +257,6 @@ export const subscribeToUserProfile = (
       }
     },
     (error) => {
-      console.error("Erreur écoute profil utilisateur:", error);
       callback(null);
     },
   );
@@ -288,7 +275,6 @@ export const updateUserPreferences = async (
     });
     return true;
   } catch (error) {
-    console.error("Erreur mise à jour préférences:", error);
     return false;
   }
 };
@@ -320,7 +306,6 @@ export const getCustomFaces = async (uid: string): Promise<CustomFace[]> => {
 
     return faces;
   } catch (error) {
-    console.error("Erreur récupération faces personnalisées:", error);
     return [];
   }
 };
@@ -339,10 +324,8 @@ export const addCustomFace = async (
     };
 
     const docRef = await addDoc(facesRef, faceData);
-    console.log("Face personnalisée ajoutée:", docRef.id);
     return docRef.id;
   } catch (error) {
-    console.error("Erreur ajout face personnalisée:", error);
     return null;
   }
 };
@@ -359,10 +342,8 @@ export const updateCustomFace = async (
       ...updates,
       updatedAt: serverTimestamp(),
     });
-    console.log("Face personnalisée mise à jour:", faceId);
     return true;
   } catch (error) {
-    console.error("Erreur mise à jour face personnalisée:", error);
     return false;
   }
 };
@@ -375,10 +356,8 @@ export const deleteCustomFace = async (
   try {
     const faceRef = doc(db, "users", uid, "faces", faceId);
     await deleteDoc(faceRef);
-    console.log("Face personnalisée supprimée:", faceId);
     return true;
   } catch (error) {
-    console.error("Erreur suppression face personnalisée:", error);
     return false;
   }
 };
@@ -391,65 +370,9 @@ export const getCurrentUserId = (): string | null => {
       return userId;
     }
 
-    // Dans Expo Go, si Firebase Auth ne fonctionne pas, créer un utilisateur de test
-    if (__DEV__) {
-      console.log(
-        "🧪 Mode développement: utilisation d'un utilisateur de test",
-      );
-      return "dev-user-expo-go";
-    }
-
     return null;
   } catch (error) {
-    console.error("Auth not initialized yet:", error);
-
-    // Fallback en mode dev
-    if (__DEV__) {
-      console.log(
-        "🧪 Mode développement: utilisation d'un utilisateur de test (fallback)",
-      );
-      return "dev-user-expo-go";
-    }
-
     return null;
-  }
-};
-
-// Initialiser un utilisateur de test pour le développement
-export const initializeDevUser = async (): Promise<void> => {
-  if (!__DEV__) return;
-
-  try {
-    const devUserId = "dev-user-expo-go";
-    const userRef = doc(db, "users", devUserId);
-
-    // Vérifier si l'utilisateur existe déjà
-    const userDoc = await getDoc(userRef);
-    if (!userDoc.exists()) {
-      console.log("🧪 Création de l'utilisateur de test...");
-      await setDoc(userRef, {
-        createdAt: serverTimestamp(),
-        hasLifetime: false,
-        freeRollsUsedToday: 0,
-        freeDayKey: new Date().toISOString().split("T")[0],
-        prefs: {
-          haptics: true,
-          weights: { payer: 0.2, repas: 0.2, activite: 0.6 },
-        },
-        notificationsEnabled: false,
-        notificationPreferences: {
-          enabled: true,
-          eveningReminders: true,
-          milestoneAlerts: true,
-          weeklyDigest: false,
-          marketingEmails: false,
-          reminderTime: "19:00",
-        },
-      });
-      console.log("✅ Utilisateur de test créé");
-    }
-  } catch (error) {
-    console.warn("Impossible de créer l'utilisateur de test:", error);
   }
 };
 
@@ -468,10 +391,8 @@ export const savePlayerNames = async (
       },
       lastSyncAt: serverTimestamp(),
     });
-    console.log("💾 Noms sauvegardés dans Firebase:", playerNames);
     return true;
   } catch (error) {
-    console.error("❌ Erreur sauvegarde noms Firebase:", error);
     return false;
   }
 };
@@ -487,7 +408,6 @@ export const getPlayerNames = async (
     if (userDoc.exists()) {
       const userData = userDoc.data() as UserProfile;
       if (userData.playerNames) {
-        console.log("👥 Noms récupérés depuis Firebase:", userData.playerNames);
         return {
           player1: userData.playerNames.player1 || "",
           player2: userData.playerNames.player2 || "",
@@ -496,7 +416,6 @@ export const getPlayerNames = async (
     }
     return null;
   } catch (error) {
-    console.error("❌ Erreur récupération noms Firebase:", error);
     return null;
   }
 };
@@ -509,7 +428,6 @@ export const checkConnectivity = async (): Promise<boolean> => {
     await getDoc(testRef);
     return true;
   } catch (error) {
-    console.log("Mode offline détecté");
     return false;
   }
 };

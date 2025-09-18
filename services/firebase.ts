@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 import {
   fetchAndActivate,
   getRemoteConfig,
@@ -30,11 +30,8 @@ let _auth: any = null;
 export const getAuthInstance = () => {
   if (!_auth) {
     try {
-      console.log('Initializing Firebase Auth...');
       _auth = getAuth(app);
-      console.log('Firebase Auth initialized successfully');
     } catch (error) {
-      console.warn('Firebase Auth initialization failed:', error);
       return null;
     }
   }
@@ -46,11 +43,10 @@ export const auth = new Proxy({} as any, {
   get(target, prop) {
     const authInstance = getAuthInstance();
     if (!authInstance) {
-      console.warn(`Trying to access auth.${String(prop)} but auth is not available`);
       return undefined;
     }
     return authInstance[prop];
-  }
+  },
 });
 
 // Remote Config will be initialized lazily to avoid Expo Go issues
@@ -59,11 +55,8 @@ let _remoteConfig: any = null;
 export const getRemoteConfigInstance = () => {
   if (!_remoteConfig) {
     try {
-      console.log('Initializing Firebase Remote Config...');
       _remoteConfig = getRemoteConfig(app);
-      console.log('Firebase Remote Config initialized successfully');
     } catch (error) {
-      console.warn('Firebase Remote Config initialization failed:', error);
       return null;
     }
   }
@@ -75,11 +68,10 @@ export const remoteConfig = new Proxy({} as any, {
   get(target, prop) {
     const configInstance = getRemoteConfigInstance();
     if (!configInstance) {
-      console.warn(`Trying to access remoteConfig.${String(prop)} but remoteConfig is not available`);
       return undefined;
     }
     return configInstance[prop];
-  }
+  },
 });
 
 // Remote Config defaults
@@ -95,21 +87,19 @@ const remoteConfigDefaults = {
 export const initRemoteConfig = async () => {
   const configInstance = getRemoteConfigInstance();
   if (!configInstance) {
-    console.log("Remote Config non disponible, utilisation des valeurs par défaut");
     return;
   }
 
   try {
     configInstance.defaultConfig = remoteConfigDefaults;
     configInstance.settings = {
-      minimumFetchIntervalMillis: __DEV__ ? 0 : 3600000, // 1 heure en prod, immédiat en dev
+      minimumFetchIntervalMillis: 3600000, // 1 heure
       fetchTimeoutMillis: 60000, // 60 secondes
     };
 
     await fetchAndActivate(configInstance);
-    console.log("Remote Config activé");
   } catch (error) {
-    console.error("Erreur Remote Config:", error);
+    // Erreur Remote Config ignorée
   }
 };
 
@@ -123,7 +113,6 @@ export const getRemoteConfigValue = (key: string) => {
   try {
     return getValue(configInstance, key).asString();
   } catch (error) {
-    console.error(`Erreur récupération RC ${key}:`, error);
     return remoteConfigDefaults[key as keyof typeof remoteConfigDefaults] || "";
   }
 };
@@ -139,7 +128,6 @@ export const getRemoteConfigNumber = (key: string): number => {
   try {
     return getValue(configInstance, key).asNumber();
   } catch (error) {
-    console.error(`Erreur récupération RC ${key}:`, error);
     const defaultValue =
       remoteConfigDefaults[key as keyof typeof remoteConfigDefaults];
     return typeof defaultValue === "number" ? defaultValue : 0;
@@ -151,7 +139,6 @@ export const getFeatureFlags = () => {
     const flags = getRemoteConfigValue("FEATURE_FLAGS");
     return JSON.parse(String(flags));
   } catch (error) {
-    console.error("Erreur parsing feature flags:", error);
     return { customFaces: true, history: true };
   }
 };
@@ -162,35 +149,28 @@ export const initAuth = () => {
     try {
       const authInstance = getAuthInstance();
       if (!authInstance) {
-        console.warn("Auth not available, skipping authentication");
         resolve(null);
         return;
       }
 
       const unsubscribe = onAuthStateChanged(authInstance, (user) => {
         if (user) {
-          console.log("Utilisateur connecté:", user.uid);
           unsubscribe();
           resolve(user);
         } else {
           // Connexion anonyme automatique
           signInAnonymously(authInstance)
             .then((result) => {
-              console.log("Connexion anonyme réussie:", result.user.uid);
               unsubscribe();
               resolve(result.user);
             })
             .catch((error) => {
-              console.error("Erreur connexion anonyme:", error);
               unsubscribe();
-              // Don't reject, resolve with null for graceful degradation
               resolve(null);
             });
         }
       });
     } catch (error) {
-      console.error("Failed to initialize auth for anonymous sign in:", error);
-      // Don't reject, resolve with null for graceful degradation
       resolve(null);
     }
   });
@@ -199,33 +179,15 @@ export const initAuth = () => {
 // Initialize Firebase services
 export const initFirebase = async () => {
   try {
-    console.log("Initialisation Firebase...");
-
-    // Force Auth initialization first
-    console.log("🔐 Forçage de l'initialisation Firebase Auth...");
     const authInstance = getAuthInstance();
     if (authInstance) {
-      console.log("✅ Firebase Auth initialisé avec succès");
-      // Auth anonyme
       await initAuth();
-    } else {
-      console.warn("⚠️ Firebase Auth non disponible, continuons sans auth");
-      
-      // En mode dev, initialiser un utilisateur de test
-      if (__DEV__) {
-        console.log("🧪 Initialisation de l'utilisateur de test pour Expo Go...");
-        const { initializeDevUser } = await import('./firestore');
-        await initializeDevUser();
-      }
     }
 
-    // Remote Config
     await initRemoteConfig();
 
-    console.log("Firebase initialisé avec succès");
     return true;
   } catch (error) {
-    console.error("Erreur initialisation Firebase:", error);
     return false;
   }
 };

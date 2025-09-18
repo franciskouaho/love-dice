@@ -64,7 +64,7 @@ const useQuota = (): QuotaState & QuotaActions => {
         isLoading: false,
       });
     } catch (error) {
-      console.error("Erreur chargement quota:", error);
+      // Erreur chargement quota ignorée
       setQuotaState((prev) => ({ ...prev, isLoading: false }));
     }
   }, []);
@@ -75,7 +75,7 @@ const useQuota = (): QuotaState & QuotaActions => {
       const { canRoll } = await canRollDice(quotaState.hasLifetime);
       return canRoll;
     } catch (error) {
-      console.error("Erreur vérification quota:", error);
+      // Erreur vérification quota ignorée
       return false;
     }
   }, [quotaState.hasLifetime]);
@@ -109,7 +109,7 @@ const useQuota = (): QuotaState & QuotaActions => {
 
       return result;
     } catch (error) {
-      console.error("Erreur consommation roll:", error);
+      // Erreur consommation roll ignorée
       return { success: false, remaining: 0 };
     }
   }, [quotaState.hasLifetime]);
@@ -132,7 +132,7 @@ const useQuota = (): QuotaState & QuotaActions => {
         // Synchroniser avec Firestore si possible
         await syncWithServer();
       } catch (error) {
-        console.error("Erreur mise à jour statut lifetime:", error);
+        // Erreur mise à jour statut lifetime ignorée
       }
     },
     [],
@@ -173,7 +173,7 @@ const useQuota = (): QuotaState & QuotaActions => {
       // Recharger l'état après la sync
       await loadQuotaState();
     } catch (error) {
-      console.error("Erreur synchronisation serveur:", error);
+      // Erreur synchronisation serveur ignorée
     }
   }, [quotaState.used, loadQuotaState]);
 

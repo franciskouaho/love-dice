@@ -5,8 +5,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { initializeAppWithRetry } from "../services/initialization";
 
-
-
 export const unstable_settings = {
   anchor: "(tabs)",
 };
@@ -15,7 +13,7 @@ export default function RootLayout() {
   useEffect(() => {
     // Initialiser tous les services Firebase avec retry automatique
     initializeAppWithRetry(3, 1000).catch((error) => {
-      console.error("Échec de l'initialisation complète de l'app:", error);
+      // Échec de l'initialisation complète de l'app
     });
   }, []);
 

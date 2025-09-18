@@ -31,8 +31,23 @@ export const SPLASH_CONFIG = {
 
   // Modern visual configurations with 2024 design trends
   COLORS: {
-    BACKGROUND_GRADIENT: ["#A50848", "#E0115F", "#FF4F7B", "#FF6B9D", "#FFB6DB", "#FFD1E3"],
-    HEARTS: ["#FFFFFF", "#F4C869", "#FFDCEB", "#FFE7F1", "#FFB6C1", "#FF91A4", "#FFD6CC"],
+    BACKGROUND_GRADIENT: [
+      "#A50848",
+      "#E0115F",
+      "#FF4F7B",
+      "#FF6B9D",
+      "#FFB6DB",
+      "#FFD1E3",
+    ],
+    HEARTS: [
+      "#FFFFFF",
+      "#F4C869",
+      "#FFDCEB",
+      "#FFE7F1",
+      "#FFB6C1",
+      "#FF91A4",
+      "#FFD6CC",
+    ],
     LOADING: "#F4C869",
     ERROR: "#FFCDD2",
     TEXT_PRIMARY: "#FFFFFF",
@@ -145,13 +160,6 @@ export const SPLASH_CONFIG = {
     LOW_END_ANIMATION_DURATION_MULTIPLIER: 1.5, // slower animations on low-end devices
   },
 
-  // Debug configuration
-  DEBUG: {
-    LONG_PRESS_DURATION: 700, // ms - duration for debug long press
-    ENABLE_CONSOLE_LOGS: __DEV__,
-    SHOW_ERROR_IN_DEBUG_ONLY: true,
-  },
-
   // Layout
   LAYOUT: {
     CARD_PADDING: 32, // px
@@ -191,7 +199,7 @@ export const getSplashConfig = () => SPLASH_CONFIG;
 // Enhanced device detection
 const isLowEndDevice = () => {
   // Simple heuristic - can be enhanced with more sophisticated detection
-  return Platform.OS === "android" && !__DEV__;
+  return Platform.OS === "android";
 };
 
 export const getHeartCount = () => {
@@ -202,21 +210,30 @@ export const getHeartCount = () => {
 };
 
 export const getParticleCount = () => {
-  if (SPLASH_CONFIG.PERFORMANCE.REDUCE_PARTICLES_ON_LOW_END && isLowEndDevice()) {
+  if (
+    SPLASH_CONFIG.PERFORMANCE.REDUCE_PARTICLES_ON_LOW_END &&
+    isLowEndDevice()
+  ) {
     return SPLASH_CONFIG.PERFORMANCE.LOW_END_PARTICLE_COUNT;
   }
   return 8; // Default particle count
 };
 
 export const getSparkleCount = () => {
-  if (SPLASH_CONFIG.PERFORMANCE.REDUCE_SPARKLES_ON_LOW_END && isLowEndDevice()) {
+  if (
+    SPLASH_CONFIG.PERFORMANCE.REDUCE_SPARKLES_ON_LOW_END &&
+    isLowEndDevice()
+  ) {
     return SPLASH_CONFIG.PERFORMANCE.LOW_END_SPARKLE_COUNT;
   }
   return 6; // Default sparkle count
 };
 
 export const getAnimationDurationMultiplier = () => {
-  if (SPLASH_CONFIG.PERFORMANCE.SIMPLIFIED_ANIMATIONS_ON_LOW_END && isLowEndDevice()) {
+  if (
+    SPLASH_CONFIG.PERFORMANCE.SIMPLIFIED_ANIMATIONS_ON_LOW_END &&
+    isLowEndDevice()
+  ) {
     return SPLASH_CONFIG.PERFORMANCE.LOW_END_ANIMATION_DURATION_MULTIPLIER;
   }
   return 1;

@@ -55,7 +55,7 @@ export default function CustomFacesScreen() {
       setIsLoading(true);
       const userId = getCurrentUserId();
       if (!userId) {
-        console.warn("Utilisateur non connecté");
+        // Utilisateur non connecté
         return;
       }
 
@@ -71,7 +71,7 @@ export default function CustomFacesScreen() {
       }));
       setFaces(diceFaces);
     } catch (error) {
-      console.error("Erreur chargement faces personnalisées:", error);
+      // Erreur chargement faces personnalisées ignorée
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +156,7 @@ export default function CustomFacesScreen() {
       closeModal();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error("Erreur sauvegarde face:", error);
+      // Erreur sauvegarde face ignorée
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert("Erreur", "Impossible de sauvegarder la face personnalisée.");
     }
@@ -183,7 +183,7 @@ export default function CustomFacesScreen() {
                 Haptics.NotificationFeedbackType.Success,
               );
             } catch (error) {
-              console.error("Erreur suppression face:", error);
+              // Erreur suppression face ignorée
               await Haptics.notificationAsync(
                 Haptics.NotificationFeedbackType.Error,
               );

@@ -9,9 +9,9 @@ const db = admin.firestore();
 
 // Interfaces
 interface AppleReceiptData {
-  receipt_data: string;
+  "receipt-data": string;
   password?: string;
-  exclude_old_transactions?: boolean;
+  "exclude-old-transactions"?: boolean;
 }
 
 interface GoogleReceiptData {
@@ -96,7 +96,6 @@ async function verifyAppleReceipt(
       };
     }
   } catch (error) {
-    console.error("Erreur vérification Apple:", error);
     return {
       success: false,
       error: "Erreur de vérification Apple",
@@ -113,8 +112,8 @@ async function verifyGoogleReceipt(
   purchaseToken: string,
 ): Promise<VerificationResult> {
   try {
-    // Note: En production, utiliser Google Play Developer API
-    // Pour ce prototype, on simule la vérification
+    // TODO: Implémenter la vérification Google Play Developer API
+    // Pour l'instant, simulation basique pour les tests
 
     if (productId === "love_dice_lifetime" && purchaseToken && packageName) {
       return {
@@ -129,7 +128,6 @@ async function verifyGoogleReceipt(
       error: "Token invalide",
     };
   } catch (error) {
-    console.error("Erreur vérification Google:", error);
     return {
       success: false,
       error: "Erreur de vérification Google",
@@ -140,239 +138,279 @@ async function verifyGoogleReceipt(
 /**
  * Cloud Function pour vérifier les reçus IAP
  */
-export const verifyReceipt = functions.https.onCall(async (data, context) => {
-  // Vérifier l'authentification
-  if (!context.auth) {
-    throw new functions.https.HttpsError(
-      "unauthenticated",
-      "Utilisateur non authentifié",
-    );
-  }
-
-  const uid = context.auth.uid;
-  const { platform, receiptData, packageName, productId, purchaseToken } = data;
-
-  if (!platform || !["apple", "google"].includes(platform)) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Plateforme invalide",
-    );
-  }
-
-  let verificationResult: VerificationResult;
-
-  try {
-    if (platform === "apple") {
-      if (!receiptData) {
-        throw new functions.https.HttpsError(
-          "invalid-argument",
-          "Receipt data manquant pour Apple",
-        );
-      }
-      verificationResult = await verifyAppleReceipt(receiptData);
-    } else {
-      if (!packageName || !productId || !purchaseToken) {
-        throw new functions.https.HttpsError(
-          "invalid-argument",
-          "Données manquantes pour Google",
-        );
-      }
-      verificationResult = await verifyGoogleReceipt(
-        packageName,
-        productId,
-        purchaseToken,
+export const verifyReceipt = functions
+  .runWith({
+    timeoutSeconds: 60,
+    memory: "256MB",
+  })
+  .https.onCall(async (data, context) => {
+    // Vérifier l'authentification
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Utilisateur non authentifié",
       );
     }
 
-    if (verificationResult.success) {
-      // Mettre à jour le profil utilisateur
-      const userRef = db.collection("users").doc(uid);
-      await userRef.update({
-        hasLifetime: true,
-        lifetimeActivatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+    const uid = context.auth.uid;
+    const { platform, receiptData, packageName, productId, purchaseToken } =
+      data;
 
-      // Enregistrer le reçu
-      const receiptRef = db
-        .collection("iapReceipts")
-        .doc(`${platform}_${uid}_${Date.now()}`);
-      await receiptRef.set({
-        uid,
-        platform,
-        productId: verificationResult.productId,
-        purchaseTime: verificationResult.purchaseTime,
-        status: "verified",
-        verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
-        receiptData:
-          platform === "apple"
-            ? receiptData
-            : {
-                packageName,
-                productId,
-                purchaseToken,
-              },
-      });
-
-      console.log(`Achat vérifié pour ${uid}: ${verificationResult.productId}`);
-
-      return {
-        success: true,
-        productId: verificationResult.productId,
-      };
-    } else {
-      console.warn(
-        `Échec vérification pour ${uid}: ${verificationResult.error}`,
-      );
+    // Validation des paramètres
+    if (!platform || !["apple", "google"].includes(platform)) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        verificationResult.error || "Vérification échouée",
+        "Plateforme invalide",
       );
     }
-  } catch (error) {
-    console.error("Erreur dans verifyReceipt:", error);
-    throw new functions.https.HttpsError(
-      "internal",
-      "Erreur interne de vérification",
-    );
-  }
-});
 
-/**
- * Fonction de reset quotidien des quotas (optionnelle)
- */
-export const resetDailyQuotas = functions.pubsub
-  .schedule("0 0 * * *") // Tous les jours à minuit UTC
-  .timeZone("Europe/Paris")
-  .onRun(async (context) => {
-    const today = new Date().toISOString().split("T")[0];
+    let verificationResult: VerificationResult;
 
     try {
-      // Récupérer tous les utilisateurs non-premium
-      const usersSnapshot = await db
-        .collection("users")
-        .where("hasLifetime", "==", false)
-        .get();
-
-      const batch = db.batch();
-      let updateCount = 0;
-
-      usersSnapshot.docs.forEach((doc) => {
-        const userData = doc.data();
-
-        // Réinitialiser seulement si ce n'est pas déjà fait aujourd'hui
-        if (userData.freeDayKey !== today) {
-          batch.update(doc.ref, {
-            freeRollsUsedToday: 0,
-            freeDayKey: today,
-            lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-          updateCount++;
-        }
-      });
-
-      if (updateCount > 0) {
-        await batch.commit();
-        console.log(
-          `Reset quotidien effectué pour ${updateCount} utilisateurs`,
-        );
-      } else {
-        console.log("Aucun quota à réinitialiser");
-      }
-
-      return null;
-    } catch (error) {
-      console.error("Erreur reset quotidien:", error);
-      throw error;
-    }
-  });
-
-/**
- * Fonction de nettoyage des données anciennes (optionnelle)
- */
-export const cleanupOldData = functions.pubsub
-  .schedule("0 2 * * 0") // Tous les dimanches à 2h
-  .timeZone("Europe/Paris")
-  .onRun(async (context) => {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 90); // 90 jours
-
-    try {
-      // Nettoyer l'historique ancien (garder seulement 90 jours)
-      const usersSnapshot = await db.collection("users").get();
-
-      for (const userDoc of usersSnapshot.docs) {
-        const historyRef = userDoc.ref.collection("history");
-        const oldHistoryQuery = historyRef
-          .where("createdAt", "<", cutoffDate)
-          .limit(500); // Traiter par batch
-
-        const oldHistorySnapshot = await oldHistoryQuery.get();
-
-        if (!oldHistorySnapshot.empty) {
-          const batch = db.batch();
-          oldHistorySnapshot.docs.forEach((doc) => {
-            batch.delete(doc.ref);
-          });
-          await batch.commit();
-
-          console.log(
-            `Supprimé ${oldHistorySnapshot.size} entrées d'historique ancien pour ${userDoc.id}`,
+      if (platform === "apple") {
+        if (!receiptData) {
+          throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Receipt data manquant pour Apple",
           );
         }
+        verificationResult = await verifyAppleReceipt(receiptData);
+      } else {
+        if (!packageName || !productId || !purchaseToken) {
+          throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Données manquantes pour Google",
+          );
+        }
+        verificationResult = await verifyGoogleReceipt(
+          packageName,
+          productId,
+          purchaseToken,
+        );
       }
 
-      console.log("Nettoyage des données anciennes terminé");
-      return null;
-    } catch (error) {
-      console.error("Erreur nettoyage:", error);
-      throw error;
-    }
-  });
-
-/**
- * Fonction de synchronisation des utilisateurs (webhook RevenueCat optionnel)
- */
-export const revenueCatWebhook = functions.https.onRequest(async (req, res) => {
-  // Vérifier la signature RevenueCat en production
-
-  try {
-    const event = req.body;
-
-    if (event.type === "INITIAL_PURCHASE" || event.type === "RENEWAL") {
-      const appUserId = event.event.app_user_id;
-      const productId = event.event.product_id;
-
-      if (productId === "love_dice_lifetime" && appUserId) {
-        // Mettre à jour le statut lifetime
-        const userRef = db.collection("users").doc(appUserId);
+      if (verificationResult.success) {
+        // Mettre à jour le profil utilisateur
+        const userRef = db.collection("users").doc(uid);
         await userRef.update({
           hasLifetime: true,
           lifetimeActivatedAt: admin.firestore.FieldValue.serverTimestamp(),
           lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
-        console.log(`Webhook RevenueCat: Lifetime activé pour ${appUserId}`);
-      }
-    }
+        // Enregistrer le reçu pour audit
+        const receiptRef = db
+          .collection("iapReceipts")
+          .doc(platform)
+          .collection("receipts")
+          .doc(`${uid}_${Date.now()}`);
 
-    res.status(200).send("OK");
-  } catch (error) {
-    console.error("Erreur webhook RevenueCat:", error);
-    res.status(500).send("Erreur interne");
-  }
-});
+        await receiptRef.set({
+          uid,
+          platform,
+          productId: verificationResult.productId,
+          purchaseTime: verificationResult.purchaseTime,
+          status: "verified",
+          verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+          receiptData:
+            platform === "apple"
+              ? { receiptData }
+              : {
+                  packageName,
+                  productId,
+                  purchaseToken,
+                },
+        });
+
+        return {
+          success: true,
+          productId: verificationResult.productId,
+        };
+      } else {
+        throw new functions.https.HttpsError(
+          "invalid-argument",
+          verificationResult.error || "Vérification échouée",
+        );
+      }
+    } catch (error) {
+      // Log l'erreur pour le monitoring (sans exposer les détails)
+      if (error instanceof functions.https.HttpsError) {
+        throw error;
+      }
+      throw new functions.https.HttpsError(
+        "internal",
+        "Erreur interne de vérification",
+      );
+    }
+  });
+
+/**
+ * Fonction de reset quotidien des quotas
+ */
+export const resetDailyQuotas = functions
+  .runWith({
+    timeoutSeconds: 540,
+    memory: "512MB",
+  })
+  .pubsub.schedule("0 0 * * *") // Tous les jours à minuit UTC
+  .timeZone("Europe/Paris")
+  .onRun(async (context) => {
+    const today = new Date().toISOString().split("T")[0];
+
+    try {
+      // Récupérer tous les utilisateurs non-premium par batch
+      const batchSize = 500;
+      let lastDoc = null;
+      let totalUpdated = 0;
+
+      do {
+        let query = db
+          .collection("users")
+          .where("hasLifetime", "==", false)
+          .limit(batchSize);
+
+        if (lastDoc) {
+          query = query.startAfter(lastDoc);
+        }
+
+        const usersSnapshot = await query.get();
+
+        if (usersSnapshot.empty) {
+          break;
+        }
+
+        const batch = db.batch();
+        let batchUpdateCount = 0;
+
+        usersSnapshot.docs.forEach((doc) => {
+          const userData = doc.data();
+
+          // Réinitialiser seulement si ce n'est pas déjà fait aujourd'hui
+          if (userData.freeDayKey !== today) {
+            batch.update(doc.ref, {
+              freeRollsUsedToday: 0,
+              freeDayKey: today,
+              lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            batchUpdateCount++;
+          }
+        });
+
+        if (batchUpdateCount > 0) {
+          await batch.commit();
+          totalUpdated += batchUpdateCount;
+        }
+
+        lastDoc = usersSnapshot.docs[usersSnapshot.docs.length - 1];
+      } while (lastDoc);
+
+      return { success: true, usersUpdated: totalUpdated };
+    } catch (error) {
+      throw error;
+    }
+  });
+
+/**
+ * Fonction de nettoyage des données anciennes
+ */
+export const cleanupOldData = functions
+  .runWith({
+    timeoutSeconds: 540,
+    memory: "512MB",
+  })
+  .pubsub.schedule("0 2 * * 0") // Tous les dimanches à 2h
+  .timeZone("Europe/Paris")
+  .onRun(async (context) => {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 90); // 90 jours
+
+    try {
+      const usersSnapshot = await db.collection("users").get();
+      let totalCleaned = 0;
+
+      for (const userDoc of usersSnapshot.docs) {
+        const historyRef = userDoc.ref.collection("history");
+        let hasMore = true;
+
+        while (hasMore) {
+          const oldHistoryQuery = historyRef
+            .where("createdAt", "<", cutoffDate)
+            .limit(500); // Traiter par batch pour éviter les timeouts
+
+          const oldHistorySnapshot = await oldHistoryQuery.get();
+
+          if (!oldHistorySnapshot.empty) {
+            const batch = db.batch();
+            oldHistorySnapshot.docs.forEach((doc) => {
+              batch.delete(doc.ref);
+            });
+            await batch.commit();
+            totalCleaned += oldHistorySnapshot.size;
+          } else {
+            hasMore = false;
+          }
+        }
+      }
+
+      return { success: true, documentsDeleted: totalCleaned };
+    } catch (error) {
+      throw error;
+    }
+  });
+
+/**
+ * Webhook RevenueCat (optionnel)
+ */
+export const revenueCatWebhook = functions
+  .runWith({
+    timeoutSeconds: 60,
+    memory: "256MB",
+  })
+  .https.onRequest(async (req, res) => {
+    // TODO: Vérifier la signature RevenueCat en production
+    // const signature = req.headers['authorization'];
+
+    try {
+      const event = req.body;
+
+      if (event.type === "INITIAL_PURCHASE" || event.type === "RENEWAL") {
+        const appUserId = event.event?.app_user_id;
+        const productId = event.event?.product_id;
+
+        if (productId === "love_dice_lifetime" && appUserId) {
+          // Mettre à jour le statut lifetime
+          const userRef = db.collection("users").doc(appUserId);
+          await userRef.set(
+            {
+              hasLifetime: true,
+              lifetimeActivatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        }
+      }
+
+      res.status(200).send("OK");
+    } catch (error) {
+      res.status(500).send("Erreur interne");
+    }
+  });
 
 /**
  * Cloud Function pour envoyer des notifications push
  */
-export const sendPushNotification = functions.https.onCall(
-  async (data, context) => {
-    // Vérifier l'authentification
-    if (!context.auth) {
+export const sendPushNotification = functions
+  .runWith({
+    timeoutSeconds: 300,
+    memory: "512MB",
+  })
+  .https.onCall(async (data, context) => {
+    // Vérifier l'authentification admin pour cette fonction
+    if (!context.auth || !context.auth.token.admin) {
       throw new functions.https.HttpsError(
-        "unauthenticated",
-        "Utilisateur non authentifié",
+        "permission-denied",
+        "Accès réservé aux administrateurs",
       );
     }
 
@@ -407,6 +445,7 @@ export const sendPushNotification = functions.https.onCall(
         badge: 1,
       }));
 
+      // Envoyer par chunks de 100 (limite Expo)
       const chunks = [];
       for (let i = 0; i < messages.length; i += 100) {
         chunks.push(messages.slice(i, i + 100));
@@ -428,28 +467,28 @@ export const sendPushNotification = functions.https.onCall(
         results.push(result);
       }
 
-      console.log(`Notifications envoyées à ${tokens.length} utilisateurs`);
-
       return {
         success: true,
         sent: tokens.length,
         results,
       };
     } catch (error) {
-      console.error("Erreur envoi notifications:", error);
       throw new functions.https.HttpsError(
         "internal",
         "Erreur interne d'envoi",
       );
     }
-  },
-);
+  });
 
 /**
  * Fonction programmée pour envoyer des rappels du soir
  */
-export const sendEveningReminders = functions.pubsub
-  .schedule("0 19 * * *") // Tous les jours à 19h
+export const sendEveningReminders = functions
+  .runWith({
+    timeoutSeconds: 540,
+    memory: "512MB",
+  })
+  .pubsub.schedule("0 19 * * *") // Tous les jours à 19h
   .timeZone("Europe/Paris")
   .onRun(async (context) => {
     try {
@@ -461,21 +500,19 @@ export const sendEveningReminders = functions.pubsub
         .get();
 
       if (usersSnapshot.empty) {
-        console.log("Aucun utilisateur avec rappels activés");
-        return null;
+        return { success: true, sent: 0 };
       }
 
       const tokens: string[] = [];
       usersSnapshot.docs.forEach((doc) => {
         const userData = doc.data();
-        if (userData.pushToken) {
+        if (userData.pushToken && typeof userData.pushToken === "string") {
           tokens.push(userData.pushToken);
         }
       });
 
       if (tokens.length === 0) {
-        console.log("Aucun token de notification trouvé");
-        return null;
+        return { success: true, sent: 0 };
       }
 
       // Messages de rappel variés
@@ -536,13 +573,8 @@ export const sendEveningReminders = functions.pubsub
         }
       }
 
-      console.log(
-        `Rappels du soir envoyés à ${totalSent}/${tokens.length} utilisateurs`,
-      );
-
-      return null;
+      return { success: true, sent: totalSent };
     } catch (error) {
-      console.error("Erreur envoi rappels du soir:", error);
       throw error;
     }
   });
@@ -550,8 +582,12 @@ export const sendEveningReminders = functions.pubsub
 /**
  * Fonction pour envoyer des notifications de milestone
  */
-export const sendMilestoneNotification = functions.firestore
-  .document("users/{userId}/history/{historyId}")
+export const sendMilestoneNotification = functions
+  .runWith({
+    timeoutSeconds: 60,
+    memory: "256MB",
+  })
+  .firestore.document("users/{userId}/history/{historyId}")
   .onCreate(async (snap, context) => {
     const userId = context.params.userId;
 
@@ -618,13 +654,13 @@ export const sendMilestoneNotification = functions.firestore
         body: message.body,
         data: {
           type: "milestone",
-          rollCount,
+          rollCount: rollCount.toString(),
         },
         priority: "high",
         channelId: "love-dice-milestones",
       };
 
-      const response = await fetch("https://exp.host/--/api/v2/push/send", {
+      await fetch("https://exp.host/--/api/v2/push/send", {
         method: "POST",
         headers: {
           Accept: "application/json",
@@ -634,11 +670,42 @@ export const sendMilestoneNotification = functions.firestore
         body: JSON.stringify(notification),
       });
 
-      console.log(`Notification milestone ${rollCount} envoyée à ${userId}`);
-
       return null;
     } catch (error) {
-      console.error("Erreur notification milestone:", error);
       return null;
+    }
+  });
+
+/**
+ * Fonction utilitaire pour créer un utilisateur admin
+ * À utiliser une seule fois pour créer le premier admin
+ */
+export const createAdminUser = functions
+  .runWith({
+    timeoutSeconds: 60,
+    memory: "256MB",
+  })
+  .https.onCall(async (data, context) => {
+    // Cette fonction ne doit être appelée que par un super admin
+    // En production, la désactiver ou ajouter une clé secrète
+    const { uid } = data;
+
+    if (!uid) {
+      throw new functions.https.HttpsError("invalid-argument", "UID requis");
+    }
+
+    try {
+      // Définir les custom claims pour admin
+      await admin.auth().setCustomUserClaims(uid, { admin: true });
+
+      return {
+        success: true,
+        message: `Utilisateur ${uid} est maintenant admin`,
+      };
+    } catch (error) {
+      throw new functions.https.HttpsError(
+        "internal",
+        "Erreur lors de la création de l'admin",
+      );
     }
   });

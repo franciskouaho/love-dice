@@ -120,7 +120,7 @@ export default function PaywallScreen() {
         );
       }
     } catch (error) {
-      console.error("Erreur achat:", error);
+      // Erreur achat ignorée
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(
         "Erreur",
@@ -163,7 +163,7 @@ export default function PaywallScreen() {
         );
       }
     } catch (error) {
-      console.error("Erreur restauration:", error);
+      // Erreur restauration ignorée
       logRestorePurchases(false, false);
       Alert.alert(
         "Erreur de restauration",

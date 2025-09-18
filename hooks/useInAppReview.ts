@@ -35,10 +35,7 @@ export const useInAppReview = () => {
       const hasReviewed = await AsyncStorage.getItem(HAS_REVIEWED_KEY);
       return hasReviewed === "true";
     } catch (error) {
-      console.error(
-        "Erreur lors de la vérification du statut de review:",
-        error,
-      );
+      // Erreur lors de la vérification du statut de review ignorée
       return false;
     }
   };
@@ -56,10 +53,10 @@ export const useInAppReview = () => {
       if (timeSinceLastAttempt > 30000) {
         await markReviewAsDone();
         await AsyncStorage.removeItem(LAST_REVIEW_ATTEMPT_KEY);
-        console.log("Review considérée comme effectuée après retour du store");
+        // Review considérée comme effectuée après retour du store
       }
     } catch (error) {
-      console.error("Erreur lors de la vérification de la review:", error);
+      // Erreur lors de la vérification de la review ignorée
     }
   };
 
@@ -70,7 +67,7 @@ export const useInAppReview = () => {
       await AsyncStorage.setItem(REVIEW_TRIGGER_COUNT_KEY, count.toString());
       return count;
     } catch (error) {
-      console.error("Erreur lors de l'incrémentation du compteur:", error);
+      // Erreur lors de l'incrémentation du compteur ignorée
       return 0;
     }
   };
@@ -90,10 +87,7 @@ export const useInAppReview = () => {
 
       return false;
     } catch (error) {
-      console.error(
-        "Erreur lors de la vérification des conditions de review:",
-        error,
-      );
+      // Erreur lors de la vérification des conditions de review ignorée
       return false;
     }
   };
@@ -102,22 +96,22 @@ export const useInAppReview = () => {
     try {
       const hasReviewed = await hasUserReviewed();
       if (hasReviewed) {
-        console.log("Review déjà effectuée, pas de nouvelle demande");
+        // Review déjà effectuée, pas de nouvelle demande
         return;
       }
 
       const isAvailable = await StoreReview.isAvailableAsync();
       if (isAvailable) {
-        console.log("Demande de review in-app");
+        // Demande de review in-app
         logReviewOpened("in_app");
         await StoreReview.requestReview();
         // On ne marque pas comme fait ici car on ne sait pas si l'utilisateur a vraiment reviewé
       } else {
-        console.log("Review in-app non disponible, ouverture du store");
+        // Review in-app non disponible, ouverture du store
         await openStoreReview();
       }
     } catch (error) {
-      console.error("Erreur lors de la demande de review:", error);
+      // Erreur lors de la demande de review ignorée
     }
   };
 
@@ -125,7 +119,7 @@ export const useInAppReview = () => {
     try {
       const hasReviewed = await hasUserReviewed();
       if (hasReviewed) {
-        console.log("Review déjà effectuée, pas d'ouverture du store");
+        // Review déjà effectuée, pas d'ouverture du store
         return;
       }
 
@@ -139,19 +133,19 @@ export const useInAppReview = () => {
         // TODO: Remplacer par l'ID réel de l'app Love Dice sur l'App Store
         const itunesItemId = "LOVE_DICE_APP_ID";
         const url = `https://apps.apple.com/app/apple-store/id${itunesItemId}?action=write-review`;
-        console.log("Ouverture App Store pour review:", url);
+        // Ouverture App Store pour review
         logReviewOpened("store_redirect");
         await Linking.openURL(url);
       } else if (Platform.OS === "android") {
         // TODO: Remplacer par le package name réel de l'app Love Dice
         const androidPackageName = "com.lovedice.app";
         const url = `https://play.google.com/store/apps/details?id=${androidPackageName}&showAllReviews=true`;
-        console.log("Ouverture Google Play pour review:", url);
+        // Ouverture Google Play pour review
         logReviewOpened("store_redirect");
         await Linking.openURL(url);
       }
     } catch (error) {
-      console.error("Erreur lors de l'ouverture du store:", error);
+      // Erreur lors de l'ouverture du store ignorée
     }
   };
 
@@ -159,9 +153,9 @@ export const useInAppReview = () => {
     try {
       await AsyncStorage.setItem(HAS_REVIEWED_KEY, "true");
       logReviewCompleted(true);
-      console.log("Review marquée comme effectuée");
+      // Review marquée comme effectuée
     } catch (error) {
-      console.error("Erreur lors du marquage de la review:", error);
+      // Erreur lors du marquage de la review ignorée
     }
   };
 
@@ -169,13 +163,11 @@ export const useInAppReview = () => {
     try {
       // Incrémenter le compteur de déclencheurs
       const triggerCount = await incrementTriggerCount();
-      console.log("Trigger count pour review:", triggerCount);
 
       // Vérifier si on doit demander une review
       const shouldRequest = await shouldRequestReview(triggerCount);
 
       if (shouldRequest) {
-        console.log("Conditions remplies, demande de review");
         logReviewPrompted(triggerCount, "after_dice_roll");
         // Petite temporisation pour que l'animation se termine
         setTimeout(() => {
@@ -183,7 +175,7 @@ export const useInAppReview = () => {
         }, 1500);
       }
     } catch (error) {
-      console.error("Erreur lors du déclenchement de review:", error);
+      // Erreur lors du déclenchement de review ignorée
     }
   };
 
@@ -194,12 +186,9 @@ export const useInAppReview = () => {
         LAST_REVIEW_ATTEMPT_KEY,
         REVIEW_TRIGGER_COUNT_KEY,
       ]);
-      console.log("Données de review réinitialisées");
+      // Données de review réinitialisées
     } catch (error) {
-      console.error(
-        "Erreur lors de la réinitialisation des données de review:",
-        error,
-      );
+      // Erreur lors de la réinitialisation des données de review ignorée
     }
   };
 

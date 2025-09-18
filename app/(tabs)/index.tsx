@@ -73,9 +73,6 @@ export default function HomeScreen() {
     try {
       const userId = FirestoreService.getCurrentUserId();
       if (!userId) {
-        console.log(
-          "👥 Pas d'utilisateur connecté, utilisation des noms par défaut",
-        );
         const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
         setPlayerNames(defaultNames);
         const randomName =
@@ -93,7 +90,6 @@ export default function HomeScreen() {
           player2: firebaseNames.player2.trim(),
         };
         setPlayerNames(cleanNames);
-        console.log("👥 Noms chargés depuis Firebase:", cleanNames);
         // Créer un nom par défaut stable pour l'affichage
         const randomName =
           Math.random() < 0.5 ? cleanNames.player1 : cleanNames.player2;
@@ -102,21 +98,13 @@ export default function HomeScreen() {
         // Pas de noms sauvegardés, utiliser des noms par défaut
         const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
         setPlayerNames(defaultNames);
-        console.log(
-          "👥 Pas de noms dans Firebase, utilisation des noms par défaut:",
-          defaultNames,
-        );
         // Créer un nom par défaut stable
         const randomName =
           Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
         setDefaultPayerName(`${randomName} paie`);
       }
     } catch (error) {
-      console.error(
-        "Erreur lors du chargement des noms depuis Firebase:",
-        error,
-      );
-      // En cas d'erreur, utiliser des noms par défaut
+      // Erreur lors du chargement des noms depuis Firebase - utiliser des noms par défaut
       const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
       setPlayerNames(defaultNames);
       const randomName =
@@ -135,27 +123,18 @@ export default function HomeScreen() {
     try {
       const userId = FirestoreService.getCurrentUserId();
       if (!userId) {
-        console.error(
-          "❌ Pas d'utilisateur connecté pour sauvegarder les noms",
-        );
+        // Pas d'utilisateur connecté pour sauvegarder les noms
         return;
       }
 
       const success = await FirestoreService.savePlayerNames(userId, names);
-      if (success) {
-        console.log("💾 Noms sauvegardés dans Firebase:", names);
-      } else {
-        console.error("❌ Échec de la sauvegarde des noms dans Firebase");
-      }
+      // Sauvegarde réalisée
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde des noms:", error);
+      // Erreur lors de la sauvegarde des noms
     }
   };
 
   useEffect(() => {
-    // Initialiser l'utilisateur de test Firebase d'abord
-    FirestoreService.initializeDevUser();
-
     // Charger le dernier lancer et les noms au démarrage
     loadLastRoll();
     loadPlayerNames();
@@ -181,7 +160,6 @@ export default function HomeScreen() {
         }
 
         if (!hasSeenNamesModal && !hasNames) {
-          console.log("🎭 First launch - showing names modal automatically");
           setTimeout(() => {
             setIsNamesModalVisible(true);
           }, 1000);
@@ -189,7 +167,7 @@ export default function HomeScreen() {
           await AsyncStorage.setItem("has_seen_names_modal", "true");
         }
       } catch (error) {
-        console.error("Erreur vérification premier lancement:", error);
+        // Erreur vérification premier lancement ignorée
       }
     };
 
@@ -240,7 +218,7 @@ export default function HomeScreen() {
     try {
       await getLastRoll();
     } catch (error) {
-      console.error("Erreur chargement dernier roll:", error);
+      // Erreur chargement dernier roll ignorée
     }
   };
 
@@ -249,11 +227,8 @@ export default function HomeScreen() {
     threshold: 1.2, // Seuil plus sensible pour faciliter la détection
     timeWindow: 1000, // Délai entre les secousses pour éviter les lancers multiples
     onShake: async () => {
-      console.log("📱 Shake detected! Triggering dice roll...");
-
       // Éviter les multiples secousses pendant un lancement
       if (isRolling) {
-        console.log("⚠️ Already rolling, ignoring shake");
         return;
       }
 
@@ -266,9 +241,6 @@ export default function HomeScreen() {
 
       // TOUJOURS relire les noms depuis Firebase au moment de la secousse
       // pour éviter les problèmes d'état React
-      console.log(
-        "📱 Secousse détectée - rechargement des noms depuis Firebase",
-      );
       let finalNames = { player1: "Mon cœur", player2: "Mon amour" };
 
       try {
@@ -280,22 +252,12 @@ export default function HomeScreen() {
               player1: firebaseNames.player1.trim() || "Mon cœur",
               player2: firebaseNames.player2.trim() || "Mon amour",
             };
-            console.log("✅ Noms rechargés depuis Firebase:", finalNames);
-          } else {
-            console.log(
-              "ℹ️ Pas de noms dans Firebase, utilisation des noms par défaut",
-            );
           }
-        } else {
-          console.log(
-            "⚠️ Pas d'utilisateur connecté, utilisation des noms par défaut",
-          );
         }
       } catch (error) {
-        console.error("❌ Erreur lecture Firebase:", error);
+        // Erreur lecture Firebase
       }
 
-      console.log("🎯 Lancement avec noms garantis:", finalNames);
       handleRollWithNames(finalNames);
     },
   });
@@ -305,44 +267,20 @@ export default function HomeScreen() {
     player2: string;
   }) => {
     const namesToUse = customNames || playerNames;
-    console.log(
-      "🎲 handleRollWithNames called - isRolling:",
-      isRolling,
-      "names:",
-      namesToUse,
-    );
     return performRollWithNames(namesToUse);
   };
 
   const handleRoll = async () => {
-    console.log("🎲 handleRoll called - isRolling:", isRolling);
-
     if (isRolling) {
-      console.log("❌ Already rolling, exiting...");
       return;
     }
 
     // Vérifier si les faces sont chargées (mais ne pas bloquer)
-    console.log(
-      "🔍 Checking faces - loading:",
-      facesLoading,
-      "count:",
-      allFaces.length,
-    );
     if (facesLoading || allFaces.length === 0) {
-      console.log("⚠️ Faces not ready, but continuing with defaults...");
       // Ne pas bloquer, continuer avec des faces par défaut
     }
 
     // Vérifier si l'utilisateur peut lancer
-    console.log(
-      "💎 Checking quota - hasLifetime:",
-      hasLifetime,
-      "rcHasLifetime:",
-      rcHasLifetime,
-      "canRoll:",
-      canRoll,
-    );
     if (!hasLifetime && !rcHasLifetime && !canRoll) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       logFreeLimitHit(0, "home_button");
@@ -351,7 +289,6 @@ export default function HomeScreen() {
     }
 
     // Les noms sont maintenant gérés avant l'appel à handleRoll
-    console.log("✅ All checks passed, performing roll...");
     performRollWithNames(playerNames);
   };
 
@@ -364,12 +301,10 @@ export default function HomeScreen() {
     player2: string;
   }) => {
     try {
-      console.log("🎲 performRollWithNames START - setting isRolling to true");
       setIsRolling(true);
 
       // Timeout de sécurité pour débloquer isRolling
       const safetyTimeout = setTimeout(() => {
-        console.log("⚠️ SAFETY TIMEOUT - forcing isRolling to false");
         setIsRolling(false);
       }, 5000);
 
@@ -408,10 +343,6 @@ export default function HomeScreen() {
         // Utiliser Firebase si disponible, sinon faces par défaut AVEC noms forcés
         let facesToUse = allFaces;
         if (allFaces.length === 0) {
-          console.log(
-            "📦 Firebase pas prêt, faces par défaut avec noms forcés",
-          );
-
           // Noms forcés
           const name1 = namesToUse.player1?.trim() || "Mon cœur";
           const name2 = namesToUse.player2?.trim() || "Mon amour";
@@ -475,17 +406,15 @@ export default function HomeScreen() {
 
         // Afficher le résultat avec une animation
         setTimeout(() => {
-          console.log("🎲 Starting result animation");
           Animated.timing(resultOpacity, {
             toValue: 1,
             duration: 400,
             useNativeDriver: true,
           }).start(() => {
-            console.log("🎲 Animation completed - setting isRolling to false");
             clearTimeout(safetyTimeout);
             setIsRolling(false);
           });
-        }, 300);
+        }, 200);
 
         // Analytics - log chaque catégorie séparément
         logDiceRoll({
@@ -528,8 +457,6 @@ export default function HomeScreen() {
         triggerReviewAfterSuccess();
       });
     } catch (error) {
-      console.error("Erreur lors du lancement:", error);
-      console.log("🎲 ERROR - setting isRolling to false");
       clearTimeout(safetyTimeout);
       setIsRolling(false);
     }
@@ -547,9 +474,7 @@ export default function HomeScreen() {
     // Sauvegarder les noms dans Firebase
     await savePlayerNamesLocal(playerNames);
 
-    // Debug : vérifier les noms sauvegardés
-    console.log("🔥 NOMS SOUMIS ET SAUVEGARDÉS:", playerNames);
-
+    // Noms sauvegardés avec succès
     setIsNamesModalVisible(false);
     await Haptics.selectionAsync();
 

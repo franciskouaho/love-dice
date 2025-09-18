@@ -56,7 +56,7 @@ export default function RootLayout() {
           options={{
             headerShown: false,
             presentation: "modal",
-            gestureEnabled: false,
+            gestureEnabled: true,
           }}
         />
 

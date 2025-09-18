@@ -184,8 +184,8 @@ export default function PaywallScreen() {
 
   const handleClose = async () => {
     await Haptics.selectionAsync();
-    // Fermer le paywall et aller directement aux tabs sans passer par le splash
-    router.replace("/(tabs)/" as any);
+    // Fermer la modal du paywall
+    router.dismiss();
   };
 
   if (isLoading) {

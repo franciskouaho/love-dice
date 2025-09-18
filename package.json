@@ -7,8 +7,8 @@
     "reset-project": "node ./scripts/reset-project.js",
     "migrate-firebase": "ts-node ./scripts/migrate-to-firebase.ts",
     "firebase-diagnostic": "ts-node ./scripts/firebase-diagnostic.ts",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },

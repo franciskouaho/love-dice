@@ -51,8 +51,7 @@
         {
           "icon": "./assets/images/notification-icon.png",
           "color": "#E0115F",
-          "defaultChannel": "love-dice-default",
-          "sounds": ["./assets/sounds/dice-roll.wav"]
+          "defaultChannel": "love-dice-default"
         }
       ],
       [

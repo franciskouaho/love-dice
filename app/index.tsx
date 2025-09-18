@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { hasCompletedOnboarding } from "../utils/onboarding";
 
 export default function SplashScreen() {
   const [isLoading, setIsLoading] = useState(true);
@@ -15,11 +15,9 @@ export default function SplashScreen() {
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         // Check if user has completed onboarding
-        const onboardingCompleted = await AsyncStorage.getItem(
-          "onboarding_completed",
-        );
+        const onboardingCompleted = await hasCompletedOnboarding();
 
-        if (onboardingCompleted === "true") {
+        if (onboardingCompleted) {
           router.replace("/(tabs)");
         } else {
           router.replace("/(onboarding)/welcome");

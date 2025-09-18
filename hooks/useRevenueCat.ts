@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import Purchases, {
   CustomerInfo,
@@ -6,8 +6,8 @@ import Purchases, {
 } from "react-native-purchases";
 
 const APIKeys = {
-  apple: "appl_lWSGnBCBjhRvOLwThHnorabYvWj",
-  google: "goog_mhKjhDQSAiyxTBAnLJzoPwQUako",
+  apple: "appl_DsRRqlIIUaHejTFtkinCiqMSqLo",
+  google: "",
 };
 
 const LIFETIME_PRODUCT_ID = "love_dice_lifetime";

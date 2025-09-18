@@ -32,7 +32,7 @@ import { useShake } from "../../hooks/useShake";
 import { CompleteDiceResult, rollCompleteDice } from "../../utils/dice";
 import * as FirestoreService from "../../services/firestore";
 import { getLastRoll, saveLastRoll } from "../../utils/quota";
-import { getAuthInstance } from "../../services/firebase";
+import firebaseDebug from "../../utils/firebase-debug";
 
 const { width } = Dimensions.get("window");
 
@@ -63,33 +63,26 @@ export default function HomeScreen() {
   const [rollCount, setRollCount] = useState(0);
   const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [firebaseDebug, setFirebaseDebug] = useState<string>("");
+  const [firebaseDebugText, setFirebaseDebugText] = useState<string>("");
   const safetyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Diagnostic Firebase
+  // Diagnostic Firebase avancé
   const checkFirebaseAuth = async () => {
     try {
-      const authInstance = getAuthInstance();
-      const userId = FirestoreService.getCurrentUserId();
-
-      let debugInfo = "";
-      debugInfo += `Auth Instance: ${authInstance ? "✅" : "❌"}\n`;
-      debugInfo += `Current User: ${userId ? "✅" + userId.slice(0, 8) : "❌"}\n`;
-      debugInfo += `Time: ${new Date().toLocaleTimeString()}`;
-
-      setFirebaseDebug(debugInfo);
+      const info = await firebaseDebug.getInfo();
+      const debugText = firebaseDebug.formatForUI(info);
+      setFirebaseDebugText(debugText);
 
       // Si pas d'utilisateur, essayer de forcer l'init
-      if (!userId && authInstance) {
+      if (!info.currentUser) {
         console.log("🔧 Tentative de réinitialisation Firebase Auth...");
-        await import("../../services/firebase").then(async (firebase) => {
-          await firebase.initAuth();
-          const newUserId = FirestoreService.getCurrentUserId();
-          console.log("🔧 Nouveau userId:", newUserId);
-        });
+        await firebaseDebug.forceInit();
+        // Mettre à jour l'affichage après force init
+        const newInfo = await firebaseDebug.getInfo();
+        setFirebaseDebugText(firebaseDebug.formatForUI(newInfo));
       }
     } catch (error) {
-      setFirebaseDebug(`❌ Erreur: ${error}`);
+      setFirebaseDebugText(`❌ Erreur: ${error}`);
     }
   };
 
@@ -746,15 +739,14 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         {/* Debug Firebase (temporaire) */}
-        {firebaseDebug && (
+        {firebaseDebugText && (
           <View style={styles.debugContainer}>
-            <Text style={styles.debugText}>{firebaseDebug}</Text>
+            <Text style={styles.debugText}>{firebaseDebugText}</Text>
             <TouchableOpacity
               style={styles.debugButton}
               onPress={async () => {
                 console.log("🔧 Force Firebase Init...");
-                const firebase = await import("../../services/firebase");
-                await firebase.initAuth();
+                await firebaseDebug.forceInit();
                 setTimeout(checkFirebaseAuth, 1000);
               }}
             >

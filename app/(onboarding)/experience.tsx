@@ -30,22 +30,48 @@ export default function OnboardingStep3() {
   const handleCommencer = async () => {
     await Haptics.selectionAsync();
 
+    console.log("🚀 DEBUT handleCommencer");
+
     try {
+      // Vérifier l'état initial
+      console.log("🔍 État initial Firebase...");
+      const initialUserId = FirestoreService.getCurrentUserId();
+      console.log("📍 UserId initial:", initialUserId || "AUCUN");
+
       // Initialiser Firebase Auth en premier
       console.log("🔧 Initialisation Firebase Auth...");
-      await initAuth();
+      const authResult = await initAuth();
+      console.log("🔧 Résultat initAuth:", authResult);
+
+      // Attendre un peu pour que l'auth se stabilise
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Vérifier que l'utilisateur est bien créé
       const userId = FirestoreService.getCurrentUserId();
-      console.log("✅ Utilisateur Firebase créé:", userId);
+      console.log(
+        "✅ Utilisateur Firebase après init:",
+        userId || "TOUJOURS AUCUN",
+      );
+
+      if (!userId) {
+        console.warn("⚠️ Pas d'utilisateur après initAuth, forçage...");
+        // Forcer une nouvelle tentative d'auth
+        await initAuth();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const retryUserId = FirestoreService.getCurrentUserId();
+        console.log("🔄 Retry userId:", retryUserId || "TOUJOURS ECHEC");
+      }
 
       // Marquer l'onboarding comme complété
+      console.log("📝 Marquage onboarding complété...");
       await markOnboardingCompleted();
 
       // Rediriger vers l'app principale (pas le paywall)
+      console.log("🏠 Redirection vers tabs...");
       nav.goTabs();
     } catch (error) {
       console.error("❌ Erreur initialisation Firebase:", error);
+      console.error("❌ Stack trace:", (error as Error).stack);
       // En cas d'erreur, aller quand même vers l'app
       await markOnboardingCompleted();
       nav.goTabs();

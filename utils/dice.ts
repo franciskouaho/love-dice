@@ -90,13 +90,29 @@ export const rollCompleteDice = (
     name2 = playerNames.player2.trim();
   }
 
-  // Personnaliser le label du payeur selon son type
-  if (payer.label === "Tu paies" || payer.label === "Je paie" || payer.label.includes("paie")) {
-    // Pour les faces génériques, utiliser les noms personnalisés
-    payer.label = Math.random() < 0.5 ? `${name1} paie` : `${name2} paie`;
+  // Personnaliser le label du payeur - BEAUCOUP plus large !
+  const shouldPersonalize = 
+    payer.label === "Tu paies" || 
+    payer.label === "Je paie" || 
+    payer.label.includes("paie") ||
+    payer.label.includes("Paie") ||
+    payer.label.includes("50/50") ||
+    payer.label.includes("Pile ou Face") ||
+    payer.label.includes("Random") ||
+    payer.label.includes("Hasard") ||
+    payer.label === "À tour de rôle" ||
+    payer.label === "Le plus jeune" ||
+    payer.label === "Le plus âgé" ||
+    payer.label.startsWith("Celui qui") ||
+    payer.label.startsWith("Celle qui");
+
+  if (shouldPersonalize) {
+    // Pour TOUTES ces faces, utiliser les noms personnalisés
+    const chosenName = Math.random() < 0.5 ? name1 : name2;
+    console.log(`🎯 Face personnalisée: "${payer.label}" → "${chosenName} paie"`);
+    payer.label = `${chosenName} paie`;
   } else {
-    // Pour les faces spécialisées ("Celui qui...", "Le plus jeune", etc.), les garder telles quelles
-    // Elles sont déjà intéressantes !
+    // Pour les faces très spécialisées, les garder telles quelles
     console.log(`🎯 Face spécialisée conservée: "${payer.label}"`);
   }
 

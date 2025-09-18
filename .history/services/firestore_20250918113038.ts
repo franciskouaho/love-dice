@@ -406,44 +406,6 @@ export const getCurrentUserId = (): string | null => {
   }
 };
 
-// Initialiser un utilisateur de test pour le développement
-export const initializeDevUser = async (): Promise<void> => {
-  if (!__DEV__) return;
-  
-  try {
-    const devUserId = "dev-user-expo-go";
-    const userRef = doc(db, "users", devUserId);
-    
-    // Vérifier si l'utilisateur existe déjà
-    const userDoc = await getDoc(userRef);
-    if (!userDoc.exists()) {
-      console.log("🧪 Création de l'utilisateur de test...");
-      await setDoc(userRef, {
-        createdAt: serverTimestamp(),
-        hasLifetime: false,
-        freeRollsUsedToday: 0,
-        freeDayKey: new Date().toISOString().split('T')[0],
-        prefs: { 
-          haptics: true, 
-          weights: { "payer": 0.2, "repas": 0.2, "activite": 0.6 } 
-        },
-        notificationsEnabled: false,
-        notificationPreferences: {
-          enabled: true,
-          eveningReminders: true,
-          milestoneAlerts: true,
-          weeklyDigest: false,
-          marketingEmails: false,
-          reminderTime: "19:00",
-        }
-      });
-      console.log("✅ Utilisateur de test créé");
-    }
-  } catch (error) {
-    console.warn("Impossible de créer l'utilisateur de test:", error);
-  }
-};
-
 // Vérifier la connectivité et gérer le mode offline
 export const checkConnectivity = async (): Promise<boolean> => {
   try {

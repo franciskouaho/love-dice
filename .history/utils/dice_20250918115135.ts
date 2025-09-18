@@ -88,26 +88,6 @@ export const rollCompleteDice = (
   };
 };
 
-// Fonction pour personnaliser les labels de paiement
-const personalizePayerLabel = (
-  originalLabel: string, 
-  playerNames: { player1: string; player2: string }
-): string => {
-  const { player1, player2 } = playerNames;
-  
-  switch (originalLabel) {
-    case "Tu paies":
-      // Choisir aléatoirement entre les deux joueurs
-      return Math.random() < 0.5 ? `${player1} paie` : `${player2} paie`;
-    case "Je paie":
-      // Alternative pour l'autre joueur
-      return Math.random() < 0.5 ? `${player2} paie` : `${player1} paie`;
-    default:
-      // Garder les autres labels comme "50/50", "Pile ou Face"
-      return originalLabel;
-  }
-};
-
 // Fonction helper pour lancer dans une catégorie spécifique
 const rollFromCategory = (faces: DiceFace[], lastFace?: DiceFace): DiceFace => {
   if (faces.length === 0) {

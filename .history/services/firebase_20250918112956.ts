@@ -210,13 +210,6 @@ export const initFirebase = async () => {
       await initAuth();
     } else {
       console.warn("⚠️ Firebase Auth non disponible, continuons sans auth");
-      
-      // En mode dev, initialiser un utilisateur de test
-      if (__DEV__) {
-        console.log("🧪 Initialisation de l'utilisateur de test pour Expo Go...");
-        const { initializeDevUser } = await import('./firestore');
-        await initializeDevUser();
-      }
     }
 
     // Remote Config

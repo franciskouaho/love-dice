@@ -1,18 +1,18 @@
 import {
-  addDoc,
-  collection,
-  deleteDoc,
   doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  serverTimestamp,
   setDoc,
+  getDoc,
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  deleteDoc,
+  serverTimestamp,
   writeBatch,
 } from "firebase/firestore";
-import { DiceFace } from "../utils/dice";
 import { db } from "./firebase";
+import { DiceFace } from "../utils/dice";
 
 // Interface pour une face stockée dans Firebase
 export interface FirebaseDiceFace extends Omit<DiceFace, "id"> {
@@ -131,25 +131,25 @@ const DEFAULT_FACES: Omit<FirebaseDiceFace, "id">[] = [
     isActive: true,
   },
   {
-    label: "Spa maison",
+    label: "Tenue chic",
     category: "activite",
-    emoji: "🛁",
+    emoji: "👔",
     weight: 1,
     isDefault: true,
     isActive: true,
   },
   {
-    label: "Cuisine ensemble",
+    label: "Budget max 30€",
     category: "activite",
-    emoji: "👨‍🍳",
+    emoji: "💶",
     weight: 1,
     isDefault: true,
     isActive: true,
   },
   {
-    label: "Netflix & Chill",
+    label: "Dessert obligatoire",
     category: "activite",
-    emoji: "📺",
+    emoji: "🍰",
     weight: 1,
     isDefault: true,
     isActive: true,

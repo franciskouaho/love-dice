@@ -1,38 +1,39 @@
-import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Alert,
-  Animated,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   Dimensions,
-  Modal,
   SafeAreaView,
   StatusBar,
-  StyleSheet,
-  Text,
+  Animated,
+  Share,
+  Modal,
   TextInput,
-  TouchableOpacity,
-  View,
+  Alert,
 } from "react-native";
-import BottomDrawer from "../../components/ui/BottomDrawer";
-import SettingsDrawerContent from "../../components/ui/SettingsDrawerContent";
+import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import useAnalytics from "../../hooks/useAnalytics";
-import { useFaces } from "../../hooks/useFaces";
-import { useInAppReview } from "../../hooks/useInAppReview";
-import useNotifications from "../../hooks/useNotifications";
 import useQuota from "../../hooks/useQuota";
 import useRevenueCat from "../../hooks/useRevenueCat";
-import { getCurrentUserId } from "../../services/firestore";
-import { CompleteDiceResult, rollCompleteDice } from "../../utils/dice";
+import { useInAppReview } from "../../hooks/useInAppReview";
+import { rollCompleteDice, CompleteDiceResult } from "../../utils/dice";
+import { useFaces } from "../../hooks/useFaces";
 import { getLastRoll, saveLastRoll } from "../../utils/quota";
+import { addToHistory, getCurrentUserId } from "../../services/firestore";
+import BottomDrawer from "../../components/ui/BottomDrawer";
+import SettingsDrawerContent from "../../components/ui/SettingsDrawerContent";
+import useNotifications from "../../hooks/useNotifications";
 
 const { width, height } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const { logDiceRoll, logFreeLimitHit } = useAnalytics();
+  const { logDiceRoll, logFreeLimitHit, logShareResult } = useAnalytics();
   const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } =
     useQuota();
   const { hasLifetime: rcHasLifetime } = useRevenueCat();
@@ -178,51 +179,40 @@ export default function HomeScreen() {
           ]),
         ]),
       ]).start(async () => {
-        // Lancer le dé complet
+        // Lancer le dé
         if (allFaces.length === 0) {
           console.error("Aucune face disponible");
           return;
         }
 
-        const completeResult = rollCompleteDice(allFaces, currentRoll || undefined, playerNames);
+        const lastFace = lastFaceId
+          ? allFaces.find((f) => f.id === lastFaceId)
+          : undefined;
+        const selectedFace = rollDice(allFaces, lastFace, true);
+        const roll = createDiceRoll(selectedFace);
 
-        setCurrentRoll(completeResult);
-        setLastFaceId(completeResult.id);
+        setCurrentRoll(roll);
+        setLastFaceId(selectedFace.id);
 
         // Sauvegarder le dernier lancer
-        await saveLastRoll(completeResult.id);
+        await saveLastRoll(selectedFace.id);
 
         // Consommer un lancer si pas d'accès à vie
         if (!hasLifetime && !rcHasLifetime) {
           await consumeRoll();
         }
 
-        // Ajouter à l'historique si connecté (TODO: adapter pour le résultat complet)
+        // Ajouter à l'historique si connecté
         const userId = getCurrentUserId();
         if (userId && (hasLifetime || rcHasLifetime)) {
-          // Pour l'instant, on log juste l'activité principale
-          // await addToHistory(userId, completeResult);
+          await addToHistory(userId, roll);
         }
 
-        // Analytics - log chaque catégorie
+        // Analytics
         logDiceRoll({
-          category: "payer",
-          label: completeResult.payer.label,
-          face_id: completeResult.payer.id,
-          is_custom: false,
-          roll_number_today: 3 - remaining + 1,
-        });
-        logDiceRoll({
-          category: "repas", 
-          label: completeResult.repas.label,
-          face_id: completeResult.repas.id,
-          is_custom: false,
-          roll_number_today: 3 - remaining + 1,
-        });
-        logDiceRoll({
-          category: "activite",
-          label: completeResult.activite.label, 
-          face_id: completeResult.activite.id,
+          category: selectedFace.category,
+          label: selectedFace.label,
+          face_id: selectedFace.id,
           is_custom: false,
           roll_number_today: 3 - remaining + 1,
         });
@@ -275,12 +265,33 @@ export default function HomeScreen() {
   };
 
   const handleSkipNames = async () => {
-    setPlayerNames({ player1: "Mon cœur", player2: "Mon amour" });
+    setPlayerNames({ player1: "Joueur 1", player2: "Joueur 2" });
     setIsNamesModalVisible(false);
     await Haptics.selectionAsync();
     performRoll();
   };
 
+  const handleShare = async () => {
+    if (!currentRoll) return;
+
+    try {
+      await Haptics.selectionAsync();
+
+      const shareText = `🎲 Love Dice: ${currentRoll.face.emoji} ${currentRoll.face.label}\n\nTélécharge Love Dice pour randomiser tes soirées !`;
+
+      await Share.share({
+        message: shareText,
+      });
+
+      logShareResult(currentRoll.face.category, currentRoll.face.label, "text");
+    } catch (error) {
+      console.error("Erreur partage:", error);
+    }
+  };
+
+  const handleReroll = () => {
+    handleRoll();
+  };
 
   const openSettings = async () => {
     await Haptics.selectionAsync();
@@ -368,24 +379,8 @@ export default function HomeScreen() {
               <Animated.View
                 style={[styles.resultContent, { opacity: resultOpacity }]}
               >
-                <View style={styles.completeResult}>
-                  <Text style={styles.resultTitle}>Votre soirée :</Text>
-                  
-                  <View style={styles.resultRow}>
-                    <Text style={styles.categoryEmoji}>{currentRoll.payer.emoji}</Text>
-                    <Text style={styles.compactLabel}>{currentRoll.payer.label}</Text>
-                  </View>
-                  
-                  <View style={styles.resultRow}>
-                    <Text style={styles.categoryEmoji}>{currentRoll.repas.emoji}</Text>
-                    <Text style={styles.compactLabel}>{currentRoll.repas.label}</Text>
-                  </View>
-                  
-                  <View style={styles.resultRow}>
-                    <Text style={styles.categoryEmoji}>{currentRoll.activite.emoji}</Text>
-                    <Text style={styles.compactLabel}>{currentRoll.activite.label}</Text>
-                  </View>
-                </View>
+                <Text style={styles.resultEmoji}>{currentRoll.face.emoji}</Text>
+                <Text style={styles.resultLabel}>{currentRoll.face.label}</Text>
               </Animated.View>
             ) : (
               <View style={styles.diceContent}>
@@ -423,6 +418,27 @@ export default function HomeScreen() {
 
           {/* Right Side */}
           <View style={styles.rightControls}>
+            {currentRoll && (
+              <>
+                <TouchableOpacity
+                  style={styles.sideButton}
+                  onPress={handleShare}
+                >
+                  <View style={styles.sideBlur}>
+                    <Ionicons name="share" size={20} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.sideButton}
+                  onPress={handleReroll}
+                >
+                  <View style={styles.sideBlur}>
+                    <Ionicons name="refresh" size={20} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </View>
@@ -680,45 +696,6 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
-  },
-  completeResult: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    paddingHorizontal: 20,
-  },
-  resultTitle: {
-    fontSize: 20,
-    color: "#FFFFFF",
-    fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 16,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  resultRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 4,
-    width: "100%",
-  },
-  categoryEmoji: {
-    fontSize: 32,
-    marginRight: 12,
-    width: 40,
-    textAlign: "center",
-  },
-  compactLabel: {
-    fontSize: 16,
-    color: "#FFFFFF",
-    fontWeight: "600",
-    flex: 1,
-    textAlign: "left",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   sideControls: {
     position: "absolute",

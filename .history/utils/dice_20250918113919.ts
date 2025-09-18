@@ -52,7 +52,6 @@ const getSecureRandom = (): number => {
 export const rollCompleteDice = (
   faces: DiceFace[],
   lastResult?: CompleteDiceResult,
-  playerNames?: { player1: string; player2: string },
 ): CompleteDiceResult => {
   if (!faces || faces.length === 0) {
     throw new Error("Aucune face disponible pour le lancer");
@@ -72,11 +71,6 @@ export const rollCompleteDice = (
   const repas = rollFromCategory(repasFaces, lastResult?.repas);
   const activite = rollFromCategory(activiteFaces, lastResult?.activite);
 
-  // Personnaliser les noms pour la catégorie "payer"
-  if (playerNames && playerNames.player1.trim() && playerNames.player2.trim()) {
-    payer.label = personalizePayerLabel(payer.label, playerNames);
-  }
-
   const now = new Date();
   return {
     id: `complete_roll_${now.getTime()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -86,26 +80,6 @@ export const rollCompleteDice = (
     timestamp: now.getTime(),
     date: now.toISOString().split("T")[0],
   };
-};
-
-// Fonction pour personnaliser les labels de paiement
-const personalizePayerLabel = (
-  originalLabel: string, 
-  playerNames: { player1: string; player2: string }
-): string => {
-  const { player1, player2 } = playerNames;
-  
-  switch (originalLabel) {
-    case "Tu paies":
-      // Choisir aléatoirement entre les deux joueurs
-      return Math.random() < 0.5 ? `${player1} paie` : `${player2} paie`;
-    case "Je paie":
-      // Alternative pour l'autre joueur
-      return Math.random() < 0.5 ? `${player2} paie` : `${player1} paie`;
-    default:
-      // Garder les autres labels comme "50/50", "Pile ou Face"
-      return originalLabel;
-  }
 };
 
 // Fonction helper pour lancer dans une catégorie spécifique

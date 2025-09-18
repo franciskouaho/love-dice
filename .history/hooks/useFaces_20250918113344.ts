@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { DiceFace } from "../utils/dice";
 import {
-  addUserFace,
-  createWeightedPool,
-  deleteUserFace,
-  getDefaultFaces,
-  getFacesByCategory,
   getUserFaces,
+  getDefaultFaces,
+  addUserFace,
   updateUserFace,
+  deleteUserFace,
+  getFacesByCategory,
+  createWeightedPool,
 } from "../services/faces";
 import { getCurrentUserId } from "../services/firestore";
-import { DiceFace } from "../utils/dice";
 
 export interface UseFacesReturn {
   // Données
@@ -60,14 +60,22 @@ export const useFaces = (): UseFacesReturn => {
         throw new Error("Utilisateur non connecté");
       }
 
+      console.log("🎲 Chargement des faces pour l'utilisateur:", userId);
+
       // Charger les faces en parallèle
       const [defaultFacesData, userFacesData] = await Promise.all([
         getDefaultFaces(),
         getUserFaces(userId),
       ]);
 
+      console.log("🎯 Faces par défaut chargées:", defaultFacesData.length);
+      console.log("👤 Faces utilisateur chargées:", userFacesData.length);
+
       const allFacesData = [...defaultFacesData, ...userFacesData];
       const pool = createWeightedPool(allFacesData);
+
+      console.log("📊 Total faces disponibles:", allFacesData.length);
+      console.log("🎱 Pool pondéré créé:", pool.length);
 
       setDefaultFaces(defaultFacesData);
       setUserFaces(userFacesData);

@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { DiceFace } from "../utils/dice";
 import {
-  addUserFace,
-  createWeightedPool,
-  deleteUserFace,
-  getDefaultFaces,
-  getFacesByCategory,
   getUserFaces,
+  getDefaultFaces,
+  addUserFace,
   updateUserFace,
+  deleteUserFace,
+  getFacesByCategory,
+  createWeightedPool,
 } from "../services/faces";
 import { getCurrentUserId } from "../services/firestore";
-import { DiceFace } from "../utils/dice";
 
 export interface UseFacesReturn {
   // Données

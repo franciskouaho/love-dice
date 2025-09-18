@@ -3,30 +3,30 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
 } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  Easing,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    Easing,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { AnimatedDice } from "../components/splash/AnimatedDice";
 import {
-  SPLASH_CONFIG,
-  getAnimationConfig,
-  getBlurIntensity,
-  getHeartCount,
-  getLoadingMessage,
+    SPLASH_CONFIG,
+    getAnimationConfig,
+    getBlurIntensity,
+    getHeartCount,
+    getLoadingMessage,
 } from "../constants/SplashConfig";
 
 // IMPORTANT:

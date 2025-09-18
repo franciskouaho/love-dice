@@ -10,6 +10,7 @@ import {
   Dimensions,
   Modal,
   SafeAreaView,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
@@ -32,7 +33,7 @@ import { getLastRoll, saveLastRoll } from "../../utils/quota";
 const { width, height } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const { logDiceRoll, logFreeLimitHit } = useAnalytics();
+  const { logDiceRoll, logFreeLimitHit, logShareResult } = useAnalytics();
   const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } =
     useQuota();
   const { hasLifetime: rcHasLifetime } = useRevenueCat();

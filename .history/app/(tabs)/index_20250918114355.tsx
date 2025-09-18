@@ -10,6 +10,7 @@ import {
   Dimensions,
   Modal,
   SafeAreaView,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
@@ -32,7 +33,7 @@ import { getLastRoll, saveLastRoll } from "../../utils/quota";
 const { width, height } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const { logDiceRoll, logFreeLimitHit } = useAnalytics();
+  const { logDiceRoll, logFreeLimitHit, logShareResult } = useAnalytics();
   const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } =
     useQuota();
   const { hasLifetime: rcHasLifetime } = useRevenueCat();
@@ -184,7 +185,7 @@ export default function HomeScreen() {
           return;
         }
 
-        const completeResult = rollCompleteDice(allFaces, currentRoll || undefined, playerNames);
+        const completeResult = rollCompleteDice(allFaces, currentRoll || undefined);
 
         setCurrentRoll(completeResult);
         setLastFaceId(completeResult.id);
@@ -275,12 +276,33 @@ export default function HomeScreen() {
   };
 
   const handleSkipNames = async () => {
-    setPlayerNames({ player1: "Mon cœur", player2: "Mon amour" });
+    setPlayerNames({ player1: "Joueur 1", player2: "Joueur 2" });
     setIsNamesModalVisible(false);
     await Haptics.selectionAsync();
     performRoll();
   };
 
+  const handleShare = async () => {
+    if (!currentRoll) return;
+
+    try {
+      await Haptics.selectionAsync();
+
+      const shareText = `🎲 Love Dice: Notre soirée est décidée !\n\n💳 ${currentRoll.payer.emoji} ${currentRoll.payer.label}\n🍽️ ${currentRoll.repas.emoji} ${currentRoll.repas.label}\n🎬 ${currentRoll.activite.emoji} ${currentRoll.activite.label}\n\nTélécharge Love Dice pour randomiser tes soirées !`;
+
+      await Share.share({
+        message: shareText,
+      });
+
+      logShareResult("complete", "complete_result", "text");
+    } catch (error) {
+      console.error("Erreur partage:", error);
+    }
+  };
+
+  const handleReroll = () => {
+    handleRoll();
+  };
 
   const openSettings = async () => {
     await Haptics.selectionAsync();
@@ -423,6 +445,27 @@ export default function HomeScreen() {
 
           {/* Right Side */}
           <View style={styles.rightControls}>
+            {currentRoll && (
+              <>
+                <TouchableOpacity
+                  style={styles.sideButton}
+                  onPress={handleShare}
+                >
+                  <View style={styles.sideBlur}>
+                    <Ionicons name="share" size={20} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.sideButton}
+                  onPress={handleReroll}
+                >
+                  <View style={styles.sideBlur}>
+                    <Ionicons name="refresh" size={20} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </View>

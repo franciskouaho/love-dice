@@ -10,6 +10,7 @@ import {
   Dimensions,
   Modal,
   SafeAreaView,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
@@ -32,7 +33,7 @@ import { getLastRoll, saveLastRoll } from "../../utils/quota";
 const { width, height } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const { logDiceRoll, logFreeLimitHit } = useAnalytics();
+  const { logDiceRoll, logFreeLimitHit, logShareResult } = useAnalytics();
   const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } =
     useQuota();
   const { hasLifetime: rcHasLifetime } = useRevenueCat();
@@ -281,6 +282,27 @@ export default function HomeScreen() {
     performRoll();
   };
 
+  const handleShare = async () => {
+    if (!currentRoll) return;
+
+    try {
+      await Haptics.selectionAsync();
+
+      const shareText = `🎲 Love Dice: Notre soirée est décidée !\n\n💳 ${currentRoll.payer.emoji} ${currentRoll.payer.label}\n🍽️ ${currentRoll.repas.emoji} ${currentRoll.repas.label}\n🎬 ${currentRoll.activite.emoji} ${currentRoll.activite.label}\n\nTélécharge Love Dice pour randomiser tes soirées !`;
+
+      await Share.share({
+        message: shareText,
+      });
+
+      logShareResult("complete", "complete_result", "text");
+    } catch (error) {
+      console.error("Erreur partage:", error);
+    }
+  };
+
+  const handleReroll = () => {
+    handleRoll();
+  };
 
   const openSettings = async () => {
     await Haptics.selectionAsync();

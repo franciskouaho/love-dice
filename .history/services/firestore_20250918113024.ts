@@ -1,22 +1,22 @@
 import {
-  addDoc,
-  collection,
-  deleteDoc,
   doc,
-  getDoc,
-  getDocs,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
   setDoc,
-  Unsubscribe,
+  getDoc,
   updateDoc,
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  deleteDoc,
+  serverTimestamp,
+  onSnapshot,
+  Unsubscribe,
 } from "firebase/firestore";
+import { db, auth } from "./firebase";
 import { DiceRoll } from "../utils/dice";
 import { UserPreferences } from "../utils/quota";
-import { auth, db } from "./firebase";
 
 // Interface pour le profil utilisateur
 export interface UserProfile {
@@ -403,44 +403,6 @@ export const getCurrentUserId = (): string | null => {
     }
     
     return null;
-  }
-};
-
-// Initialiser un utilisateur de test pour le développement
-export const initializeDevUser = async (): Promise<void> => {
-  if (!__DEV__) return;
-  
-  try {
-    const devUserId = "dev-user-expo-go";
-    const userRef = doc(db, "users", devUserId);
-    
-    // Vérifier si l'utilisateur existe déjà
-    const userDoc = await getDoc(userRef);
-    if (!userDoc.exists()) {
-      console.log("🧪 Création de l'utilisateur de test...");
-      await setDoc(userRef, {
-        createdAt: serverTimestamp(),
-        hasLifetime: false,
-        freeRollsUsedToday: 0,
-        freeDayKey: new Date().toISOString().split('T')[0],
-        prefs: { 
-          haptics: true, 
-          weights: { "payer": 0.2, "repas": 0.2, "activite": 0.6 } 
-        },
-        notificationsEnabled: false,
-        notificationPreferences: {
-          enabled: true,
-          eveningReminders: true,
-          milestoneAlerts: true,
-          weeklyDigest: false,
-          marketingEmails: false,
-          reminderTime: "19:00",
-        }
-      });
-      console.log("✅ Utilisateur de test créé");
-    }
-  } catch (error) {
-    console.warn("Impossible de créer l'utilisateur de test:", error);
   }
 };
 

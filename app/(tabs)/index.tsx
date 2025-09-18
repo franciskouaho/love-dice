@@ -32,6 +32,7 @@ import { useShake } from "../../hooks/useShake";
 import { CompleteDiceResult, rollCompleteDice } from "../../utils/dice";
 import * as FirestoreService from "../../services/firestore";
 import { getLastRoll, saveLastRoll } from "../../utils/quota";
+import { getAuthInstance } from "../../services/firebase";
 
 const { width } = Dimensions.get("window");
 
@@ -62,6 +63,7 @@ export default function HomeScreen() {
   const [rollCount, setRollCount] = useState(0);
   const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [firebaseDebug, setFirebaseDebug] = useState<string>("");
 
   // Animation refs
   const diceRotation = useRef(new Animated.Value(0)).current;
@@ -173,7 +175,35 @@ export default function HomeScreen() {
       }
     };
 
+    // Diagnostic Firebase
+    const checkFirebaseAuth = async () => {
+      try {
+        const authInstance = getAuthInstance();
+        const userId = FirestoreService.getCurrentUserId();
+
+        let debugInfo = "";
+        debugInfo += `Auth Instance: ${authInstance ? "✅" : "❌"}\n`;
+        debugInfo += `Current User: ${userId ? "✅" + userId.slice(0,8) : "❌"}\n`;
+        debugInfo += `Time: ${new Date().toLocaleTimeString()}`;
+
+        setFirebaseDebug(debugInfo);
+
+        // Si pas d'utilisateur, essayer de forcer l'init
+        if (!userId && authInstance) {
+          console.log("🔧 Tentative de réinitialisation Firebase Auth...");
+          await import("../../services/firebase").then(async (firebase) => {
+            await firebase.initAuth();
+            const newUserId = FirestoreService.getCurrentUserId();
+            console.log("🔧 Nouveau userId:", newUserId);
+          });
+        }
+      } catch (error) {
+        setFirebaseDebug(`❌ Erreur: ${error}`);
+      }
+    };
+
     checkFirstLaunch();
+    checkFirebaseAuth();
 
     // Réinitialiser le flag paywall chaque jour
     const checkPaywallFlag = async () => {
@@ -191,18 +221,16 @@ export default function HomeScreen() {
           setHasSeenPaywallToday(hasSeenToday === "true");
         }
       } catch (error) {
-        // Erreur réinitialisation flag ignorée
+        // Erreur gestion paywall flag ignorée
       }
     };
     checkPaywallFlag();
 
     // Demander les permissions de notifications si pas encore accordées
     if (notificationsInitialized && !hasPermissions) {
-      // Attendre un peu avant de demander pour ne pas être intrusif
-      setTimeout(() => {
-        requestPermissions();
-      }, 3000);
+      requestPermissions();
     }
+  }, [hasPermissions, notificationsInitialized, requestPermissions]);
 
     // Start floating animation
     Animated.loop(
@@ -710,6 +738,24 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* Debug Firebase (temporaire) */}
+        {firebaseDebug && (
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugText}>{firebaseDebug}</Text>
+            <TouchableOpacity
+              style={styles.debugButton}
+              onPress={async () => {
+                console.log("🔧 Force Firebase Init...");
+                const firebase = await import("../../services/firebase");
+                await firebase.initAuth();
+                setTimeout(checkFirebaseAuth, 1000);
+              }}
+            >
+              <Text style={styles.debugButtonText}>🔧 Force Init</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Bouton Noms au milieu */}
         <TouchableOpacity
           style={styles.bottomButton}
@@ -1201,5 +1247,31 @@ const styles = StyleSheet.create({
   },
   blockedText: {
     color: "#FF6B6B",
+  },
+  debugContainer: {
+    position: "absolute",
+    top: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    padding: 10,
+    borderRadius: 8,
+    zIndex: 1000,
+  },
+  debugText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontFamily: "monospace",
+  },
+  debugButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    padding: 8,
+    borderRadius: 4,
+    marginTop: 8,
+  },
+  debugButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    textAlign: "center",
   },
 });

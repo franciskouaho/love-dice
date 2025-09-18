@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,7 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SimpleDiceResult } from "../../components/SimpleDiceResult";
+import { AnimatedDice } from "../../components/AnimatedDice";
 import BottomDrawer from "../../components/ui/BottomDrawer";
 import SettingsDrawerContent from "../../components/ui/SettingsDrawerContent";
 import useAnalytics from "../../hooks/useAnalytics";
@@ -28,11 +28,12 @@ import useNotifications from "../../hooks/useNotifications";
 import useQuota from "../../hooks/useQuota";
 import useRevenueCat from "../../hooks/useRevenueCat";
 import { useShake } from "../../hooks/useShake";
-import { getCurrentUserId } from "../../services/firestore";
+
 import { CompleteDiceResult, rollCompleteDice } from "../../utils/dice";
+import * as FirestoreService from "../../services/firestore";
 import { getLastRoll, saveLastRoll } from "../../utils/quota";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const { logDiceRoll, logFreeLimitHit } = useAnalytics();
@@ -40,7 +41,7 @@ export default function HomeScreen() {
     useQuota();
   const { hasLifetime: rcHasLifetime } = useRevenueCat();
   const { triggerReviewAfterSuccess } = useInAppReview();
-  const { allFaces, loading: facesLoading, getRandomFace } = useFaces();
+  const { allFaces, loading: facesLoading } = useFaces();
   const {
     hasPermissions,
     notifyMilestone,
@@ -48,13 +49,16 @@ export default function HomeScreen() {
     isInitialized: notificationsInitialized,
   } = useNotifications();
 
-  const [currentRoll, setCurrentRoll] = useState<CompleteDiceResult | null>(null);
+  const [currentRoll, setCurrentRoll] = useState<CompleteDiceResult | null>(
+    null,
+  );
   const [isRolling, setIsRolling] = useState(false);
-  const [isDiceAnimating, setIsDiceAnimating] = useState(false);
-  const [lastFaceId, setLastFaceId] = useState<string | null>(null);
+  const [isShakingDice, setIsShakingDice] = useState(false);
   const [isSettingsDrawerVisible, setIsSettingsDrawerVisible] = useState(false);
   const [isNamesModalVisible, setIsNamesModalVisible] = useState(false);
   const [playerNames, setPlayerNames] = useState({ player1: "", player2: "" });
+  const [playerNamesLoaded, setPlayerNamesLoaded] = useState(false);
+  const [defaultPayerName, setDefaultPayerName] = useState("");
   const [rollCount, setRollCount] = useState(0);
 
   // Animation refs
@@ -64,31 +68,94 @@ export default function HomeScreen() {
   const floatAnimation = useRef(new Animated.Value(0)).current;
   const glowAnimation = useRef(new Animated.Value(0)).current;
 
-  // Fonction pour charger les noms sauvegardés
+  // Fonction pour charger les noms sauvegardés depuis Firebase
   const loadPlayerNames = async () => {
     try {
-      const savedNames = await AsyncStorage.getItem('player_names');
-      if (savedNames) {
-        const names = JSON.parse(savedNames);
-        setPlayerNames(names);
-        console.log('👥 Noms chargés:', names);
+      const userId = FirestoreService.getCurrentUserId();
+      if (!userId) {
+        console.log(
+          "👥 Pas d'utilisateur connecté, utilisation des noms par défaut",
+        );
+        const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
+        setPlayerNames(defaultNames);
+        const randomName =
+          Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
+        setDefaultPayerName(`${randomName} paie`);
+        setPlayerNamesLoaded(true);
+        return;
+      }
+
+      const firebaseNames = await FirestoreService.getPlayerNames(userId);
+      if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
+        // Nettoyer les noms dès le chargement
+        const cleanNames = {
+          player1: firebaseNames.player1.trim(),
+          player2: firebaseNames.player2.trim(),
+        };
+        setPlayerNames(cleanNames);
+        console.log("👥 Noms chargés depuis Firebase:", cleanNames);
+        // Créer un nom par défaut stable pour l'affichage
+        const randomName =
+          Math.random() < 0.5 ? cleanNames.player1 : cleanNames.player2;
+        setDefaultPayerName(`${randomName} paie`);
+      } else {
+        // Pas de noms sauvegardés, utiliser des noms par défaut
+        const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
+        setPlayerNames(defaultNames);
+        console.log(
+          "👥 Pas de noms dans Firebase, utilisation des noms par défaut:",
+          defaultNames,
+        );
+        // Créer un nom par défaut stable
+        const randomName =
+          Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
+        setDefaultPayerName(`${randomName} paie`);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des noms:', error);
+      console.error(
+        "Erreur lors du chargement des noms depuis Firebase:",
+        error,
+      );
+      // En cas d'erreur, utiliser des noms par défaut
+      const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
+      setPlayerNames(defaultNames);
+      const randomName =
+        Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
+      setDefaultPayerName(`${randomName} paie`);
+    } finally {
+      setPlayerNamesLoaded(true);
     }
   };
 
-  // Fonction pour sauvegarder les noms
-  const savePlayerNames = async (names: { player1: string; player2: string }) => {
+  // Fonction pour sauvegarder les noms dans Firebase
+  const savePlayerNamesLocal = async (names: {
+    player1: string;
+    player2: string;
+  }) => {
     try {
-      await AsyncStorage.setItem('player_names', JSON.stringify(names));
-      console.log('💾 Noms sauvegardés:', names);
+      const userId = FirestoreService.getCurrentUserId();
+      if (!userId) {
+        console.error(
+          "❌ Pas d'utilisateur connecté pour sauvegarder les noms",
+        );
+        return;
+      }
+
+      const success = await FirestoreService.savePlayerNames(userId, names);
+      if (success) {
+        console.log("💾 Noms sauvegardés dans Firebase:", names);
+      } else {
+        console.error("❌ Échec de la sauvegarde des noms dans Firebase");
+      }
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde des noms:', error);
+      console.error("Erreur lors de la sauvegarde des noms:", error);
     }
   };
 
   useEffect(() => {
+    // Initialiser l'utilisateur de test Firebase d'abord
+    FirestoreService.initializeDevUser();
+
     // Charger le dernier lancer et les noms au démarrage
     loadLastRoll();
     loadPlayerNames();
@@ -97,23 +164,35 @@ export default function HomeScreen() {
     // Afficher automatiquement la modal des noms SEULEMENT au premier lancement
     const checkFirstLaunch = async () => {
       try {
-        const hasSeenNamesModal = await AsyncStorage.getItem('has_seen_names_modal');
-        const savedNames = await AsyncStorage.getItem('player_names');
-        const names = savedNames ? JSON.parse(savedNames) : { player1: "", player2: "" };
-        
-        if (!hasSeenNamesModal && (!names.player1.trim() || !names.player2.trim())) {
-          console.log('🎭 First launch - showing names modal automatically');
+        const hasSeenNamesModal = await AsyncStorage.getItem(
+          "has_seen_names_modal",
+        );
+
+        // Vérifier si l'utilisateur a des noms dans Firebase
+        const userId = FirestoreService.getCurrentUserId();
+        let hasNames = false;
+        if (userId) {
+          const firebaseNames = await FirestoreService.getPlayerNames(userId);
+          hasNames = !!(
+            firebaseNames &&
+            firebaseNames.player1.trim() &&
+            firebaseNames.player2.trim()
+          );
+        }
+
+        if (!hasSeenNamesModal && !hasNames) {
+          console.log("🎭 First launch - showing names modal automatically");
           setTimeout(() => {
             setIsNamesModalVisible(true);
           }, 1000);
           // Marquer comme vu pour ne plus jamais le reproposer automatiquement
-          await AsyncStorage.setItem('has_seen_names_modal', 'true');
+          await AsyncStorage.setItem("has_seen_names_modal", "true");
         }
       } catch (error) {
-        console.error('Error checking first launch:', error);
+        console.error("Erreur vérification premier lancement:", error);
       }
     };
-    
+
     checkFirstLaunch();
 
     // Demander les permissions de notifications si pas encore accordées
@@ -159,67 +238,111 @@ export default function HomeScreen() {
 
   const loadLastRoll = async () => {
     try {
-      const lastRollId = await getLastRoll();
-      if (lastRollId) {
-        setLastFaceId(lastRollId);
-      }
+      await getLastRoll();
     } catch (error) {
       console.error("Erreur chargement dernier roll:", error);
     }
   };
 
   // Hook pour détecter la secousse du téléphone
-  const { isShaking } = useShake({
+  useShake({
     threshold: 1.2, // Seuil plus sensible pour faciliter la détection
     timeWindow: 1000, // Délai entre les secousses pour éviter les lancers multiples
     onShake: async () => {
-      console.log('📱 Shake detected! Triggering dice roll...');
-      
+      console.log("📱 Shake detected! Triggering dice roll...");
+
+      // Éviter les multiples secousses pendant un lancement
+      if (isRolling) {
+        console.log("⚠️ Already rolling, ignoring shake");
+        return;
+      }
+
+      // Déclencher l'animation de secousse des dés
+      setIsShakingDice(true);
+      setTimeout(() => setIsShakingDice(false), 300);
+
       // Ajouter un feedback haptique spécial pour la secousse
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      
-      // Si les faces ne sont pas encore chargées, utiliser des faces par défaut
-      if (facesLoading || allFaces.length === 0) {
-        console.log('⏳ Faces not ready, using default faces...');
-        // Utiliser des faces par défaut pour ne pas bloquer l'utilisateur
+
+      // TOUJOURS relire les noms depuis Firebase au moment de la secousse
+      // pour éviter les problèmes d'état React
+      console.log(
+        "📱 Secousse détectée - rechargement des noms depuis Firebase",
+      );
+      let finalNames = { player1: "Mon cœur", player2: "Mon amour" };
+
+      try {
+        const userId = FirestoreService.getCurrentUserId();
+        if (userId) {
+          const firebaseNames = await FirestoreService.getPlayerNames(userId);
+          if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
+            finalNames = {
+              player1: firebaseNames.player1.trim() || "Mon cœur",
+              player2: firebaseNames.player2.trim() || "Mon amour",
+            };
+            console.log("✅ Noms rechargés depuis Firebase:", finalNames);
+          } else {
+            console.log(
+              "ℹ️ Pas de noms dans Firebase, utilisation des noms par défaut",
+            );
+          }
+        } else {
+          console.log(
+            "⚠️ Pas d'utilisateur connecté, utilisation des noms par défaut",
+          );
+        }
+      } catch (error) {
+        console.error("❌ Erreur lecture Firebase:", error);
       }
-      
-      // Utiliser les noms actuels (ils sont chargés au démarrage)
-      console.log('🎭 Current playerNames:', playerNames);
-      console.log('🎭 Player1 length:', playerNames.player1.length, 'Player2 length:', playerNames.player2.length);
-      console.log('🎭 Player1 trimmed:', `"${playerNames.player1.trim()}"`, 'Player2 trimmed:', `"${playerNames.player2.trim()}"`);
-      
-      const namesToUse = playerNames;
-      
-      // Déclencher le lancement des dés avec les noms appropriés
-      console.log('🎯 Calling handleRoll from shake with names:', namesToUse);
-      handleRollWithNames(namesToUse);
-    }
+
+      console.log("🎯 Lancement avec noms garantis:", finalNames);
+      handleRollWithNames(finalNames);
+    },
   });
 
-  const handleRollWithNames = async (customNames?: { player1: string; player2: string }) => {
+  const handleRollWithNames = async (customNames?: {
+    player1: string;
+    player2: string;
+  }) => {
     const namesToUse = customNames || playerNames;
-    console.log('🎲 handleRollWithNames called - isRolling:', isRolling, 'names:', namesToUse);
+    console.log(
+      "🎲 handleRollWithNames called - isRolling:",
+      isRolling,
+      "names:",
+      namesToUse,
+    );
     return performRollWithNames(namesToUse);
   };
 
   const handleRoll = async () => {
-    console.log('🎲 handleRoll called - isRolling:', isRolling);
-    
+    console.log("🎲 handleRoll called - isRolling:", isRolling);
+
     if (isRolling) {
-      console.log('❌ Already rolling, exiting...');
+      console.log("❌ Already rolling, exiting...");
       return;
     }
 
     // Vérifier si les faces sont chargées (mais ne pas bloquer)
-    console.log('🔍 Checking faces - loading:', facesLoading, 'count:', allFaces.length);
+    console.log(
+      "🔍 Checking faces - loading:",
+      facesLoading,
+      "count:",
+      allFaces.length,
+    );
     if (facesLoading || allFaces.length === 0) {
-      console.log('⚠️ Faces not ready, but continuing with defaults...');
+      console.log("⚠️ Faces not ready, but continuing with defaults...");
       // Ne pas bloquer, continuer avec des faces par défaut
     }
 
     // Vérifier si l'utilisateur peut lancer
-    console.log('💎 Checking quota - hasLifetime:', hasLifetime, 'rcHasLifetime:', rcHasLifetime, 'canRoll:', canRoll);
+    console.log(
+      "💎 Checking quota - hasLifetime:",
+      hasLifetime,
+      "rcHasLifetime:",
+      rcHasLifetime,
+      "canRoll:",
+      canRoll,
+    );
     if (!hasLifetime && !rcHasLifetime && !canRoll) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       logFreeLimitHit(0, "home_button");
@@ -228,18 +351,28 @@ export default function HomeScreen() {
     }
 
     // Les noms sont maintenant gérés avant l'appel à handleRoll
-    console.log('✅ All checks passed, performing roll...');
+    console.log("✅ All checks passed, performing roll...");
     performRollWithNames(playerNames);
   };
 
   const handleDiceAnimationComplete = () => {
-    setIsDiceAnimating(false);
     setIsRolling(false);
   };
 
-  const performRollWithNames = async (namesToUse: { player1: string; player2: string }) => {
+  const performRollWithNames = async (namesToUse: {
+    player1: string;
+    player2: string;
+  }) => {
     try {
+      console.log("🎲 performRollWithNames START - setting isRolling to true");
       setIsRolling(true);
+
+      // Timeout de sécurité pour débloquer isRolling
+      const safetyTimeout = setTimeout(() => {
+        console.log("⚠️ SAFETY TIMEOUT - forcing isRolling to false");
+        setIsRolling(false);
+      }, 5000);
+
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       // Masquer le résultat précédent
@@ -272,52 +405,110 @@ export default function HomeScreen() {
           ]),
         ]),
       ]).start(async () => {
-        // Lancer le dé complet (avec faces par défaut si nécessaire)
+        // Utiliser Firebase si disponible, sinon faces par défaut AVEC noms forcés
         let facesToUse = allFaces;
         if (allFaces.length === 0) {
-          console.log("📦 Using default faces as Firebase faces not loaded yet");
-          // Faces par défaut en cas de problème de chargement
+          console.log(
+            "📦 Firebase pas prêt, faces par défaut avec noms forcés",
+          );
+
+          // Noms forcés
+          const name1 = namesToUse.player1?.trim() || "Mon cœur";
+          const name2 = namesToUse.player2?.trim() || "Mon amour";
+
           facesToUse = [
-            { id: 'default-payer-1', label: 'Tu paies', emoji: '💰', category: 'payer', weight: 1 },
-            { id: 'default-payer-2', label: 'Tu paies', emoji: '💝', category: 'payer', weight: 1 },
-            { id: 'default-repas-1', label: 'Pizza', emoji: '🍕', category: 'repas', weight: 1 },
-            { id: 'default-repas-2', label: 'Sushi', emoji: '🍣', category: 'repas', weight: 1 },
-            { id: 'default-repas-3', label: 'Burger', emoji: '🍔', category: 'repas', weight: 1 },
-            { id: 'default-activite-1', label: 'Cinéma', emoji: '🎬', category: 'activite', weight: 1 },
-            { id: 'default-activite-2', label: 'Jeu de société', emoji: '🎲', category: 'activite', weight: 1 },
-            { id: 'default-activite-3', label: 'Promenade', emoji: '🚶', category: 'activite', weight: 1 },
+            {
+              id: "default-payer-1",
+              label: `${name1} paie`,
+              emoji: "💰",
+              category: "payer",
+              weight: 1,
+            },
+            {
+              id: "default-payer-2",
+              label: `${name2} paie`,
+              emoji: "💝",
+              category: "payer",
+              weight: 1,
+            },
+            {
+              id: "default-repas-1",
+              label: "Pizza",
+              emoji: "🍕",
+              category: "repas",
+              weight: 1,
+            },
+            {
+              id: "default-repas-2",
+              label: "Sushi",
+              emoji: "🍣",
+              category: "repas",
+              weight: 1,
+            },
+            {
+              id: "default-activite-1",
+              label: "Cinéma",
+              emoji: "🎬",
+              category: "activite",
+              weight: 1,
+            },
+            {
+              id: "default-activite-2",
+              label: "Balade",
+              emoji: "🚶",
+              category: "activite",
+              weight: 1,
+            },
           ];
         }
 
-        const completeResult = rollCompleteDice(facesToUse, currentRoll || undefined, namesToUse);
+        const completeResult = rollCompleteDice(
+          facesToUse,
+          currentRoll || undefined,
+          namesToUse,
+        );
 
         setCurrentRoll(completeResult);
-        setLastFaceId(completeResult.id);
-        
-        // Déclencher l'animation des dés
-        setIsDiceAnimating(true);
 
         // Sauvegarder le résultat
         await saveLastRoll(completeResult.id);
 
         // Afficher le résultat avec une animation
         setTimeout(() => {
+          console.log("🎲 Starting result animation");
           Animated.timing(resultOpacity, {
             toValue: 1,
             duration: 400,
             useNativeDriver: true,
           }).start(() => {
+            console.log("🎲 Animation completed - setting isRolling to false");
+            clearTimeout(safetyTimeout);
             setIsRolling(false);
           });
         }, 300);
 
-        // Analytics
-        logDiceRoll(
-          completeResult.payer.label,
-          completeResult.repas.label,
-          completeResult.activite.label,
-          "shake"
-        );
+        // Analytics - log chaque catégorie séparément
+        logDiceRoll({
+          category: "payer",
+          label: completeResult.payer.label,
+          face_id: completeResult.payer.id,
+          is_custom: false,
+          roll_number_today: rollCount + 1,
+        });
+        logDiceRoll({
+          category: "repas",
+          label: completeResult.repas.label,
+          face_id: completeResult.repas.id,
+          is_custom: false,
+          roll_number_today: rollCount + 1,
+        });
+        logDiceRoll({
+          category: "activite",
+          label: completeResult.activite.label,
+          face_id: completeResult.activite.id,
+          is_custom: false,
+          roll_number_today: rollCount + 1,
+        });
 
         // Consommer un lancer si pas premium
         if (!hasLifetime && !rcHasLifetime) {
@@ -338,137 +529,9 @@ export default function HomeScreen() {
       });
     } catch (error) {
       console.error("Erreur lors du lancement:", error);
+      console.log("🎲 ERROR - setting isRolling to false");
+      clearTimeout(safetyTimeout);
       setIsRolling(false);
-    }
-  };
-
-  const performRoll = async () => {
-    try {
-      setIsRolling(true);
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      // Masquer le résultat précédent
-      Animated.timing(resultOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-
-      // Animation de rotation du dé
-      diceRotation.setValue(0);
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(diceRotation, {
-            toValue: 360 * 3, // 3 tours complets
-            duration: 1200,
-            useNativeDriver: true,
-          }),
-          Animated.sequence([
-            Animated.timing(diceScale, {
-              toValue: 1.15,
-              duration: 600,
-              useNativeDriver: true,
-            }),
-            Animated.timing(diceScale, {
-              toValue: 1,
-              duration: 600,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
-      ]).start(async () => {
-        // Lancer le dé complet (avec faces par défaut si nécessaire)
-        let facesToUse = allFaces;
-        if (allFaces.length === 0) {
-          console.log("📦 Using default faces as Firebase faces not loaded yet");
-          // Faces par défaut en cas de problème de chargement
-          facesToUse = [
-            { id: 'default-payer-1', label: 'Tu paies', emoji: '💰', category: 'payer', weight: 1 },
-            { id: 'default-payer-2', label: 'Tu paies', emoji: '💝', category: 'payer', weight: 1 },
-            { id: 'default-repas-1', label: 'Pizza', emoji: '🍕', category: 'repas', weight: 1 },
-            { id: 'default-repas-2', label: 'Sushi', emoji: '🍣', category: 'repas', weight: 1 },
-            { id: 'default-repas-3', label: 'Burger', emoji: '🍔', category: 'repas', weight: 1 },
-            { id: 'default-activite-1', label: 'Cinéma', emoji: '🎬', category: 'activite', weight: 1 },
-            { id: 'default-activite-2', label: 'Jeu de société', emoji: '🎲', category: 'activite', weight: 1 },
-            { id: 'default-activite-3', label: 'Promenade', emoji: '🚶', category: 'activite', weight: 1 },
-          ];
-        }
-
-        const completeResult = rollCompleteDice(facesToUse, currentRoll || undefined, playerNames);
-
-        setCurrentRoll(completeResult);
-        setLastFaceId(completeResult.id);
-        
-        // Déclencher l'animation des dés 3D
-        setIsDiceAnimating(true);
-
-        // Sauvegarder le dernier lancer
-        await saveLastRoll(completeResult.id);
-
-        // Consommer un lancer si pas d'accès à vie
-        if (!hasLifetime && !rcHasLifetime) {
-          await consumeRoll();
-        }
-
-        // Ajouter à l'historique si connecté (TODO: adapter pour le résultat complet)
-        const userId = getCurrentUserId();
-        if (userId && (hasLifetime || rcHasLifetime)) {
-          // Pour l'instant, on log juste l'activité principale
-          // await addToHistory(userId, completeResult);
-        }
-
-        // Analytics - log chaque catégorie
-        logDiceRoll({
-          category: "payer",
-          label: completeResult.payer.label,
-          face_id: completeResult.payer.id,
-          is_custom: false,
-          roll_number_today: 3 - remaining + 1,
-        });
-        logDiceRoll({
-          category: "repas", 
-          label: completeResult.repas.label,
-          face_id: completeResult.repas.id,
-          is_custom: false,
-          roll_number_today: 3 - remaining + 1,
-        });
-        logDiceRoll({
-          category: "activite",
-          label: completeResult.activite.label, 
-          face_id: completeResult.activite.id,
-          is_custom: false,
-          roll_number_today: 3 - remaining + 1,
-        });
-
-        // Haptic feedback de succès
-        await Haptics.notificationAsync(
-          Haptics.NotificationFeedbackType.Success,
-        );
-
-        // Afficher le résultat
-        Animated.timing(resultOpacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }).start();
-
-        // Déclencher potentiellement une demande de review après un lancer réussi
-        triggerReviewAfterSuccess();
-
-        // Incrémenter le compteur de lancers et vérifier les milestones
-        const newRollCount = rollCount + 1;
-        setRollCount(newRollCount);
-
-        // Vérifier les milestones pour les notifications
-        if (hasPermissions && [10, 50, 100, 500].includes(newRollCount)) {
-          await notifyMilestone(newRollCount);
-        }
-      });
-    } catch (error) {
-      console.error("Erreur lancer de dé:", error);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setIsRolling(false);
-      setIsDiceAnimating(false);
     }
   };
 
@@ -481,15 +544,15 @@ export default function HomeScreen() {
       return;
     }
 
-    // Sauvegarder les noms dans AsyncStorage
-    await savePlayerNames(playerNames);
-    
+    // Sauvegarder les noms dans Firebase
+    await savePlayerNamesLocal(playerNames);
+
     // Debug : vérifier les noms sauvegardés
-    console.log('🔥 NOMS SOUMIS ET SAUVEGARDÉS:', playerNames);
-    
+    console.log("🔥 NOMS SOUMIS ET SAUVEGARDÉS:", playerNames);
+
     setIsNamesModalVisible(false);
     await Haptics.selectionAsync();
-    
+
     // NE PAS lancer les dés ici - seulement sauvegarder
     // Les dés se lancent uniquement en secouant le téléphone
   };
@@ -497,17 +560,16 @@ export default function HomeScreen() {
   const handleSkipNames = async () => {
     const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
     setPlayerNames(defaultNames);
-    
+
     // Sauvegarder les noms par défaut
-    await savePlayerNames(defaultNames);
-    
+    await savePlayerNamesLocal(defaultNames);
+
     setIsNamesModalVisible(false);
     await Haptics.selectionAsync();
-    
+
     // NE PAS lancer les dés ici non plus - seulement sauvegarder
     // Les dés se lancent uniquement en secouant le téléphone
   };
-
 
   const openSettings = async () => {
     await Haptics.selectionAsync();
@@ -523,22 +585,6 @@ export default function HomeScreen() {
       router.push("/history");
     }
   };
-
-  const getDiceRotation = () => {
-    return diceRotation.interpolate({
-      inputRange: [0, 360],
-      outputRange: ["0deg", "360deg"],
-    });
-  };
-
-  const getFloatTransform = () => {
-    return floatAnimation.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, -15],
-    });
-  };
-
-
   const remainingText = hasLifetime || rcHasLifetime ? "∞" : `${remaining}`;
 
   return (
@@ -560,9 +606,7 @@ export default function HomeScreen() {
 
       {/* Header Controls */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          {/* Espace vide à gauche */}
-        </View>
+        <View style={styles.headerLeft}>{/* Espace vide à gauche */}</View>
 
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.controlButton} onPress={openSettings}>
@@ -575,24 +619,62 @@ export default function HomeScreen() {
 
       {/* Main Content */}
       <View style={styles.content}>
-        {/* Main Display */}
+        {/* Main Display Area */}
         <View style={styles.mainDisplayContainer}>
           <View style={styles.mainDisplay}>
             {currentRoll ? (
-              <SimpleDiceResult result={currentRoll} />
-            ) : (
-              <SimpleDiceResult
-                result={{
-                  id: 'default',
-                  payer: { label: 'Tu paies', emoji: '💰', category: 'payer' },
-                  repas: { label: 'Livraison', emoji: '🍕', category: 'repas' },
-                  activite: { label: 'Jeu de société', emoji: '🎲', category: 'activite' },
-                  timestamp: Date.now(),
-                  date: new Date().toISOString().split('T')[0]
-                }}
+              <AnimatedDice
+                result={currentRoll}
+                isShaking={isShakingDice}
+                isRolling={isRolling}
+                onAnimationComplete={handleDiceAnimationComplete}
               />
+            ) : playerNamesLoaded ? (
+              <AnimatedDice
+                result={{
+                  id: "default",
+                  payer: {
+                    id: "default-payer",
+                    label: defaultPayerName || "Tu paies",
+                    emoji: "💰",
+                    category: "payer",
+                    weight: 1,
+                  },
+                  repas: {
+                    id: "default-repas",
+                    label: "Livraison",
+                    emoji: "🍕",
+                    category: "repas",
+                    weight: 1,
+                  },
+                  activite: {
+                    id: "default-activite",
+                    label: "Jeu de société",
+                    emoji: "🎲",
+                    category: "activite",
+                    weight: 1,
+                  },
+                  timestamp: Date.now(),
+                  date: new Date().toISOString().split("T")[0],
+                }}
+                isShaking={false}
+                isRolling={false}
+              />
+            ) : (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Chargement...</Text>
+              </View>
             )}
           </View>
+
+          {/* Instruction de secousse */}
+          <Animated.View
+            style={[styles.shakeInstruction, { opacity: floatAnimation }]}
+          >
+            <Text style={styles.shakeText} numberOfLines={1}>
+              Secouez pour lancer
+            </Text>
+          </Animated.View>
         </View>
 
         {/* Side Controls */}
@@ -620,21 +702,9 @@ export default function HomeScreen() {
           </View>
 
           {/* Right Side */}
-          <View style={styles.rightControls}>
-          </View>
+          <View style={styles.rightControls}></View>
         </View>
       </View>
-
-      {/* Quota Display */}
-      {!hasLifetime && !rcHasLifetime && (
-        <View style={styles.quotaContainer}>
-          <View style={styles.quotaBlur}>
-            <Text style={styles.quotaText}>
-              {remaining}/3 lancers restants aujourd&apos;hui
-            </Text>
-          </View>
-        </View>
-      )}
 
       {/* Bottom Controls */}
       <View style={styles.bottomControls}>
@@ -649,7 +719,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         {/* Bouton Noms au milieu */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.bottomButton}
           onPress={() => setIsNamesModalVisible(true)}
         >
@@ -1105,5 +1175,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.8)",
+    fontWeight: "500",
+  },
+  shakeInstruction: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 40,
+  },
+  shakeText: {
+    fontSize: 16,
+    color: "rgba(255, 255, 255, 0.8)",
+    fontWeight: "500",
+    textAlign: "center",
+    marginTop: 300,
   },
 });

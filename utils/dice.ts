@@ -59,12 +59,18 @@ export const rollCompleteDice = (
   }
 
   // Séparer les faces par catégorie
-  const payerFaces = faces.filter(f => f.category === "payer");
-  const repasFaces = faces.filter(f => f.category === "repas");
-  const activiteFaces = faces.filter(f => f.category === "activite");
+  const payerFaces = faces.filter((f) => f.category === "payer");
+  const repasFaces = faces.filter((f) => f.category === "repas");
+  const activiteFaces = faces.filter((f) => f.category === "activite");
 
-  if (payerFaces.length === 0 || repasFaces.length === 0 || activiteFaces.length === 0) {
-    throw new Error("Il faut au moins une face par catégorie (payer, repas, activite)");
+  if (
+    payerFaces.length === 0 ||
+    repasFaces.length === 0 ||
+    activiteFaces.length === 0
+  ) {
+    throw new Error(
+      "Il faut au moins une face par catégorie (payer, repas, activite)",
+    );
   }
 
   // Lancer pour chaque catégorie
@@ -72,31 +78,24 @@ export const rollCompleteDice = (
   const repas = rollFromCategory(repasFaces, lastResult?.repas);
   const activite = rollFromCategory(activiteFaces, lastResult?.activite);
 
-  // Personnaliser les noms pour la catégorie "payer" - TOUJOURS si on a des noms
-  if (playerNames && playerNames.player1.trim() && playerNames.player2.trim()) {
-    console.log('🏷️ Original payer label:', payer.label);
-    console.log('👥 Player names for personalization:', playerNames);
-    const originalLabel = payer.label;
-    
-    // FORCER la personnalisation pour TOUS les labels de paiement
-    if (originalLabel.includes("paie") || originalLabel === "Tu paies" || originalLabel === "Je paie" || originalLabel === "50/50" || originalLabel === "Pile ou Face") {
-      payer.label = Math.random() < 0.5 ? `${playerNames.player1} paie` : `${playerNames.player2} paie`;
-      console.log('🔥 FORCED personalization applied:', payer.label);
-    } else {
-      // Essayer la personnalisation normale d'abord
-      payer.label = personalizePayerLabel(payer.label, playerNames);
-      console.log('✨ Normal personalization:', payer.label);
-      
-      // Si ça n'a pas marché, forcer
-      if (payer.label === originalLabel) {
-        payer.label = Math.random() < 0.5 ? `${playerNames.player1} paie` : `${playerNames.player2} paie`;
-        console.log('🔄 Fallback forced personalization:', payer.label);
-      }
-    }
-  } else {
-    console.log('⚠️ No valid player names provided, keeping original label:', payer.label);
-    console.log('⚠️ playerNames object:', playerNames);
+  // FORCER ABSOLUMENT la personnalisation des noms - PAS DE CONDITIONS
+  console.log("🏷️ Original payer label:", payer.label);
+  console.log("👥 Player names for personalization:", playerNames);
+
+  // TOUJOURS forcer les noms, même si ils sont vides (utiliser des défauts)
+  let name1 = "Mon cœur";
+  let name2 = "Mon amour";
+
+  if (playerNames && playerNames.player1 && playerNames.player1.trim()) {
+    name1 = playerNames.player1.trim();
   }
+  if (playerNames && playerNames.player2 && playerNames.player2.trim()) {
+    name2 = playerNames.player2.trim();
+  }
+
+  // FORCER TOUJOURS un nom personnalisé - AUCUNE EXCEPTION
+  payer.label = Math.random() < 0.5 ? `${name1} paie` : `${name2} paie`;
+  console.log("🔥 FORCED ABSOLUTE personalization applied:", payer.label);
 
   const now = new Date();
   return {
@@ -111,11 +110,11 @@ export const rollCompleteDice = (
 
 // Fonction pour personnaliser les labels de paiement
 const personalizePayerLabel = (
-  originalLabel: string, 
-  playerNames: { player1: string; player2: string }
+  originalLabel: string,
+  playerNames: { player1: string; player2: string },
 ): string => {
   const { player1, player2 } = playerNames;
-  
+
   switch (originalLabel) {
     case "Tu paies":
     case "Je paie":
@@ -140,9 +139,10 @@ const rollFromCategory = (faces: DiceFace[], lastFace?: DiceFace): DiceFace => {
   }
 
   // Anti-répétition : exclure la dernière face si il y a assez de choix
-  const availableFaces = lastFace && faces.length > 2
-    ? faces.filter(face => face.id !== lastFace.id)
-    : faces;
+  const availableFaces =
+    lastFace && faces.length > 2
+      ? faces.filter((face) => face.id !== lastFace.id)
+      : faces;
 
   const finalFaces = availableFaces.length > 0 ? availableFaces : faces;
   const randomIndex = Math.floor(getSecureRandom() * finalFaces.length);

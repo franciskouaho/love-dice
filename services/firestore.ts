@@ -39,6 +39,11 @@ export interface UserProfile {
     reminderTime: string;
   };
   notificationPreferencesUpdatedAt?: any;
+  playerNames?: {
+    player1: string;
+    player2: string;
+    updatedAt?: any;
+  };
 }
 
 // Interface pour l'historique des lancers
@@ -385,23 +390,27 @@ export const getCurrentUserId = (): string | null => {
     if (userId) {
       return userId;
     }
-    
+
     // Dans Expo Go, si Firebase Auth ne fonctionne pas, créer un utilisateur de test
     if (__DEV__) {
-      console.log("🧪 Mode développement: utilisation d'un utilisateur de test");
+      console.log(
+        "🧪 Mode développement: utilisation d'un utilisateur de test",
+      );
       return "dev-user-expo-go";
     }
-    
+
     return null;
   } catch (error) {
     console.error("Auth not initialized yet:", error);
-    
+
     // Fallback en mode dev
     if (__DEV__) {
-      console.log("🧪 Mode développement: utilisation d'un utilisateur de test (fallback)");
+      console.log(
+        "🧪 Mode développement: utilisation d'un utilisateur de test (fallback)",
+      );
       return "dev-user-expo-go";
     }
-    
+
     return null;
   }
 };
@@ -409,11 +418,11 @@ export const getCurrentUserId = (): string | null => {
 // Initialiser un utilisateur de test pour le développement
 export const initializeDevUser = async (): Promise<void> => {
   if (!__DEV__) return;
-  
+
   try {
     const devUserId = "dev-user-expo-go";
     const userRef = doc(db, "users", devUserId);
-    
+
     // Vérifier si l'utilisateur existe déjà
     const userDoc = await getDoc(userRef);
     if (!userDoc.exists()) {
@@ -422,10 +431,10 @@ export const initializeDevUser = async (): Promise<void> => {
         createdAt: serverTimestamp(),
         hasLifetime: false,
         freeRollsUsedToday: 0,
-        freeDayKey: new Date().toISOString().split('T')[0],
-        prefs: { 
-          haptics: true, 
-          weights: { "payer": 0.2, "repas": 0.2, "activite": 0.6 } 
+        freeDayKey: new Date().toISOString().split("T")[0],
+        prefs: {
+          haptics: true,
+          weights: { payer: 0.2, repas: 0.2, activite: 0.6 },
         },
         notificationsEnabled: false,
         notificationPreferences: {
@@ -435,12 +444,60 @@ export const initializeDevUser = async (): Promise<void> => {
           weeklyDigest: false,
           marketingEmails: false,
           reminderTime: "19:00",
-        }
+        },
       });
       console.log("✅ Utilisateur de test créé");
     }
   } catch (error) {
     console.warn("Impossible de créer l'utilisateur de test:", error);
+  }
+};
+
+// Sauvegarder les noms des joueurs
+export const savePlayerNames = async (
+  uid: string,
+  playerNames: { player1: string; player2: string },
+): Promise<boolean> => {
+  try {
+    const userRef = doc(db, "users", uid);
+    await updateDoc(userRef, {
+      playerNames: {
+        player1: playerNames.player1.trim(),
+        player2: playerNames.player2.trim(),
+        updatedAt: serverTimestamp(),
+      },
+      lastSyncAt: serverTimestamp(),
+    });
+    console.log("💾 Noms sauvegardés dans Firebase:", playerNames);
+    return true;
+  } catch (error) {
+    console.error("❌ Erreur sauvegarde noms Firebase:", error);
+    return false;
+  }
+};
+
+// Récupérer les noms des joueurs
+export const getPlayerNames = async (
+  uid: string,
+): Promise<{ player1: string; player2: string } | null> => {
+  try {
+    const userRef = doc(db, "users", uid);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data() as UserProfile;
+      if (userData.playerNames) {
+        console.log("👥 Noms récupérés depuis Firebase:", userData.playerNames);
+        return {
+          player1: userData.playerNames.player1 || "",
+          player2: userData.playerNames.player2 || "",
+        };
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ Erreur récupération noms Firebase:", error);
+    return null;
   }
 };
 

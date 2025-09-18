@@ -2,17 +2,17 @@ import { Platform } from "react-native";
 
 export const SPLASH_CONFIG = {
   // Timing configurations
-  MIN_SPLASH_DURATION: 1500, // ms - minimum time to show splash
-  FADE_DURATION: 300, // ms - fade in/out duration
-  CARD_ENTRANCE_DURATION: 800, // ms - card entrance animation
+  MIN_SPLASH_DURATION: 2000, // ms - minimum time to show splash (increased for better experience)
+  FADE_DURATION: 400, // ms - fade in/out duration (smoother)
+  CARD_ENTRANCE_DURATION: 1000, // ms - card entrance animation (more graceful)
 
   // Animation durations
-  DICE_ROTATION_DURATION: 3000, // ms - base dice rotation speed
+  DICE_ROTATION_DURATION: 6000, // ms - base dice rotation speed (slower, more elegant)
   DICE_ROTATION_VARIANCE: 2000, // ms - random variance in rotation speed
-  BACKGROUND_SHIFT_DURATION: 8000, // ms - background gradient shift
-  GLOW_PULSE_DURATION: 1500, // ms - glow pulse cycle
-  TITLE_SHIMMER_DURATION: 2000, // ms - title shimmer effect
-  SHIMMER_DELAY: 1000, // ms - delay between shimmer cycles
+  BACKGROUND_SHIFT_DURATION: 12000, // ms - background gradient shift (slower, more subtle)
+  GLOW_PULSE_DURATION: 1800, // ms - glow pulse cycle (more relaxed)
+  TITLE_SHIMMER_DURATION: 2500, // ms - title shimmer effect (more noticeable)
+  SHIMMER_DELAY: 1500, // ms - delay between shimmer cycles
 
   // Heart animations
   HEART_COUNT: 8, // number of floating hearts
@@ -29,40 +29,49 @@ export const SPLASH_CONFIG = {
   HEART_FLOAT_DISTANCE_VARIANCE: 100, // px - additional random distance
   HEART_HORIZONTAL_SPREAD: 120, // px - horizontal movement range
 
-  // Visual configurations
+  // Modern visual configurations with 2024 design trends
   COLORS: {
-    BACKGROUND_GRADIENT: ["#A50848", "#E0115F", "#FF4F7B", "#FF6B9D"],
-    HEARTS: ["#FFFFFF", "#F4C869", "#FFDCEB", "#FFE7F1", "#FFB6C1"],
+    BACKGROUND_GRADIENT: ["#A50848", "#E0115F", "#FF4F7B", "#FF6B9D", "#FFB6DB", "#FFD1E3"],
+    HEARTS: ["#FFFFFF", "#F4C869", "#FFDCEB", "#FFE7F1", "#FFB6C1", "#FF91A4", "#FFD6CC"],
     LOADING: "#F4C869",
     ERROR: "#FFCDD2",
     TEXT_PRIMARY: "#FFFFFF",
-    TEXT_SECONDARY: "rgba(255,255,255,0.9)",
+    TEXT_SECONDARY: "rgba(255,255,255,0.96)",
     GLOW: "#FFFFFF",
-    CARD_BORDER: "rgba(255,255,255,0.4)",
-    DICE_CONTAINER_BG: "rgba(255,255,255,0.3)",
-    DICE_CONTAINER_BORDER: "rgba(255,255,255,0.5)",
+    CARD_BORDER: "rgba(255,255,255,0.55)",
+    DICE_CONTAINER_BG: "rgba(255,255,255,0.4)",
+    DICE_CONTAINER_BORDER: "rgba(255,255,255,0.65)",
+    // Enhanced modern colors
+    PARTICLE_COLORS: ["#F4C869", "#FFD700", "#FFA500", "#FF6B35", "#FF9F43"],
+    ACCENT_GLOW: "#F4C869",
+    SHIMMER_HIGHLIGHT: "rgba(255,255,255,0.75)",
+    MODERN_ACCENT: "#FF6B9D",
+    SOFT_WHITE: "rgba(255,255,255,0.9)",
   },
 
   // Heart emojis
   HEART_EMOJIS: ["💕", "💖", "💗", "🥰", "😍"],
 
-  // Card styling
+  // Enhanced card styling
   CARD: {
-    WIDTH_PERCENTAGE: 85, // percentage of screen width
-    MAX_WIDTH: 380, // px - maximum card width
-    ASPECT_RATIO: 1.4, // width/height ratio
-    BORDER_RADIUS: 50, // px - card border radius
+    WIDTH_PERCENTAGE: 88, // percentage of screen width (slightly larger)
+    MAX_WIDTH: 400, // px - maximum card width (increased)
+    ASPECT_RATIO: 1.35, // width/height ratio (slightly adjusted)
+    BORDER_RADIUS: 55, // px - card border radius (more rounded)
     BLUR_INTENSITY: {
-      IOS: 80,
-      ANDROID: 60,
+      IOS: 85,
+      ANDROID: 65,
     },
     SHADOW: {
       COLOR: "#000",
-      OPACITY: 0.4,
-      RADIUS: 25,
-      OFFSET: { width: 0, height: 15 },
-      ELEVATION: 20,
+      OPACITY: 0.3,
+      RADIUS: 30,
+      OFFSET: { width: 0, height: 18 },
+      ELEVATION: 25,
     },
+    // New glass morphism effects
+    GLASS_BORDER: "rgba(255,255,255,0.2)",
+    GLASS_BACKGROUND: "rgba(255,255,255,0.1)",
   },
 
   // Dice styling
@@ -73,31 +82,31 @@ export const SPLASH_CONFIG = {
     REFLECTION_HEIGHT_PERCENTAGE: 50, // percentage of container height
   },
 
-  // Typography
+  // Modern typography with enhanced readability
   TYPOGRAPHY: {
     BRAND_TITLE: {
-      FONT_SIZE: 36,
+      FONT_SIZE: 38,
       FONT_WEIGHT: "800" as const,
-      LETTER_SPACING: 1,
+      LETTER_SPACING: 1.2,
     },
     BRAND_SUBTITLE: {
-      FONT_SIZE: 15,
+      FONT_SIZE: 16,
       FONT_WEIGHT: "500" as const,
-      LETTER_SPACING: 1.2,
-      OPACITY: 0.9,
+      LETTER_SPACING: 1.5,
+      OPACITY: 0.95,
     },
     LOADING_TEXT: {
-      FONT_SIZE: 14,
+      FONT_SIZE: 15,
       FONT_WEIGHT: "600" as const,
-      LETTER_SPACING: 0.5,
+      LETTER_SPACING: 0.6,
     },
     ERROR_TEXT: {
-      FONT_SIZE: 11,
-      OPACITY: 0.8,
+      FONT_SIZE: 12,
+      OPACITY: 0.85,
     },
     DEBUG_TEXT: {
-      FONT_SIZE: 10,
-      OPACITY: 0.5,
+      FONT_SIZE: 11,
+      OPACITY: 0.6,
     },
   },
 
@@ -122,12 +131,18 @@ export const SPLASH_CONFIG = {
     READY: "Prêt !",
   },
 
-  // Performance optimizations
+  // Enhanced performance optimizations
   PERFORMANCE: {
     USE_NATIVE_DRIVER: true,
     IS_INTERACTION: false,
     REDUCE_HEARTS_ON_LOW_END: true, // reduce hearts on slower devices
     LOW_END_HEART_COUNT: 4, // hearts count for low-end devices
+    REDUCE_PARTICLES_ON_LOW_END: true, // reduce particles on slower devices
+    LOW_END_PARTICLE_COUNT: 4, // particles count for low-end devices
+    REDUCE_SPARKLES_ON_LOW_END: true, // reduce sparkles on slower devices
+    LOW_END_SPARKLE_COUNT: 3, // sparkles count for low-end devices
+    SIMPLIFIED_ANIMATIONS_ON_LOW_END: true, // use simpler animations on slower devices
+    LOW_END_ANIMATION_DURATION_MULTIPLIER: 1.5, // slower animations on low-end devices
   },
 
   // Debug configuration
@@ -173,15 +188,38 @@ export type LoadingMessage = keyof typeof SPLASH_CONFIG.LOADING_MESSAGES;
 // Helper functions
 export const getSplashConfig = () => SPLASH_CONFIG;
 
+// Enhanced device detection
+const isLowEndDevice = () => {
+  // Simple heuristic - can be enhanced with more sophisticated detection
+  return Platform.OS === "android" && !__DEV__;
+};
+
 export const getHeartCount = () => {
-  if (SPLASH_CONFIG.PERFORMANCE.REDUCE_HEARTS_ON_LOW_END) {
-    // Simple device detection - could be enhanced
-    const isLowEnd = Platform.OS === "android" && !__DEV__;
-    return isLowEnd
-      ? SPLASH_CONFIG.PERFORMANCE.LOW_END_HEART_COUNT
-      : SPLASH_CONFIG.HEART_COUNT;
+  if (SPLASH_CONFIG.PERFORMANCE.REDUCE_HEARTS_ON_LOW_END && isLowEndDevice()) {
+    return SPLASH_CONFIG.PERFORMANCE.LOW_END_HEART_COUNT;
   }
   return SPLASH_CONFIG.HEART_COUNT;
+};
+
+export const getParticleCount = () => {
+  if (SPLASH_CONFIG.PERFORMANCE.REDUCE_PARTICLES_ON_LOW_END && isLowEndDevice()) {
+    return SPLASH_CONFIG.PERFORMANCE.LOW_END_PARTICLE_COUNT;
+  }
+  return 8; // Default particle count
+};
+
+export const getSparkleCount = () => {
+  if (SPLASH_CONFIG.PERFORMANCE.REDUCE_SPARKLES_ON_LOW_END && isLowEndDevice()) {
+    return SPLASH_CONFIG.PERFORMANCE.LOW_END_SPARKLE_COUNT;
+  }
+  return 6; // Default sparkle count
+};
+
+export const getAnimationDurationMultiplier = () => {
+  if (SPLASH_CONFIG.PERFORMANCE.SIMPLIFIED_ANIMATIONS_ON_LOW_END && isLowEndDevice()) {
+    return SPLASH_CONFIG.PERFORMANCE.LOW_END_ANIMATION_DURATION_MULTIPLIER;
+  }
+  return 1;
 };
 
 export const getBlurIntensity = () => {

@@ -16,7 +16,7 @@ import {
 } from "firebase/firestore";
 import { DiceRoll } from "../utils/dice";
 import { UserPreferences } from "../utils/quota";
-import { auth, db } from "./firebase";
+import { db, getAuthInstance } from "./firebase";
 
 // Interface pour le profil utilisateur
 export interface UserProfile {
@@ -365,7 +365,9 @@ export const deleteCustomFace = async (
 // Fonction utilitaire pour obtenir l'UID de l'utilisateur actuel
 export const getCurrentUserId = (): string | null => {
   try {
-    const userId = auth?.currentUser?.uid;
+    // Utiliser getAuthInstance() au lieu du proxy auth pour éviter les problèmes d'initialisation
+    const authInstance = getAuthInstance();
+    const userId = authInstance?.currentUser?.uid;
     if (userId) {
       return userId;
     }

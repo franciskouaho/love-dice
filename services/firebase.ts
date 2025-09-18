@@ -1,4 +1,4 @@
-import { initializeApp, getApps } from "firebase/app";
+import { getApps, initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import {
@@ -155,37 +155,96 @@ export const getFeatureFlags = () => {
   }
 };
 
-// Auth anonyme automatique
+// Auth anonyme automatique avec protection contre les appels multiples
+let authPromise: Promise<any> | null = null;
+
+// Fonction pour créer explicitement un nouvel utilisateur anonyme
+export const createAnonymousUser = async () => {
+  try {
+    console.log("🔧 Début création utilisateur anonyme...");
+    const authInstance = getAuthInstance();
+    console.log("🔍 Auth instance disponible:", !!authInstance);
+    
+    if (!authInstance) {
+      console.error("❌ Instance Auth non disponible");
+      throw new Error("Instance Auth non disponible");
+    }
+
+    console.log("🔧 Appel signInAnonymously...");
+    const result = await signInAnonymously(authInstance);
+    console.log("✅ Utilisateur anonyme créé:", result.user.uid);
+    console.log("🔍 Utilisateur détails:", {
+      uid: result.user.uid,
+      isAnonymous: result.user.isAnonymous,
+      providerId: result.user.providerId
+    });
+    return result.user;
+  } catch (error) {
+    console.error("❌ Erreur création utilisateur anonyme:", error);
+    console.error("❌ Type d'erreur:", error?.constructor?.name);
+    console.error("❌ Message:", error?.message);
+    throw error;
+  }
+};
+
 export const initAuth = () => {
-  return new Promise((resolve, reject) => {
+  // Si une authentification est déjà en cours, retourner la même promesse
+  if (authPromise) {
+    console.log("🔄 initAuth déjà en cours, réutilisation de la promesse existante");
+    return authPromise;
+  }
+
+  authPromise = new Promise((resolve, reject) => {
     try {
       const authInstance = getAuthInstance();
       if (!authInstance) {
+        authPromise = null; // Reset pour permettre un retry plus tard
         resolve(null);
         return;
       }
 
+      // Vérifier d'abord si un utilisateur est déjà connecté
+      if (authInstance.currentUser) {
+        console.log("✅ Utilisateur déjà connecté:", authInstance.currentUser.uid);
+        authPromise = null; // Reset pour les futurs appels
+        resolve(authInstance.currentUser);
+        return;
+      }
+
+      let isSigningIn = false;
       const unsubscribe = onAuthStateChanged(authInstance, (user) => {
         if (user) {
+          console.log("✅ Utilisateur Firebase après state change:", user.uid);
           unsubscribe();
+          authPromise = null; // Reset pour les futurs appels
           resolve(user);
-        } else {
-          // Connexion anonyme automatique
-          signInAnonymously(authInstance)
-            .then((result) => {
-              unsubscribe();
-              resolve(result.user);
-            })
-            .catch((error) => {
-              unsubscribe();
-              resolve(null);
-            });
+        } else if (!isSigningIn) {
+          // NE PLUS créer automatiquement un utilisateur anonyme
+          console.log("ℹ️ Aucun utilisateur détecté, mais ne pas créer automatiquement");
+          unsubscribe();
+          authPromise = null; // Reset pour les futurs appels
+          resolve(null);
         }
       });
+
+      // Timeout de sécurité
+      setTimeout(() => {
+        if (authPromise) {
+          console.warn("⚠️ Timeout initAuth, résolution avec null");
+          unsubscribe();
+          authPromise = null;
+          resolve(null);
+        }
+      }, 10000); // 10 secondes maximum
+
     } catch (error) {
+      console.error("❌ Erreur dans initAuth:", error);
+      authPromise = null; // Reset pour permettre un retry
       resolve(null);
     }
   });
+
+  return authPromise;
 };
 
 // Initialize Firebase services

@@ -1,24 +1,24 @@
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  TouchableOpacity,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import {
-  PanGestureHandler,
-  GestureHandlerRootView,
+    GestureHandlerRootView,
+    PanGestureHandler,
 } from "react-native-gesture-handler";
 import { nav } from "../../utils/navigation";
-import { LinearGradient } from "expo-linear-gradient";
 
 import * as Haptics from "expo-haptics";
 import useAnalytics from "../../hooks/useAnalytics";
-import { markOnboardingCompleted } from "../../utils/onboarding";
-import { initAuth } from "../../services/firebase";
+import { createAnonymousUser, initAuth } from "../../services/firebase";
 import * as FirestoreService from "../../services/firestore";
+import { markOnboardingCompleted } from "../../utils/onboarding";
 
 export default function OnboardingStep3() {
   const { logOnboardingView } = useAnalytics();
@@ -38,28 +38,32 @@ export default function OnboardingStep3() {
       const initialUserId = FirestoreService.getCurrentUserId();
       console.log("📍 UserId initial:", initialUserId || "AUCUN");
 
-      // Initialiser Firebase Auth en premier
-      console.log("🔧 Initialisation Firebase Auth...");
+      // Vérifier l'état Firebase sans forcer la création d'un nouvel utilisateur
+      console.log("🔧 Vérification Firebase Auth...");
       const authResult = await initAuth();
       console.log("🔧 Résultat initAuth:", authResult);
 
-      // Attendre un peu pour que l'auth se stabilise
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Vérifier que l'utilisateur est bien créé
+      // Si pas d'utilisateur, l'app peut fonctionner en mode "offline" ou avec des valeurs par défaut
       const userId = FirestoreService.getCurrentUserId();
       console.log(
-        "✅ Utilisateur Firebase après init:",
-        userId || "TOUJOURS AUCUN",
+        "✅ Utilisateur Firebase:",
+        userId || "AUCUN (mode par défaut)",
       );
 
+      // Créer un utilisateur Firebase à la fin de l'onboarding
       if (!userId) {
-        console.warn("⚠️ Pas d'utilisateur après initAuth, forçage...");
-        // Forcer une nouvelle tentative d'auth
-        await initAuth();
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const retryUserId = FirestoreService.getCurrentUserId();
-        console.log("🔄 Retry userId:", retryUserId || "TOUJOURS ECHEC");
+        console.log("🔧 Fin d'onboarding - création d'un utilisateur Firebase...");
+        try {
+          const newUser = await createAnonymousUser();
+          console.log("✅ Utilisateur créé à la fin de l'onboarding:", newUser?.uid);
+          // Attendre que l'auth se propage
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.warn("⚠️ Erreur création utilisateur onboarding:", error);
+          console.log("ℹ️ L'app continuera quand même");
+        }
+      } else {
+        console.log("ℹ️ Utilisateur déjà existant, pas de création nécessaire");
       }
 
       // Marquer l'onboarding comme complété

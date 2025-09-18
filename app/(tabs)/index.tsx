@@ -23,20 +23,22 @@ import BottomDrawer from "../../components/ui/BottomDrawer";
 import SettingsDrawerContent from "../../components/ui/SettingsDrawerContent";
 import useAnalytics from "../../hooks/useAnalytics";
 import { useFaces } from "../../hooks/useFaces";
+import { useAuth } from "../../hooks/useFirebase";
 import { useInAppReview } from "../../hooks/useInAppReview";
 import useNotifications from "../../hooks/useNotifications";
 import useQuota from "../../hooks/useQuota";
 import useRevenueCat from "../../hooks/useRevenueCat";
 import { useShake } from "../../hooks/useShake";
 
-import { CompleteDiceResult, rollCompleteDice } from "../../utils/dice";
+import { createAnonymousUser } from "../../services/firebase";
 import * as FirestoreService from "../../services/firestore";
+import { CompleteDiceResult, rollCompleteDice } from "../../utils/dice";
 import { getLastRoll, saveLastRoll } from "../../utils/quota";
-import firebaseDebug from "../../utils/firebase-debug";
 
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
+  const { user, loading: authLoading } = useAuth();
   const { logDiceRoll, logFreeLimitHit } = useAnalytics();
   const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } =
     useQuota();
@@ -63,28 +65,8 @@ export default function HomeScreen() {
   const [rollCount, setRollCount] = useState(0);
   const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [firebaseDebugText, setFirebaseDebugText] = useState<string>("");
-  const safetyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const safetyTimeoutRef = useRef<number | null>(null);
 
-  // Diagnostic Firebase avancé
-  const checkFirebaseAuth = async () => {
-    try {
-      const info = await firebaseDebug.getInfo();
-      const debugText = firebaseDebug.formatForUI(info);
-      setFirebaseDebugText(debugText);
-
-      // Si pas d'utilisateur, essayer de forcer l'init
-      if (!info.currentUser) {
-        console.log("🔧 Tentative de réinitialisation Firebase Auth...");
-        await firebaseDebug.forceInit();
-        // Mettre à jour l'affichage après force init
-        const newInfo = await firebaseDebug.getInfo();
-        setFirebaseDebugText(firebaseDebug.formatForUI(newInfo));
-      }
-    } catch (error) {
-      setFirebaseDebugText(`❌ Erreur: ${error}`);
-    }
-  };
 
   // Animation refs
   const diceRotation = useRef(new Animated.Value(0)).current;
@@ -96,8 +78,9 @@ export default function HomeScreen() {
   // Fonction pour charger les noms sauvegardés depuis Firebase
   const loadPlayerNames = async () => {
     try {
-      const userId = FirestoreService.getCurrentUserId();
-      if (!userId) {
+      // Utiliser l'utilisateur du hook useAuth au lieu de getCurrentUserId
+      if (!user?.uid) {
+        console.log("ℹ️ Pas d'utilisateur connecté, utilisation des noms par défaut");
         const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
         setPlayerNames(defaultNames);
         const randomName =
@@ -107,7 +90,7 @@ export default function HomeScreen() {
         return;
       }
 
-      const firebaseNames = await FirestoreService.getPlayerNames(userId);
+      const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
       if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
         // Nettoyer les noms dès le chargement
         const cleanNames = {
@@ -146,13 +129,12 @@ export default function HomeScreen() {
     player2: string;
   }) => {
     try {
-      const userId = FirestoreService.getCurrentUserId();
-      if (!userId) {
+      if (!user?.uid) {
         // Pas d'utilisateur connecté pour sauvegarder les noms
         return;
       }
 
-      const success = await FirestoreService.savePlayerNames(userId, names);
+      const success = await FirestoreService.savePlayerNames(user.uid, names);
       // Sauvegarde réalisée
     } catch (error) {
       // Erreur lors de la sauvegarde des noms
@@ -160,9 +142,8 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    // Charger le dernier lancer et les noms au démarrage
+    // Charger le dernier lancer au démarrage
     loadLastRoll();
-    loadPlayerNames();
     refreshQuota();
 
     // Afficher automatiquement la modal des noms SEULEMENT au premier lancement
@@ -173,10 +154,9 @@ export default function HomeScreen() {
         );
 
         // Vérifier si l'utilisateur a des noms dans Firebase
-        const userId = FirestoreService.getCurrentUserId();
         let hasNames = false;
-        if (userId) {
-          const firebaseNames = await FirestoreService.getPlayerNames(userId);
+        if (user?.uid) {
+          const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
           hasNames = !!(
             firebaseNames &&
             firebaseNames.player1.trim() &&
@@ -197,7 +177,6 @@ export default function HomeScreen() {
     };
 
     checkFirstLaunch();
-    checkFirebaseAuth();
 
     // Réinitialiser le flag paywall chaque jour
     const checkPaywallFlag = async () => {
@@ -225,6 +204,13 @@ export default function HomeScreen() {
       requestPermissions();
     }
   }, [hasPermissions, notificationsInitialized, requestPermissions]);
+
+  // Charger les noms des joueurs quand l'utilisateur est disponible
+  useEffect(() => {
+    if (!authLoading) {
+      loadPlayerNames();
+    }
+  }, [user?.uid, authLoading]);
 
   // Animation effects
   useEffect(() => {
@@ -312,18 +298,21 @@ export default function HomeScreen() {
       let finalNames = { player1: "Mon cœur", player2: "Mon amour" };
 
       try {
-        const userId = FirestoreService.getCurrentUserId();
-        if (userId) {
-          const firebaseNames = await FirestoreService.getPlayerNames(userId);
+        // Utiliser l'utilisateur du hook au lieu de getCurrentUserId
+        if (user?.uid) {
+          const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
           if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
             finalNames = {
               player1: firebaseNames.player1.trim() || "Mon cœur",
               player2: firebaseNames.player2.trim() || "Mon amour",
             };
           }
+        } else {
+          console.log("⚠️ Utilisateur pas encore connecté, utilisation des noms par défaut");
         }
       } catch (error) {
         // Erreur lecture Firebase
+        console.warn("⚠️ Erreur lors de la lecture des noms Firebase:", error);
       }
 
       handleRollWithNames(finalNames);
@@ -390,6 +379,24 @@ export default function HomeScreen() {
   }) => {
     try {
       setIsRolling(true);
+
+      // Créer un utilisateur Firebase si nécessaire SEULEMENT au moment du premier lancer
+      console.log("🔍 État avant création utilisateur:", { user: !!user, authLoading, userUid: user?.uid });
+      if (!user && !authLoading) {
+        console.log("🔧 Premier lancer détecté - création d'un utilisateur Firebase...");
+        try {
+          const newUser = await createAnonymousUser();
+          console.log("✅ Utilisateur créé pour le premier lancer:", newUser?.uid);
+          // Attendre un peu que l'auth se propage
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          console.log("🔍 État après création:", { user: !!user, userUid: user?.uid });
+        } catch (error) {
+          console.error("❌ Erreur création utilisateur:", error);
+          console.warn("⚠️ Continuer quand même avec l'action");
+        }
+      } else {
+        console.log("ℹ️ Pas besoin de créer d'utilisateur:", { hasUser: !!user, isLoading: authLoading });
+      }
 
       // Timeout de sécurité pour débloquer isRolling
       safetyTimeoutRef.current = setTimeout(() => {
@@ -563,6 +570,19 @@ export default function HomeScreen() {
       return;
     }
 
+    // Créer un utilisateur Firebase si nécessaire pour sauvegarder les noms
+    if (!user && !authLoading) {
+      console.log("🔧 Sauvegarde des noms - création d'un utilisateur Firebase...");
+      try {
+        await createAnonymousUser();
+        console.log("✅ Utilisateur créé pour sauvegarder les noms");
+        // Attendre un peu que l'auth se propage
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.warn("⚠️ Erreur création utilisateur, continuer quand même:", error);
+      }
+    }
+
     // Sauvegarder les noms dans Firebase
     await savePlayerNamesLocal(playerNames);
 
@@ -577,6 +597,19 @@ export default function HomeScreen() {
   const handleSkipNames = async () => {
     const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
     setPlayerNames(defaultNames);
+
+    // Créer un utilisateur Firebase si nécessaire pour sauvegarder les noms par défaut
+    if (!user && !authLoading) {
+      console.log("🔧 Sauvegarde des noms par défaut - création d'un utilisateur Firebase...");
+      try {
+        await createAnonymousUser();
+        console.log("✅ Utilisateur créé pour sauvegarder les noms par défaut");
+        // Attendre un peu que l'auth se propage
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.warn("⚠️ Erreur création utilisateur, continuer quand même:", error);
+      }
+    }
 
     // Sauvegarder les noms par défaut
     await savePlayerNamesLocal(defaultNames);
@@ -738,31 +771,6 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Debug Firebase (temporaire) */}
-        {firebaseDebugText && (
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugText}>{firebaseDebugText}</Text>
-            <TouchableOpacity
-              style={styles.debugButton}
-              onPress={async () => {
-                console.log("🔧 Force Firebase Init...");
-                await firebaseDebug.forceInit();
-                setTimeout(checkFirebaseAuth, 1000);
-              }}
-            >
-              <Text style={styles.debugButtonText}>🔧 Force Init</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.debugButton}
-              onPress={async () => {
-                console.log("🔍 Diagnostic détaillé...");
-                await firebaseDebug.diagnose();
-              }}
-            >
-              <Text style={styles.debugButtonText}>🔍 Diagnostic</Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* Bouton Noms au milieu */}
         <TouchableOpacity
@@ -1255,31 +1263,5 @@ const styles = StyleSheet.create({
   },
   blockedText: {
     color: "#FF6B6B",
-  },
-  debugContainer: {
-    position: "absolute",
-    top: 100,
-    left: 20,
-    right: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    padding: 10,
-    borderRadius: 8,
-    zIndex: 1000,
-  },
-  debugText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontFamily: "monospace",
-  },
-  debugButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    padding: 8,
-    borderRadius: 4,
-    marginTop: 8,
-  },
-  debugButtonText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    textAlign: "center",
   },
 });

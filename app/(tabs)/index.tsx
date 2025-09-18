@@ -79,6 +79,13 @@ export default function HomeScreen() {
   // Fonction pour charger les noms sauvegardés depuis Firebase
   const loadPlayerNames = async () => {
     try {
+      console.log("🔄 loadPlayerNames - DÉBUT", { 
+        justSavedNames, 
+        userUid: user?.uid, 
+        authLoading, 
+        playerNamesLoaded 
+      });
+      
       // Ne pas recharger si on vient de sauvegarder des noms
       if (justSavedNames) {
         console.log("🛑 loadPlayerNames - Éviter le rechargement, noms viennent d'être sauvegardés");
@@ -88,7 +95,7 @@ export default function HomeScreen() {
       
       // Utiliser l'utilisateur du hook useAuth au lieu de getCurrentUserId
       if (!user?.uid) {
-        console.log("ℹ️ Pas d'utilisateur connecté, utilisation des noms par défaut");
+        console.log("ℹ️ loadPlayerNames - Pas d'utilisateur connecté, utilisation des noms par défaut");
         const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
         setPlayerNames(defaultNames);
         const randomName =
@@ -98,13 +105,17 @@ export default function HomeScreen() {
         return;
       }
 
+      console.log("📖 loadPlayerNames - Lecture Firebase pour:", user.uid);
       const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
+      console.log("📖 loadPlayerNames - Résultat Firebase:", firebaseNames);
+      
       if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
         // Nettoyer les noms dès le chargement
         const cleanNames = {
           player1: firebaseNames.player1.trim(),
           player2: firebaseNames.player2.trim(),
         };
+        console.log("✅ loadPlayerNames - Noms Firebase trouvés:", cleanNames);
         setPlayerNames(cleanNames);
         // Créer un nom par défaut stable pour l'affichage
         const randomName =
@@ -112,6 +123,7 @@ export default function HomeScreen() {
         setDefaultPayerName(`${randomName} paie`);
       } else {
         // Pas de noms sauvegardés, utiliser des noms par défaut
+        console.log("⚠️ loadPlayerNames - Pas de noms Firebase, utilisation des défauts");
         const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
         setPlayerNames(defaultNames);
         // Créer un nom par défaut stable
@@ -216,8 +228,18 @@ export default function HomeScreen() {
   // Charger les noms des joueurs quand l'utilisateur est disponible
   // SEULEMENT au premier chargement, pas quand user change pendant une session
   useEffect(() => {
+    console.log("🔄 useEffect loadPlayerNames - Conditions:", { 
+      authLoading, 
+      playerNamesLoaded, 
+      userUid: user?.uid,
+      shouldLoad: !authLoading && !playerNamesLoaded
+    });
+    
     if (!authLoading && !playerNamesLoaded) {
+      console.log("✅ useEffect - Déclenchement loadPlayerNames");
       loadPlayerNames();
+    } else {
+      console.log("❌ useEffect - loadPlayerNames NON déclenché");
     }
   }, [user?.uid, authLoading, playerNamesLoaded]);
 

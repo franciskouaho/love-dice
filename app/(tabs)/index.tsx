@@ -316,26 +316,39 @@ export default function HomeScreen() {
       // Ajouter un feedback haptique spécial pour la secousse
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-      // TOUJOURS relire les noms depuis Firebase au moment de la secousse
-      // pour éviter les problèmes d'état React
+      // PRIORITÉ 1: État React (noms saisis dans le modal)
+      // PRIORITÉ 2: Firebase (noms sauvegardés)
+      // PRIORITÉ 3: Noms par défaut
       let finalNames = { player1: "Mon cœur", player2: "Mon amour" };
 
-      try {
-        // Utiliser l'utilisateur du hook au lieu de getCurrentUserId
-        if (user?.uid) {
-          const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
-          if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
-            finalNames = {
-              player1: firebaseNames.player1.trim() || "Mon cœur",
-              player2: firebaseNames.player2.trim() || "Mon amour",
-            };
+      // D'ABORD regarder l'état React local
+      if (playerNames.player1.trim() && playerNames.player2.trim()) {
+        finalNames = {
+          player1: playerNames.player1.trim(),
+          player2: playerNames.player2.trim(),
+        };
+        console.log("🎯 SECOUSSE - Noms depuis l'état React:", finalNames);
+      } else {
+        // Fallback: Firebase
+        try {
+          if (user?.uid) {
+            console.log("🔄 SECOUSSE - Lecture depuis Firebase car état React vide");
+            const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
+            if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
+              finalNames = {
+                player1: firebaseNames.player1.trim() || "Mon cœur",
+                player2: firebaseNames.player2.trim() || "Mon amour",
+              };
+              console.log("🎯 SECOUSSE - Noms depuis Firebase:", finalNames);
+            } else {
+              console.log("⚠️ SECOUSSE - Pas de noms Firebase, noms par défaut");
+            }
+          } else {
+            console.log("⚠️ SECOUSSE - Pas d'utilisateur, noms par défaut");
           }
-        } else {
-          console.log("⚠️ Utilisateur pas encore connecté, utilisation des noms par défaut");
+        } catch (error) {
+          console.warn("⚠️ SECOUSSE - Erreur Firebase, noms par défaut:", error);
         }
-      } catch (error) {
-        // Erreur lecture Firebase
-        console.warn("⚠️ Erreur lors de la lecture des noms Firebase:", error);
       }
 
       handleRollWithNames(finalNames);

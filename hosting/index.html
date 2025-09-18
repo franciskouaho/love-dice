@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Love Dice - Le dé magique pour ce soir</title>
+    <meta name="description" content="Randomisez votre soirée en couple avec Love Dice. Un seul dé, une décision parfaite. Téléchargez maintenant !">
+    <meta name="keywords" content="couple, soirée, dé, idées, aléatoire, date, application">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Love Dice - Le dé magique pour ce soir">
+    <meta property="og:description" content="Fini les prises de tête ! Un seul dé pour décider de votre soirée parfaite.">
+    <meta property="og:image" content="/og-image.png">
+    <meta property="og:type" content="website">
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="/favicon.png">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #0E0E10;
+            background: linear-gradient(135deg, #A50848 0%, #E0115F 50%, #FF4F7B 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            padding: 40px 0;
+            text-align: center;
+            color: white;
+        }
+
+        .logo {
+            font-size: 80px;
+            margin-bottom: 16px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero-subtitle {
+            font-size: 24px;
+            margin-bottom: 32px;
+            opacity: 0.9;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .tagline {
+            font-size: 20px;
+            font-style: italic;
+            margin-bottom: 48px;
+            opacity: 0.8;
+        }
+
+        /* Features */
+        .features {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 48px;
+            margin: 48px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-top: 32px;
+        }
+
+        .feature {
+            text-align: center;
+            color: white;
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .feature-description {
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 64px 0;
+            color: white;
+        }
+
+        .cta-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .cta-subtitle {
+            font-size: 18px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .download-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .download-btn img {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Pricing */
+        .pricing {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 48px;
+            margin: 48px auto;
+            max-width: 600px;
+            text-align: center;
+            color: #0E0E10;
+            box-shadow: 0 16px 32px rgba(0,0,0,0.1);
+        }
+
+        .pricing-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #E0115F;
+            margin-bottom: 16px;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin: 24px 0;
+        }
+
+        .pricing-features li {
+            padding: 8px 0;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .pricing-features li::before {
+            content: "✓";
+            color: #E0115F;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .price {
+            font-size: 36px;
+            font-weight: bold;
+            color: #E0115F;
+            margin: 24px 0;
+        }
+
+        .price-subtitle {
+            color: #A50848;
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            padding: 48px 0;
+            text-align: center;
+            margin-top: 64px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        .footer-text {
+            opacity: 0.7;
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 36px;
+            }
+
+            .hero-subtitle {
+                font-size: 20px;
+            }
+
+            .tagline {
+                font-size: 18px;
+            }
+
+            .features {
+                padding: 32px 24px;
+            }
+
+            .pricing {
+                padding: 32px 24px;
+                margin: 32px 16px;
+            }
+
+            .download-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .download-btn {
+                width: 280px;
+            }
+        }
+
+        /* Animation pour les éléments qui apparaissent */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 1s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Délais d'animation */
+        .fade-in:nth-child(1) { animation-delay: 0.1s; }
+        .fade-in:nth-child(2) { animation-delay: 0.2s; }
+        .fade-in:nth-child(3) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header / Hero -->
+        <header class="header">
+            <div class="logo">🎲💕</div>
+            <h1 class="hero-title fade-in">Love Dice</h1>
+            <p class="hero-subtitle fade-in">Le dé magique pour ce soir</p>
+            <p class="tagline fade-in">"Lance, décide, profitez."</p>
+        </header>
+
+        <!-- Features -->
+        <section class="features fade-in">
+            <h2 style="text-align: center; color: white; font-size: 32px; margin-bottom: 16px;">
+                Fini les prises de tête
+            </h2>
+            <p style="text-align: center; color: white; font-size: 18px; opacity: 0.9; margin-bottom: 32px;">
+                Un seul bouton. Un seul dé. Une décision parfaite.
+            </p>
+
+            <div class="features-grid">
+                <div class="feature">
+                    <span class="feature-icon">🎯</span>
+                    <h3 class="feature-title">Décision instantanée</h3>
+                    <p class="feature-description">Plus de "qu'est-ce qu'on fait ce soir ?". Un lancer et c'est décidé !</p>
+                </div>
+
+                <div class="feature">
+                    <span class="feature-icon">🎲</span>
+                    <h3 class="feature-title">Totalement aléatoire</h3>
+                    <p class="feature-description">Qui paie, où manger, quelle activité. Laissez le hasard choisir pour vous.</p>
+                </div>
+
+                <div class="feature">
+                    <span class="feature-icon">💕</span>
+                    <h3 class="feature-title">Fait pour les couples</h3>
+                    <p class="feature-description">Conçu spécialement pour transformer vos soirées en moments magiques.</p>
+                </div>
+
+                <div class="feature">
+                    <span class="feature-icon">⚡</span>
+                    <h3 class="feature-title">Ultra simple</h3>
+                    <p class="feature-description">Interface épurée, pas de configuration compliquée. Juste du fun !</p>
+                </div>
+
+                <div class="feature">
+                    <span class="feature-icon">✨</span>
+                    <h3 class="feature-title">Personnalisable</h3>
+                    <p class="feature-description">Créez vos propres idées et adaptez le dé à vos envies (version premium).</p>
+                </div>
+
+                <div class="feature">
+                    <span class="feature-icon">📱</span>
+                    <h3 class="feature-title">Toujours avec vous</h3>
+                    <p class="feature-description">Fonctionne hors ligne, synchronise vos données et s'adapte à vos habitudes.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing -->
+        <section class="pricing fade-in">
+            <h2 class="pricing-title">Accès à vie 💕</h2>
+            <p>Débloquez tout le potentiel de Love Dice</p>
+
+            <ul class="pricing-features">
+                <li>Lancers illimités</li>
+                <li>Dés personnalisables</li>
+                <li>Historique complet</li>
+                <li></li>Aucune publicité</li>
+                <li></li>Nouvelles fonctionnalités incluses</li>
+            </ul>
+
+            <div class="price">12,99 €</div>
+            <p class="price-subtitle">Achat unique, profitez à vie</p>
+        </section>
+
+        <!-- CTA -->
+        <section class="cta-section">
+            <h2 class="cta-title fade-in">Prêt à randomiser vos soirées ?</h2>
+            <p class="cta-subtitle fade-in">Téléchargez Love Dice et découvrez des soirées inoubliables</p>
+
+            <div class="download-buttons fade-in">
+                <a href="#" class="download-btn">
+                    <span>📱</span>
+                    Télécharger sur l'App Store
+                </a>
+                <a href="#" class="download-btn">
+                    <span>🤖</span>
+                    Télécharger sur Google Play
+                </a>
+            </div>
+
+            <p style="opacity: 0.8; font-size: 16px;">
+                3 lancers gratuits par jour • Accès à vie disponible
+            </p>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-links">
+                <a href="/privacy">Politique de confidentialité</a>
+                <a href="/terms">Conditions d'utilisation</a>
+                <a href="mailto:support@lovedice.app">Support</a>
+                <a href="mailto:contact@lovedice.app">Contact</a>
+            </div>
+            <p class="footer-text">
+                © 2024 Love Dice. Fait avec 💕 pour les couples qui aiment l'aventure.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Animation au scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+            el.style.animationPlayState = 'paused';
+        });
+
+        // Démarrer les animations pour les éléments déjà visibles
+        setTimeout(() => {
+            document.querySelectorAll('.fade-in').forEach((el, index) => {
+                if (el.getBoundingClientRect().top < window.innerHeight) {
+                    setTimeout(() => {
+                        el.style.animationPlayState = 'running';
+                    }, index * 100);
+                }
+            });
+        }, 100);
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "love-dice",
+    "name": "Love Dice",
     "slug": "love-dice",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,15 +9,34 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.emplica.lovedice",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "appleTeamId": "NAN7MFNMT7",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "UIBackgroundModes": ["remote-notification", "background-processing"],
+        "NSUserNotificationsUsageDescription": "Love Dice vous envoie des rappels personnalisés pour vos soirées romantiques."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundImage": "./assets/images/icon.png",
+        "monochromeImage": "./assets/images/icon.png"
       },
+      "package": "com.emplica.lovedice",
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 19,
+      "permissions": [
+        "INTERNET",
+        "NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -28,14 +47,22 @@
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",
+        "expo-notifications",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#E0115F",
+          "defaultChannel": "love-dice-default",
+          "sounds": ["./assets/sounds/dice-roll.wav"]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          },
+          "android": {
+            "permissions": ["com.android.vending.BILLING"]
           }
         }
       ]

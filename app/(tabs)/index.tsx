@@ -1,98 +1,902 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  SafeAreaView,
+  StatusBar,
+  Animated,
+  Share,
+  Modal,
+  TextInput,
+  Alert,
+} from "react-native";
+import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import useAnalytics from "../../hooks/useAnalytics";
+import useQuota from "../../hooks/useQuota";
+import useRevenueCat from "../../hooks/useRevenueCat";
+import { useInAppReview } from "../../hooks/useInAppReview";
+import { rollDice, createDiceRoll, DiceRoll } from "../../utils/dice";
+import { useFaces } from "../../hooks/useFaces";
+import { getLastRoll, saveLastRoll } from "../../utils/quota";
+import { addToHistory, getCurrentUserId } from "../../services/firestore";
+import BottomDrawer from "../../components/ui/BottomDrawer";
+import SettingsDrawerContent from "../../components/ui/SettingsDrawerContent";
+import useNotifications from "../../hooks/useNotifications";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const { width, height } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { logDiceRoll, logFreeLimitHit, logShareResult } = useAnalytics();
+  const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } =
+    useQuota();
+  const { hasLifetime: rcHasLifetime } = useRevenueCat();
+  const { triggerReviewAfterSuccess } = useInAppReview();
+  const { allFaces, loading: facesLoading, getRandomFace } = useFaces();
+  const {
+    hasPermissions,
+    notifyMilestone,
+    requestPermissions,
+    isInitialized: notificationsInitialized,
+  } = useNotifications();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const [currentRoll, setCurrentRoll] = useState<DiceRoll | null>(null);
+  const [isRolling, setIsRolling] = useState(false);
+  const [lastFaceId, setLastFaceId] = useState<string | null>(null);
+  const [isSettingsDrawerVisible, setIsSettingsDrawerVisible] = useState(false);
+  const [isNamesModalVisible, setIsNamesModalVisible] = useState(false);
+  const [playerNames, setPlayerNames] = useState({ player1: "", player2: "" });
+  const [rollCount, setRollCount] = useState(0);
+
+  // Animation refs
+  const diceRotation = useRef(new Animated.Value(0)).current;
+  const diceScale = useRef(new Animated.Value(1)).current;
+  const resultOpacity = useRef(new Animated.Value(0)).current;
+  const floatAnimation = useRef(new Animated.Value(0)).current;
+  const glowAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Charger le dernier lancer au démarrage
+    loadLastRoll();
+    refreshQuota();
+
+    // Demander les permissions de notifications si pas encore accordées
+    if (notificationsInitialized && !hasPermissions) {
+      // Attendre un peu avant de demander pour ne pas être intrusif
+      setTimeout(() => {
+        requestPermissions();
+      }, 3000);
+    }
+
+    // Start floating animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnimation, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnimation, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+
+    // Start glow animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnimation, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnimation, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+      ]),
+    ).start();
+  }, []);
+
+  const loadLastRoll = async () => {
+    try {
+      const lastRollId = await getLastRoll();
+      if (lastRollId) {
+        setLastFaceId(lastRollId);
+      }
+    } catch (error) {
+      console.error("Erreur chargement dernier roll:", error);
+    }
+  };
+
+  const handleRoll = async () => {
+    if (isRolling) return;
+
+    // Vérifier si les faces sont chargées
+    if (facesLoading || allFaces.length === 0) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    // Vérifier si l'utilisateur peut lancer
+    if (!hasLifetime && !rcHasLifetime && !canRoll) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      logFreeLimitHit(0, "home_button");
+      router.push("/paywall");
+      return;
+    }
+
+    // Demander les noms si pas encore renseignés
+    if (!playerNames.player1.trim() || !playerNames.player2.trim()) {
+      setIsNamesModalVisible(true);
+      return;
+    }
+
+    performRoll();
+  };
+
+  const performRoll = async () => {
+    try {
+      setIsRolling(true);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      // Masquer le résultat précédent
+      Animated.timing(resultOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+
+      // Animation de rotation du dé
+      diceRotation.setValue(0);
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(diceRotation, {
+            toValue: 360 * 3, // 3 tours complets
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.sequence([
+            Animated.timing(diceScale, {
+              toValue: 1.15,
+              duration: 600,
+              useNativeDriver: true,
+            }),
+            Animated.timing(diceScale, {
+              toValue: 1,
+              duration: 600,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+      ]).start(async () => {
+        // Lancer le dé
+        if (allFaces.length === 0) {
+          console.error("Aucune face disponible");
+          return;
+        }
+
+        const lastFace = lastFaceId
+          ? allFaces.find((f) => f.id === lastFaceId)
+          : undefined;
+        const selectedFace = rollDice(allFaces, lastFace, true);
+        const roll = createDiceRoll(selectedFace);
+
+        setCurrentRoll(roll);
+        setLastFaceId(selectedFace.id);
+
+        // Sauvegarder le dernier lancer
+        await saveLastRoll(selectedFace.id);
+
+        // Consommer un lancer si pas d'accès à vie
+        if (!hasLifetime && !rcHasLifetime) {
+          await consumeRoll();
+        }
+
+        // Ajouter à l'historique si connecté
+        const userId = getCurrentUserId();
+        if (userId && (hasLifetime || rcHasLifetime)) {
+          await addToHistory(userId, roll);
+        }
+
+        // Analytics
+        logDiceRoll({
+          category: selectedFace.category,
+          label: selectedFace.label,
+          face_id: selectedFace.id,
+          is_custom: false,
+          roll_number_today: 3 - remaining + 1,
+        });
+
+        // Haptic feedback de succès
+        await Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        );
+
+        // Afficher le résultat
+        Animated.timing(resultOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }).start();
+
+        // Déclencher potentiellement une demande de review après un lancer réussi
+        triggerReviewAfterSuccess();
+
+        // Incrémenter le compteur de lancers et vérifier les milestones
+        const newRollCount = rollCount + 1;
+        setRollCount(newRollCount);
+
+        // Vérifier les milestones pour les notifications
+        if (hasPermissions && [10, 50, 100, 500].includes(newRollCount)) {
+          await notifyMilestone(newRollCount);
+        }
+
+        setIsRolling(false);
+      });
+    } catch (error) {
+      console.error("Erreur lancer de dé:", error);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setIsRolling(false);
+    }
+  };
+
+  const handleNamesSubmit = async () => {
+    if (!playerNames.player1.trim() || !playerNames.player2.trim()) {
+      Alert.alert(
+        "Noms requis",
+        "Veuillez saisir les deux prénoms pour continuer.",
+      );
+      return;
+    }
+
+    setIsNamesModalVisible(false);
+    await Haptics.selectionAsync();
+    performRoll();
+  };
+
+  const handleSkipNames = async () => {
+    setPlayerNames({ player1: "Joueur 1", player2: "Joueur 2" });
+    setIsNamesModalVisible(false);
+    await Haptics.selectionAsync();
+    performRoll();
+  };
+
+  const handleShare = async () => {
+    if (!currentRoll) return;
+
+    try {
+      await Haptics.selectionAsync();
+
+      const shareText = `🎲 Love Dice: ${currentRoll.face.emoji} ${currentRoll.face.label}\n\nTélécharge Love Dice pour randomiser tes soirées !`;
+
+      await Share.share({
+        message: shareText,
+      });
+
+      logShareResult(currentRoll.face.category, currentRoll.face.label, "text");
+    } catch (error) {
+      console.error("Erreur partage:", error);
+    }
+  };
+
+  const handleReroll = () => {
+    handleRoll();
+  };
+
+  const openSettings = async () => {
+    await Haptics.selectionAsync();
+    setIsSettingsDrawerVisible(true);
+  };
+
+  const closeSettingsDrawer = () => {
+    setIsSettingsDrawerVisible(false);
+  };
+
+  const openHistory = () => {
+    if (hasLifetime || rcHasLifetime) {
+      router.push("/history");
+    }
+  };
+
+  const getDiceRotation = () => {
+    return diceRotation.interpolate({
+      inputRange: [0, 360],
+      outputRange: ["0deg", "360deg"],
+    });
+  };
+
+  const getFloatTransform = () => {
+    return floatAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, -15],
+    });
+  };
+
+  const getGlowOpacity = () => {
+    return glowAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.3, 0.8],
+    });
+  };
+
+  const remainingText = hasLifetime || rcHasLifetime ? "∞" : `${remaining}`;
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
+
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={["#A50848", "#E0115F", "#FF4F7B"]}
+        style={styles.backgroundGradient}
+      />
+
+      {/* Background Blur Effect */}
+      <BlurView intensity={15} style={styles.backgroundBlur} />
+
+      {/* Header Controls */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity style={styles.controlButton}>
+            <View style={styles.blurContainer}>
+              <Text style={styles.remainingText}>{remainingText}</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.controlButton} onPress={openSettings}>
+            <View style={styles.blurContainer}>
+              <Ionicons name="settings" size={20} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Main Content */}
+      <View style={styles.content}>
+        {/* Main Display */}
+        <View style={styles.mainDisplayContainer}>
+          <View style={styles.mainDisplay}>
+            <Animated.View
+              style={[styles.glowEffect, { opacity: getGlowOpacity() }]}
+            />
+            {currentRoll ? (
+              <Animated.View
+                style={[styles.resultContent, { opacity: resultOpacity }]}
+              >
+                <Text style={styles.resultEmoji}>{currentRoll.face.emoji}</Text>
+                <Text style={styles.resultLabel}>{currentRoll.face.label}</Text>
+              </Animated.View>
+            ) : (
+              <View style={styles.diceContent}>
+                <Text style={styles.diceEmoji}>🎲</Text>
+                <Text style={styles.diceEmoji}>🎲</Text>
+                <Text style={styles.diceEmoji}>🎲</Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Side Controls */}
+        <View style={styles.sideControls}>
+          {/* Left Side */}
+          <View style={styles.leftControls}>
+            {(hasLifetime || rcHasLifetime) && (
+              <>
+                <TouchableOpacity
+                  style={styles.sideButton}
+                  onPress={openHistory}
+                >
+                  <View style={styles.sideBlur}>
+                    <Text style={styles.sideEmoji}>📝</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.sideButton}>
+                  <View style={styles.sideBlur}>
+                    <Text style={styles.sideEmoji}>💕</Text>
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+
+          {/* Right Side */}
+          <View style={styles.rightControls}>
+            {currentRoll && (
+              <>
+                <TouchableOpacity
+                  style={styles.sideButton}
+                  onPress={handleShare}
+                >
+                  <View style={styles.sideBlur}>
+                    <Ionicons name="share" size={20} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.sideButton}
+                  onPress={handleReroll}
+                >
+                  <View style={styles.sideBlur}>
+                    <Ionicons name="refresh" size={20} color="#FFFFFF" />
+                  </View>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {/* Quota Display */}
+      {!hasLifetime && !rcHasLifetime && (
+        <View style={styles.quotaContainer}>
+          <View style={styles.quotaBlur}>
+            <Text style={styles.quotaText}>
+              {remaining}/3 lancers restants aujourd&apos;hui
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Bottom Controls */}
+      <View style={styles.bottomControls}>
+        <TouchableOpacity
+          style={styles.bottomButton}
+          onPress={() => router.push("/paywall")}
+        >
+          <View style={styles.bottomBlur}>
+            <Text style={styles.bottomButtonText}>💎</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.bottomButton, styles.mainActionButton]}
+          onPress={handleRoll}
+          disabled={isRolling}
+        >
+          <View style={[styles.bottomBlur, styles.mainActionBlur]}>
+            <Text style={styles.mainActionText}>
+              {isRolling ? "Lancement..." : "Lancer"}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.bottomButton}>
+          <View style={styles.bottomBlur}>
+            <Ionicons name="checkmark" size={24} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Bar with Love Dice Logo */}
+      <View style={styles.tabBarContainer}>
+        <View style={styles.tabBarContent}></View>
+      </View>
+
+      {/* Floating Particles */}
+      <View style={styles.particlesContainer}>
+        {[...Array(8)].map((_, index) => (
+          <Animated.View
+            key={index}
+            style={[
+              styles.particle,
+              {
+                left: `${10 + index * 10}%`,
+                top: `${20 + (index % 3) * 20}%`,
+                opacity: 0.6,
+              },
+            ]}
+          />
+        ))}
+      </View>
+
+      {/* Names Input Modal */}
+      <Modal
+        visible={isNamesModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>👫 Prénoms des joueurs</Text>
+            <Text style={styles.modalSubtitle}>
+              Pour personnaliser vos résultats
+            </Text>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.nameInput}
+                placeholder="Prénom du premier joueur"
+                placeholderTextColor="#A50848"
+                value={playerNames.player1}
+                onChangeText={(text) =>
+                  setPlayerNames((prev) => ({ ...prev, player1: text }))
+                }
+                maxLength={20}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.nameInput}
+                placeholder="Prénom du second joueur"
+                placeholderTextColor="#A50848"
+                value={playerNames.player2}
+                onChangeText={(text) =>
+                  setPlayerNames((prev) => ({ ...prev, player2: text }))
+                }
+                maxLength={20}
+              />
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.skipButton]}
+                onPress={handleSkipNames}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.skipButtonText}>Passer</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleNamesSubmit}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.confirmButtonText}>Valider</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Settings Drawer */}
+      <BottomDrawer
+        visible={isSettingsDrawerVisible}
+        onClose={closeSettingsDrawer}
+      >
+        <SettingsDrawerContent onClose={closeSettingsDrawer} />
+      </BottomDrawer>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#A50848",
   },
-  stepContainer: {
-    gap: 8,
+  backgroundGradient: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  backgroundBlur: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 24,
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 4 : 20,
+    paddingBottom: 20,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  headerRight: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  controlButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: "hidden",
+  },
+  blurContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.4)",
+  },
+  remainingText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  content: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 40,
+    paddingBottom: 80,
+  },
+  mainDisplayContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 40,
+  },
+  mainDisplay: {
+    width: width * 0.75,
+    height: width * 0.5,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.4)",
+    overflow: "hidden",
+    position: "relative",
+  },
+  glowEffect: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 40,
+  },
+  diceContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  diceEmoji: {
+    fontSize: 64,
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
+  diceLabel: {
+    fontSize: 20,
+    color: "rgba(255, 255, 255, 1)",
+    fontWeight: "600",
+  },
+  resultContent: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resultEmoji: {
+    fontSize: 72,
+    marginBottom: 8,
+  },
+  resultLabel: {
+    fontSize: 24,
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  sideControls: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 0,
+  },
+  leftControls: {
+    alignItems: "center",
+    gap: 24,
+  },
+  rightControls: {
+    alignItems: "center",
+    gap: 24,
+    marginTop: 320,
+  },
+  sideButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    overflow: "hidden",
+  },
+  sideBlur: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.35)",
+  },
+  sideEmoji: {
+    fontSize: 24,
+  },
+  bottomControls: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 40,
+    paddingBottom: 20,
+    gap: 20,
+  },
+  bottomButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    overflow: "hidden",
+  },
+  bottomBlur: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.4)",
+  },
+  mainActionButton: {
+    width: 140,
+    height: 70,
+    borderRadius: 35,
+  },
+  mainActionBlur: {
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+  },
+  bottomButtonText: {
+    fontSize: 24,
+  },
+  mainActionText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  quotaContainer: {
+    alignItems: "center",
+    paddingBottom: 20,
+  },
+  quotaBlur: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  quotaText: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 1)",
+    fontWeight: "500",
+  },
+  particlesContainer: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    pointerEvents: "none",
+  },
+  particle: {
+    position: "absolute",
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: "rgba(255, 255, 255, 0.6)",
+  },
+  tabBarContainer: {
+    position: "absolute",
     bottom: 0,
     left: 0,
-    position: 'absolute',
+    right: 0,
+    height: 90,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 30,
+  },
+  tabBarContent: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabBarEmoji: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  tabBarText: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.9)",
+    fontWeight: "500",
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  modalContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 340,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#0E0E10",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#A50848",
+    textAlign: "center",
+    marginBottom: 24,
+    opacity: 0.8,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  nameInput: {
+    backgroundColor: "#FFF3F6",
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: "#0E0E10",
+    borderWidth: 1,
+    borderColor: "rgba(224, 17, 95, 0.2)",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  skipButton: {
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  confirmButton: {
+    backgroundColor: "#E0115F",
+  },
+  skipButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#666666",
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });

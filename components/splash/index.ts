@@ -1,0 +1,1 @@
+export { AnimatedDice } from './AnimatedDice';

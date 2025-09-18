@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
+import { Animated, Dimensions, StyleSheet, Text } from "react-native";
 import { CompleteDiceResult } from "../utils/dice";
 
 interface AnimatedDiceProps {

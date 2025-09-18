@@ -8,8 +8,8 @@ interface UseShakeOptions {
 }
 
 export const useShake = ({
-  threshold = 1.2,
-  timeWindow = 600,
+  threshold = 1.5,
+  timeWindow = 5000,
   onShake,
 }: UseShakeOptions = {}) => {
   const [isShaking, setIsShaking] = useState(false);
@@ -30,15 +30,15 @@ export const useShake = ({
         return;
       }
 
-      // Configurer la fréquence de mise à jour (40 fois par seconde pour capturer tous les mouvements)
-      Accelerometer.setUpdateInterval(25);
+      // Configurer la fréquence de mise à jour (20 fois par seconde pour réduire la sensibilité)
+      Accelerometer.setUpdateInterval(50);
 
       subscription = Accelerometer.addListener(({ x, y, z }) => {
         const currentTime = Date.now();
 
-        // Ajouter les données à l'historique (garder seulement les 10 dernières mesures)
+        // Ajouter les données à l'historique (garder seulement les 8 dernières mesures)
         accelerationHistory.current.push({ x, y, z, timestamp: currentTime });
-        if (accelerationHistory.current.length > 10) {
+        if (accelerationHistory.current.length > 8) {
           accelerationHistory.current.shift();
         }
 
@@ -76,30 +76,30 @@ export const useShake = ({
           let zChanges = 0;
 
           for (let i = 1; i < recent.length; i++) {
-            if (Math.abs(recent[i].x - recent[i - 1].x) > 0.3) xChanges++;
-            if (Math.abs(recent[i].y - recent[i - 1].y) > 0.3) yChanges++;
-            if (Math.abs(recent[i].z - recent[i - 1].z) > 0.3) zChanges++;
+            if (Math.abs(recent[i].x - recent[i - 1].x) > 0.5) xChanges++;
+            if (Math.abs(recent[i].y - recent[i - 1].y) > 0.5) yChanges++;
+            if (Math.abs(recent[i].z - recent[i - 1].z) > 0.5) zChanges++;
           }
 
           // Secousse multidirectionnelle si au moins 2 axes bougent beaucoup
           isMultiDirectional =
-            (xChanges >= 2 && yChanges >= 2) ||
-            (xChanges >= 2 && zChanges >= 2) ||
-            (yChanges >= 2 && zChanges >= 2);
+            (xChanges >= 3 && yChanges >= 2) ||
+            (xChanges >= 2 && zChanges >= 3) ||
+            (yChanges >= 3 && zChanges >= 2);
         }
 
-        // Force finale combinée
+        // Force finale combinée (plus stricte)
         const finalForce =
-          Math.max(instantForce, cumulativeForce * 0.7) +
-          (isMultiDirectional ? 0.5 : 0);
+          Math.max(instantForce, cumulativeForce * 0.6) +
+          (isMultiDirectional ? 0.3 : 0);
 
         // Log périodique pour débugger (toutes les 3 secondes environ)
         // Logging périodique des données (commenté pour la production)
 
-        // Détecter une secousse si la force dépasse le seuil OU si mouvement multidirectionnel intense
+        // Détecter une secousse si la force dépasse le seuil ET mouvement multidirectionnel
         if (
-          finalForce > threshold ||
-          (isMultiDirectional && instantForce > threshold * 0.8)
+          finalForce > threshold &&
+          (isMultiDirectional || instantForce > threshold * 1.2)
         ) {
           const timeSinceLastShake = currentTime - lastShakeTime.current;
           // Shake detected - logging removed for production

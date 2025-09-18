@@ -248,19 +248,19 @@ export default function HomeScreen() {
   // Hook pour détecter la secousse du téléphone
   // Hook pour détecter la secousse et lancer le dé
   useShake({
-    threshold: 1.2, // Seuil plus sensible pour faciliter la détection
-    timeWindow: 2000, // Délai entre les secousses pour éviter les lancers multiples
+    threshold: 1.5, // Seuil moins sensible pour éviter les faux positifs
+    timeWindow: 5000, // Délai plus long entre les secousses (5 secondes)
     onShake: async () => {
-      // Éviter les multiples secousses pendant un lancement
+      // Éviter les multiples secousses pendant un lancement ou si déjà bloqué
       if (isRolling || isBlocked) {
         return;
       }
 
       // VÉRIFIER LES QUOTAS AVANT DE PERMETTRE LE SECOUER
       if (!hasLifetime && !rcHasLifetime && !canRoll) {
-        // Bloquer temporairement pour éviter le spam
+        // Bloquer pour une durée plus longue pour éviter le spam
         setIsBlocked(true);
-        setTimeout(() => setIsBlocked(false), 3000); // 3 secondes de blocage
+        setTimeout(() => setIsBlocked(false), 8000); // 8 secondes de blocage
 
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         logFreeLimitHit(0, "shake");
@@ -270,17 +270,9 @@ export default function HomeScreen() {
           setHasSeenPaywallToday(true);
           AsyncStorage.setItem("has_seen_paywall_today", "true");
           router.push("/paywall");
-        } else {
-          // Afficher un message simple si déjà vu le paywall
-          Alert.alert(
-            "Quota épuisé",
-            "Vous avez utilisé votre lancer gratuit quotidien. Achetez l'accès illimité pour continuer !",
-            [
-              { text: "Plus tard" },
-              { text: "Acheter", onPress: () => router.push("/paywall") },
-            ],
-          );
         }
+        // Si déjà vu le paywall aujourd'hui, ne rien faire du tout
+        // Pas d'alerte supplémentaire pour éviter le spam
         return;
       }
 

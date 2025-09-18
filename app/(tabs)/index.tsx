@@ -65,6 +65,7 @@ export default function HomeScreen() {
   const [rollCount, setRollCount] = useState(0);
   const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [justSavedNames, setJustSavedNames] = useState(false); // Pour éviter de recharger après sauvegarde
   const safetyTimeoutRef = useRef<number | null>(null);
 
 
@@ -78,6 +79,13 @@ export default function HomeScreen() {
   // Fonction pour charger les noms sauvegardés depuis Firebase
   const loadPlayerNames = async () => {
     try {
+      // Ne pas recharger si on vient de sauvegarder des noms
+      if (justSavedNames) {
+        console.log("🛑 loadPlayerNames - Éviter le rechargement, noms viennent d'être sauvegardés");
+        setPlayerNamesLoaded(true);
+        return;
+      }
+      
       // Utiliser l'utilisateur du hook useAuth au lieu de getCurrentUserId
       if (!user?.uid) {
         console.log("ℹ️ Pas d'utilisateur connecté, utilisation des noms par défaut");
@@ -206,11 +214,12 @@ export default function HomeScreen() {
   }, [hasPermissions, notificationsInitialized, requestPermissions]);
 
   // Charger les noms des joueurs quand l'utilisateur est disponible
+  // SEULEMENT au premier chargement, pas quand user change pendant une session
   useEffect(() => {
-    if (!authLoading) {
+    if (!authLoading && !playerNamesLoaded) {
       loadPlayerNames();
     }
-  }, [user?.uid, authLoading]);
+  }, [user?.uid, authLoading, playerNamesLoaded]);
 
   // Animation effects
   useEffect(() => {
@@ -576,13 +585,18 @@ export default function HomeScreen() {
   };
 
   const handleNamesSubmit = async () => {
+    console.log("🏷️ handleNamesSubmit - DÉBUT - Noms saisis:", playerNames);
+    
     if (!playerNames.player1.trim() || !playerNames.player2.trim()) {
+      console.log("❌ handleNamesSubmit - Noms vides, affichage alert");
       Alert.alert(
         "Noms requis",
         "Veuillez saisir les deux prénoms pour continuer.",
       );
       return;
     }
+    
+    console.log("✅ handleNamesSubmit - Noms valides, début sauvegarde");
 
     // Créer un utilisateur Firebase si nécessaire pour sauvegarder les noms
     if (!user && !authLoading) {
@@ -598,11 +612,25 @@ export default function HomeScreen() {
     }
 
     // Sauvegarder les noms dans Firebase
+    console.log("🏷️ handleNamesSubmit - Sauvegarde des noms:", playerNames);
     await savePlayerNamesLocal(playerNames);
+    console.log("✅ Noms sauvegardés dans Firebase");
+
+    // Marquer qu'on vient de sauvegarder pour éviter de recharger
+    setJustSavedNames(true);
+    
+    // PAS de rechargement - on garde les noms qui viennent d'être saisis
+    console.log("✅ Noms conservés localement, pas de rechargement depuis Firebase");
 
     // Noms sauvegardés avec succès
     setIsNamesModalVisible(false);
     await Haptics.selectionAsync();
+
+    // Réinitialiser le flag après 3 secondes
+    setTimeout(() => {
+      setJustSavedNames(false);
+      console.log("🔄 Flag justSavedNames réinitialisé");
+    }, 3000);
 
     // NE PAS lancer les dés ici - seulement sauvegarder
     // Les dés se lancent uniquement en secouant le téléphone
@@ -837,10 +865,27 @@ export default function HomeScreen() {
         transparent
         animationType="fade"
         statusBarTranslucent
+        onRequestClose={() => setIsNamesModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>👫 Prénoms des joueurs</Text>
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsNamesModalVisible(false)}
+        >
+          <TouchableOpacity 
+            style={styles.modalContainer}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>👫 Prénoms des joueurs</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setIsNamesModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={styles.modalSubtitle}>
               Pour personnaliser vos résultats
             </Text>
@@ -888,8 +933,8 @@ export default function HomeScreen() {
                 <Text style={styles.confirmButtonText}>Valider</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* Settings Drawer */}
@@ -1193,12 +1238,31 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 16,
   },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   modalTitle: {
     fontSize: 22,
     fontWeight: "bold",
     color: "#0E0E10",
+    flex: 1,
     textAlign: "center",
-    marginBottom: 8,
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#F0F0F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "bold",
   },
   modalSubtitle: {
     fontSize: 14,

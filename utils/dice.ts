@@ -90,8 +90,15 @@ export const rollCompleteDice = (
     name2 = playerNames.player2.trim();
   }
 
-  // FORCER TOUJOURS un nom personnalisé - AUCUNE EXCEPTION
-  payer.label = Math.random() < 0.5 ? `${name1} paie` : `${name2} paie`;
+  // Personnaliser le label du payeur selon son type
+  if (payer.label === "Tu paies" || payer.label === "Je paie" || payer.label.includes("paie")) {
+    // Pour les faces génériques, utiliser les noms personnalisés
+    payer.label = Math.random() < 0.5 ? `${name1} paie` : `${name2} paie`;
+  } else {
+    // Pour les faces spécialisées ("Celui qui...", "Le plus jeune", etc.), les garder telles quelles
+    // Elles sont déjà intéressantes !
+    console.log(`🎯 Face spécialisée conservée: "${payer.label}"`);
+  }
 
   const now = new Date();
   return {

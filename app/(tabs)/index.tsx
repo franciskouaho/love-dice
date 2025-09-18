@@ -258,8 +258,8 @@ export default function HomeScreen() {
   // Hook pour détecter la secousse du téléphone
   // Hook pour détecter la secousse et lancer le dé
   useShake({
-    threshold: 1.5, // Seuil moins sensible pour éviter les faux positifs
-    timeWindow: 5000, // Délai plus long entre les secousses (5 secondes)
+    threshold: 2.5, // 🔧 Seuil encore moins sensible (1.5 → 2.5)
+    timeWindow: 3000, // 🔧 Délai réduit (5s → 3s) car moins de faux positifs
     onShake: async () => {
       // Éviter les multiples secousses pendant un lancement ou si déjà bloqué
       if (isRolling || isBlocked) {
@@ -267,7 +267,21 @@ export default function HomeScreen() {
       }
 
       // VÉRIFIER LES QUOTAS AVANT DE PERMETTRE LE SECOUER
+      console.log("🔍 SHAKE - Vérification quotas:", {
+        hasLifetime,
+        rcHasLifetime,
+        canRoll,
+        remaining,
+        condition: !hasLifetime && !rcHasLifetime && !canRoll
+      });
+      console.log("🔍 SHAKE - Détail condition:");
+      console.log("  - !hasLifetime:", !hasLifetime);
+      console.log("  - !rcHasLifetime:", !rcHasLifetime);
+      console.log("  - !canRoll:", !canRoll);
+      console.log("  - Résultat final:", !hasLifetime && !rcHasLifetime && !canRoll);
+      
       if (!hasLifetime && !rcHasLifetime && !canRoll) {
+        console.log("❌ SHAKE - Quota bloqué, redirection paywall");
         // Bloquer pour une durée plus longue pour éviter le spam
         setIsBlocked(true);
         setTimeout(() => setIsBlocked(false), 8000); // 8 secondes de blocage

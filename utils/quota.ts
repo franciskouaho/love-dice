@@ -318,7 +318,7 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
     }
 
     // Quotas normaux
-    return {
+    const finalResult = {
       hasLifetime: false,
       unlimited: false,
       used: 0, // On ne track plus l'used avec le nouveau système
@@ -326,6 +326,8 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
       remaining: rollResult.remainingRolls || 0,
       canRoll: rollResult.canRoll,
     };
+    console.log("📋 getQuotaSummary - Résultat final:", finalResult);
+    return finalResult;
   } catch (error) {
     console.error("❌ Erreur getQuotaSummary:", error);
     // En cas d'erreur, bloquer l'accès

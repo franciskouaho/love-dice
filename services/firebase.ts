@@ -1,10 +1,17 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApps, initializeApp } from "firebase/app";
-import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
+import {
+  getAuth,
+  getReactNativePersistence,
+  initializeAuth,
+  onAuthStateChanged,
+  signInAnonymously
+} from "firebase/auth";
 import { doc, getFirestore, setDoc, Timestamp } from "firebase/firestore";
 import {
-    fetchAndActivate,
-    getRemoteConfig,
-    getValue,
+  fetchAndActivate,
+  getRemoteConfig,
+  getValue,
 } from "firebase/remote-config";
 
 // Configuration Firebase - Expo va automatiquement utiliser les credentials natifs
@@ -36,9 +43,26 @@ export const getAuthInstance = () => {
       console.log("🔧 App name:", app?.name);
       console.log("🔧 App options:", app?.options?.projectId);
 
-      _auth = getAuth(app);
-      console.log("✅ getAuth réussi, instance créée");
+      // 🔥 Utiliser initializeAuth avec AsyncStorage pour VRAIE persistance
+      try {
+        _auth = initializeAuth(app, {
+          persistence: getReactNativePersistence(AsyncStorage)
+        });
+        console.log("✅ Auth instance créée avec persistance AsyncStorage");
+      } catch (error) {
+        console.log("⚠️ initializeAuth échoué, fallback vers getAuth:", error);
+        _auth = getAuth(app);
+      }
       console.log("✅ Auth app:", _auth?.app?.name);
+      
+      // Écouter les changements d'authentification pour debug
+      onAuthStateChanged(_auth, (user) => {
+        if (user) {
+          console.log("🔥 Utilisateur persisté détecté:", user.uid);
+        } else {
+          console.log("👤 Aucun utilisateur persisté");
+        }
+      });
     } catch (error) {
       console.error("❌ Erreur getAuth:", error);
       console.error("❌ Type d'erreur:", typeof error);

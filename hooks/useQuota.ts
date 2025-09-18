@@ -6,6 +6,7 @@ import {
   getQuotaSummary,
   saveLifetimeStatus,
 } from "../utils/quota";
+import { useAuth } from "./useFirebase";
 
 export interface QuotaState {
   hasLifetime: boolean;
@@ -32,13 +33,14 @@ export interface QuotaActions {
 }
 
 const useQuota = (): QuotaState & QuotaActions => {
+  const { user, loading: authLoading } = useAuth();
   const [quotaState, setQuotaState] = useState<QuotaState>({
     hasLifetime: false,
     unlimited: false,
     used: 0,
     limit: 50,
-    remaining: 0,
-    canRoll: false,
+    remaining: 50, // 🔧 CHANGÉ: 0 → 50 par défaut
+    canRoll: true,  // 🔧 CHANGÉ: false → true par défaut
     isLoading: true,
     error: undefined,
   });
@@ -47,6 +49,34 @@ const useQuota = (): QuotaState & QuotaActions => {
   const loadQuotaState = useCallback(async () => {
     try {
       console.log("🔄 useQuota: Chargement des quotas...");
+      console.log("🔄 useQuota: État auth - user:", !!user, "loading:", authLoading);
+      
+      // Attendre que l'authentification soit complète
+      if (authLoading) {
+        console.log("⏳ useQuota: En attente de l'authentification...");
+        return;
+      }
+      
+      // Si pas d'utilisateur après l'auth, utiliser getCurrentUserId directement
+      if (!user) {
+        console.log("🔧 useQuota: Pas d'utilisateur dans useAuth, vérification directe...");
+        const { getCurrentUserId } = await import("../services/firestore");
+        const currentUserId = getCurrentUserId();
+        
+        if (!currentUserId) {
+          console.log("🔧 useQuota: Vraiment pas d'utilisateur, création en cours...");
+          const { createAnonymousUser } = await import("../services/firebase");
+          await createAnonymousUser();
+          console.log("✅ useQuota: Utilisateur créé, on recharge...");
+          // Attendre que l'état se mette à jour puis recharger
+          setTimeout(() => loadQuotaState(), 2000);
+          return;
+        } else {
+          console.log("✅ useQuota: Utilisateur trouvé directement:", currentUserId);
+          // Continuer avec le chargement normal
+        }
+      }
+      
       setQuotaState((prev) => ({ ...prev, isLoading: true, error: undefined }));
 
       // Récupérer le statut lifetime (cache local + Firebase si possible)
@@ -69,6 +99,7 @@ const useQuota = (): QuotaState & QuotaActions => {
 
       // Obtenir le résumé complet du quota
       const summary = await getQuotaSummary(hasLifetime);
+      console.log("🔄 useQuota: Mise à jour état avec:", summary);
 
       setQuotaState({
         hasLifetime: summary.hasLifetime,
@@ -80,6 +111,8 @@ const useQuota = (): QuotaState & QuotaActions => {
         isLoading: false,
         error: summary.error,
       });
+      
+      console.log("✅ useQuota: État mis à jour - canRoll:", summary.canRoll, "remaining:", summary.remaining);
     } catch (error) {
       setQuotaState((prev) => ({
         ...prev,
@@ -88,7 +121,12 @@ const useQuota = (): QuotaState & QuotaActions => {
         canRoll: false,
       }));
     }
-  }, []);
+  }, [user, authLoading]);
+
+  // Charger les quotas quand l'authentification change
+  useEffect(() => {
+    loadQuotaState();
+  }, [loadQuotaState]);
 
   // Vérifier si l'utilisateur peut lancer le dé
   const checkCanRoll = useCallback(async (): Promise<boolean> => {
@@ -194,10 +232,7 @@ const useQuota = (): QuotaState & QuotaActions => {
     await loadQuotaState();
   }, [loadQuotaState]);
 
-  // Charger l'état initial
-  useEffect(() => {
-    loadQuotaState();
-  }, [loadQuotaState]);
+  // SUPPRIMÉ - on charge via l'effet de dépendance auth ci-dessus
 
   // Rafraîchir périodiquement depuis Firebase (toutes les 2 minutes)
   useEffect(() => {
@@ -210,6 +245,15 @@ const useQuota = (): QuotaState & QuotaActions => {
 
     return () => clearInterval(interval);
   }, [loadQuotaState]);
+
+  // Log de l'état final retourné (seulement si pas en loading)
+  if (!quotaState.isLoading) {
+    console.log("📤 useQuota: État retourné:", {
+      canRoll: quotaState.canRoll,
+      remaining: quotaState.remaining,
+      isLoading: quotaState.isLoading
+    });
+  }
 
   return {
     // État

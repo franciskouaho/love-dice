@@ -60,6 +60,8 @@ export default function HomeScreen() {
   const [playerNamesLoaded, setPlayerNamesLoaded] = useState(false);
   const [defaultPayerName, setDefaultPayerName] = useState("");
   const [rollCount, setRollCount] = useState(0);
+  const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   // Animation refs
   const diceRotation = useRef(new Animated.Value(0)).current;
@@ -173,6 +175,27 @@ export default function HomeScreen() {
 
     checkFirstLaunch();
 
+    // Réinitialiser le flag paywall chaque jour
+    const checkPaywallFlag = async () => {
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        const lastPaywallDate = await AsyncStorage.getItem("last_paywall_date");
+
+        if (lastPaywallDate !== today) {
+          setHasSeenPaywallToday(false);
+          await AsyncStorage.setItem("last_paywall_date", today);
+        } else {
+          const hasSeenToday = await AsyncStorage.getItem(
+            "has_seen_paywall_today",
+          );
+          setHasSeenPaywallToday(hasSeenToday === "true");
+        }
+      } catch (error) {
+        // Erreur réinitialisation flag ignorée
+      }
+    };
+    checkPaywallFlag();
+
     // Demander les permissions de notifications si pas encore accordées
     if (notificationsInitialized && !hasPermissions) {
       // Attendre un peu avant de demander pour ne pas être intrusif
@@ -223,12 +246,41 @@ export default function HomeScreen() {
   };
 
   // Hook pour détecter la secousse du téléphone
+  // Hook pour détecter la secousse et lancer le dé
   useShake({
     threshold: 1.2, // Seuil plus sensible pour faciliter la détection
-    timeWindow: 1000, // Délai entre les secousses pour éviter les lancers multiples
+    timeWindow: 2000, // Délai entre les secousses pour éviter les lancers multiples
     onShake: async () => {
       // Éviter les multiples secousses pendant un lancement
-      if (isRolling) {
+      if (isRolling || isBlocked) {
+        return;
+      }
+
+      // VÉRIFIER LES QUOTAS AVANT DE PERMETTRE LE SECOUER
+      if (!hasLifetime && !rcHasLifetime && !canRoll) {
+        // Bloquer temporairement pour éviter le spam
+        setIsBlocked(true);
+        setTimeout(() => setIsBlocked(false), 3000); // 3 secondes de blocage
+
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        logFreeLimitHit(0, "shake");
+
+        // Ne rediriger vers le paywall que si pas encore vu aujourd'hui
+        if (!hasSeenPaywallToday) {
+          setHasSeenPaywallToday(true);
+          AsyncStorage.setItem("has_seen_paywall_today", "true");
+          router.push("/paywall");
+        } else {
+          // Afficher un message simple si déjà vu le paywall
+          Alert.alert(
+            "Quota épuisé",
+            "Vous avez utilisé votre lancer gratuit quotidien. Achetez l'accès illimité pour continuer !",
+            [
+              { text: "Plus tard" },
+              { text: "Acheter", onPress: () => router.push("/paywall") },
+            ],
+          );
+        }
         return;
       }
 
@@ -271,7 +323,7 @@ export default function HomeScreen() {
   };
 
   const handleRoll = async () => {
-    if (isRolling) {
+    if (isRolling || isBlocked) {
       return;
     }
 
@@ -282,9 +334,29 @@ export default function HomeScreen() {
 
     // Vérifier si l'utilisateur peut lancer
     if (!hasLifetime && !rcHasLifetime && !canRoll) {
+      // Bloquer temporairement pour éviter le spam
+      setIsBlocked(true);
+      setTimeout(() => setIsBlocked(false), 3000); // 3 secondes de blocage
+
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       logFreeLimitHit(0, "home_button");
-      router.push("/paywall");
+
+      // Ne rediriger vers le paywall que si pas encore vu aujourd'hui
+      if (!hasSeenPaywallToday) {
+        setHasSeenPaywallToday(true);
+        AsyncStorage.setItem("has_seen_paywall_today", "true");
+        router.push("/paywall");
+      } else {
+        // Afficher un message simple si déjà vu le paywall
+        Alert.alert(
+          "Quota épuisé",
+          "Vous avez utilisé votre lancer gratuit quotidien. Achetez l'accès illimité pour continuer !",
+          [
+            { text: "Plus tard" },
+            { text: "Acheter", onPress: () => router.push("/paywall") },
+          ],
+        );
+      }
       return;
     }
 
@@ -636,7 +708,10 @@ export default function HomeScreen() {
         {/* Bouton Premium à gauche */}
         <TouchableOpacity
           style={styles.bottomButton}
-          onPress={() => router.push("/paywall")}
+          onPress={async () => {
+            await Haptics.selectionAsync();
+            router.push("/paywall");
+          }}
         >
           <View style={styles.bottomBlur}>
             <Text style={styles.bottomButtonText}>💎</Text>
@@ -655,8 +730,12 @@ export default function HomeScreen() {
 
         {/* Bouton compteur de lancers à droite */}
         <TouchableOpacity style={styles.bottomButton}>
-          <View style={styles.bottomBlur}>
-            <Text style={styles.remainingText}>{remainingText}</Text>
+          <View style={[styles.bottomBlur, isBlocked && styles.blockedBlur]}>
+            <Text
+              style={[styles.remainingText, isBlocked && styles.blockedText]}
+            >
+              {isBlocked ? "⏳" : remainingText}
+            </Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -1123,5 +1202,12 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
     marginTop: 300,
+  },
+  blockedBlur: {
+    backgroundColor: "rgba(255, 107, 107, 0.3)",
+    borderColor: "rgba(255, 107, 107, 0.5)",
+  },
+  blockedText: {
+    color: "#FF6B6B",
   },
 });

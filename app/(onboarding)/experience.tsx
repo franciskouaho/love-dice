@@ -17,6 +17,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import useAnalytics from "../../hooks/useAnalytics";
 import { markOnboardingCompleted } from "../../utils/onboarding";
+import { initAuth } from "../../services/firebase";
+import * as FirestoreService from "../../services/firestore";
 
 export default function OnboardingStep3() {
   const { logOnboardingView } = useAnalytics();
@@ -27,8 +29,27 @@ export default function OnboardingStep3() {
 
   const handleCommencer = async () => {
     await Haptics.selectionAsync();
-    await markOnboardingCompleted();
-    nav.goPaywall();
+
+    try {
+      // Initialiser Firebase Auth en premier
+      console.log("🔧 Initialisation Firebase Auth...");
+      await initAuth();
+
+      // Vérifier que l'utilisateur est bien créé
+      const userId = FirestoreService.getCurrentUserId();
+      console.log("✅ Utilisateur Firebase créé:", userId);
+
+      // Marquer l'onboarding comme complété
+      await markOnboardingCompleted();
+
+      // Rediriger vers l'app principale (pas le paywall)
+      nav.goTabs();
+    } catch (error) {
+      console.error("❌ Erreur initialisation Firebase:", error);
+      // En cas d'erreur, aller quand même vers l'app
+      await markOnboardingCompleted();
+      nav.goTabs();
+    }
   };
 
   const handleSwipeRight = async () => {

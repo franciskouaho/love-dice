@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import {
@@ -7,7 +7,7 @@ import {
   getValue,
 } from "firebase/remote-config";
 
-// Configuration Firebase
+// Configuration Firebase - Expo va automatiquement utiliser les credentials natifs
 const firebaseConfig = {
   apiKey: "AIzaSyAXrDxGHxOgHcFxRfHEL2Qi82KpE29CJMY",
   authDomain: "love-dice-7a878.firebaseapp.com",
@@ -18,8 +18,9 @@ const firebaseConfig = {
   measurementId: "G-7Z5GB9RCT5",
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase avec protection contre les multiples initialisations
+const app =
+  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
 // Initialize Firestore
 export const db = getFirestore(app);
@@ -30,8 +31,19 @@ let _auth: any = null;
 export const getAuthInstance = () => {
   if (!_auth) {
     try {
+      console.log("🔧 Tentative d'initialisation getAuth...");
+      console.log("🔧 App instance:", app ? "✅" : "❌");
+      console.log("🔧 App name:", app?.name);
+      console.log("🔧 App options:", app?.options?.projectId);
+
       _auth = getAuth(app);
+      console.log("✅ getAuth réussi, instance créée");
+      console.log("✅ Auth app:", _auth?.app?.name);
     } catch (error) {
+      console.error("❌ Erreur getAuth:", error);
+      console.error("❌ Type d'erreur:", typeof error);
+      console.error("❌ Message:", (error as Error)?.message);
+      console.error("❌ Stack:", (error as Error)?.stack);
       return null;
     }
   }

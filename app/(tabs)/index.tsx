@@ -752,6 +752,15 @@ export default function HomeScreen() {
             >
               <Text style={styles.debugButtonText}>🔧 Force Init</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.debugButton}
+              onPress={async () => {
+                console.log("🔍 Diagnostic détaillé...");
+                await firebaseDebug.diagnose();
+              }}
+            >
+              <Text style={styles.debugButtonText}>🔍 Diagnostic</Text>
+            </TouchableOpacity>
           </View>
         )}
 

@@ -33,8 +33,9 @@ import { useShake } from "../../hooks/useShake";
 import { cacheService } from "../../services/cache";
 import { createAnonymousUser } from "../../services/firebase";
 import * as FirestoreService from "../../services/firestore";
+import { getCurrentUserId } from "../../services/firestore";
 import { CompleteDiceResult, rollCompleteDice } from "../../utils/dice";
-import { getLastRoll, saveLastRoll } from "../../utils/quota";
+import { getLastRoll, getLifetimeStatus, getQuotaSummary, saveLastRoll } from "../../utils/quota";
 
 const { width } = Dimensions.get("window");
 
@@ -298,39 +299,29 @@ export default function HomeScreen() {
         return;
       }
 
-      // VÉRIFIER LES QUOTAS AVANT DE PERMETTRE LE SECOUER
-      console.log("🔍 SHAKE - Vérification quotas:", {
-        hasLifetime,
-        rcHasLifetime,
-        canRoll,
-        remaining,
-        condition: !hasLifetime && !rcHasLifetime && !canRoll
-      });
-      console.log("🔍 SHAKE - Détail condition:");
-      console.log("  - !hasLifetime:", !hasLifetime);
-      console.log("  - !rcHasLifetime:", !rcHasLifetime);
-      console.log("  - !canRoll:", !canRoll);
-      console.log("  - Résultat final:", !hasLifetime && !rcHasLifetime && !canRoll);
-      
-      if (!hasLifetime && !rcHasLifetime && !canRoll) {
-        console.log("❌ SHAKE - Quota bloqué, redirection paywall");
-        // Bloquer pour une durée plus longue pour éviter le spam
-        setIsBlocked(true);
-        setTimeout(() => setIsBlocked(false), 8000); // 8 secondes de blocage
-
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        logFreeLimitHit(0, "shake");
-
-        // Ne rediriger vers le paywall que si pas encore vu aujourd'hui
-        if (!hasSeenPaywallToday) {
-          setHasSeenPaywallToday(true);
-          AsyncStorage.setItem("has_seen_paywall_today", "true");
-          router.push("/paywall");
-        }
-        // Si déjà vu le paywall aujourd'hui, ne rien faire du tout
-        // Pas d'alerte supplémentaire pour éviter le spam
+      // VÉRIFIER LES QUOTAS DIRECTEMENT DEPUIS FIREBASE (valeurs en temps réel)
+      const userId = getCurrentUserId();
+      if (!userId) {
+        console.log("❌ SHAKE - Pas d'utilisateur connecté");
         return;
       }
+
+      // Récupérer le statut lifetime d'abord
+      const hasLifetime = await getLifetimeStatus();
+      console.log("🔍 SHAKE - Statut lifetime:", hasLifetime);
+      
+      // Récupérer les quotas directement depuis Firebase
+      const quotaSummary = await getQuotaSummary(hasLifetime);
+      console.log("🔍 SHAKE - Quotas Firebase directs:", quotaSummary);
+      
+      // Vérifier si l'utilisateur peut lancer
+      if (!quotaSummary.canRoll && !quotaSummary.hasLifetime) {
+        console.log("❌ SHAKE - QUOTA BLOQUÉ - Redirection paywall");
+        router.push("/paywall");
+        return;
+      }
+      
+      console.log("✅ SHAKE - QUOTA OK - CONTINUE");
 
       // Déclencher l'animation de secousse des dés
       setIsShakingDice(true);

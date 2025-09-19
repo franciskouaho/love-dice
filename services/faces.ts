@@ -1,18 +1,19 @@
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-  writeBatch,
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    getDoc,
+    getDocs,
+    orderBy,
+    query,
+    serverTimestamp,
+    setDoc,
+    writeBatch,
 } from "firebase/firestore";
 import { DiceFace } from "../utils/dice";
 import { db } from "./firebase";
+import { syncService } from "./sync";
 
 // Interface pour une face stockée dans Firebase
 export interface FirebaseDiceFace extends Omit<DiceFace, "id"> {
@@ -231,8 +232,13 @@ export const initializeDefaultFaces = async (): Promise<boolean> => {
   }
 };
 
-// Récupérer toutes les faces par défaut depuis Firebase
-export const getDefaultFaces = async (): Promise<DiceFace[]> => {
+// Récupérer toutes les faces par défaut depuis Firebase (avec cache)
+export const getDefaultFaces = async (forceRefresh: boolean = false): Promise<DiceFace[]> => {
+  return await syncService.syncDefaultFaces(forceRefresh);
+};
+
+// Récupérer toutes les faces par défaut depuis Firebase (sans cache - pour usage interne)
+export const fetchDefaultFacesFromFirebase = async (): Promise<DiceFace[]> => {
   try {
     const defaultFacesRef = collection(db, DEFAULT_FACES_COLLECTION);
     const q = query(defaultFacesRef, orderBy("createdAt", "asc"));
@@ -295,11 +301,16 @@ export const getUserFaces = async (uid: string): Promise<DiceFace[]> => {
   }
 };
 
-// Récupérer toutes les faces actives (par défaut + personnalisées) pour un utilisateur
-export const getAllActiveFaces = async (uid: string): Promise<DiceFace[]> => {
+// Récupérer toutes les faces actives (par défaut + personnalisées) pour un utilisateur (avec cache)
+export const getAllActiveFaces = async (uid: string, forceRefresh: boolean = false): Promise<DiceFace[]> => {
+  return await syncService.syncAllActiveFaces(uid, forceRefresh);
+};
+
+// Récupérer toutes les faces actives (par défaut + personnalisées) pour un utilisateur (sans cache - pour usage interne)
+export const fetchAllActiveFacesFromFirebase = async (uid: string): Promise<DiceFace[]> => {
   try {
     const [defaultFaces, userFaces] = await Promise.all([
-      getDefaultFaces(),
+      fetchDefaultFacesFromFirebase(),
       getUserFaces(uid),
     ]);
 

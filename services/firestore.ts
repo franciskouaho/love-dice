@@ -1,22 +1,23 @@
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-  Unsubscribe,
-  updateDoc,
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    getDoc,
+    getDocs,
+    limit,
+    onSnapshot,
+    orderBy,
+    query,
+    serverTimestamp,
+    setDoc,
+    Unsubscribe,
+    updateDoc,
 } from "firebase/firestore";
 import { DiceRoll } from "../utils/dice";
 import { UserPreferences } from "../utils/quota";
 import { db, getAuthInstance } from "./firebase";
+import { syncService } from "./sync";
 
 // Interface pour le profil utilisateur
 export interface UserProfile {
@@ -104,8 +105,16 @@ export const createUserProfile = async (
   }
 };
 
-// Récupérer le profil utilisateur
+// Récupérer le profil utilisateur (avec cache)
 export const getUserProfile = async (
+  uid: string,
+  forceRefresh: boolean = false,
+): Promise<UserProfile | null> => {
+  return await syncService.syncUserProfile(uid, forceRefresh);
+};
+
+// Récupérer le profil utilisateur (sans cache - pour usage interne)
+export const fetchUserProfileFromFirebase = async (
   uid: string,
 ): Promise<UserProfile | null> => {
   try {
@@ -199,8 +208,17 @@ export const addToHistory = async (
   }
 };
 
-// Récupérer l'historique des lancers
+// Récupérer l'historique des lancers (avec cache)
 export const getHistory = async (
+  uid: string,
+  limitCount: number = 10,
+  forceRefresh: boolean = false,
+): Promise<HistoryEntry[]> => {
+  return await syncService.syncUserHistory(uid, limitCount, forceRefresh);
+};
+
+// Récupérer l'historique des lancers (sans cache - pour usage interne)
+export const fetchHistoryFromFirebase = async (
   uid: string,
   limitCount: number = 10,
 ): Promise<HistoryEntry[]> => {
@@ -292,8 +310,13 @@ export interface CustomFace {
   actions?: string[];
 }
 
-// Récupérer les faces personnalisées de l'utilisateur
-export const getCustomFaces = async (uid: string): Promise<CustomFace[]> => {
+// Récupérer les faces personnalisées de l'utilisateur (avec cache)
+export const getCustomFaces = async (uid: string, forceRefresh: boolean = false): Promise<CustomFace[]> => {
+  return await syncService.syncUserFaces(uid, forceRefresh);
+};
+
+// Récupérer les faces personnalisées de l'utilisateur (sans cache - pour usage interne)
+export const fetchCustomFacesFromFirebase = async (uid: string): Promise<CustomFace[]> => {
   try {
     const facesRef = collection(db, "users", uid, "faces");
     const q = query(facesRef, orderBy("createdAt", "desc"));

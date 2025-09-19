@@ -1,7 +1,8 @@
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import React from "react";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "./firebase";
 import { Platform } from "react-native";
+import { db } from "./firebase";
+import { syncService } from "./sync";
 
 // Interface pour la configuration
 export interface AppConfig {
@@ -61,8 +62,13 @@ export const initializeConfig = async (): Promise<boolean> => {
   }
 };
 
-// Récupérer la configuration depuis Firestore
-export const fetchConfig = async (): Promise<AppConfig> => {
+// Récupérer la configuration depuis Firestore (avec cache)
+export const fetchConfig = async (forceRefresh: boolean = false): Promise<AppConfig> => {
+  return await syncService.syncAppConfig(forceRefresh);
+};
+
+// Récupérer la configuration depuis Firestore (sans cache - pour usage interne)
+export const fetchConfigFromFirebase = async (): Promise<AppConfig> => {
   try {
     // Vérifier le cache
     const now = Date.now();

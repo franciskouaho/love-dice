@@ -56,18 +56,20 @@ export const useFaces = (): UseFacesReturn => {
       setError(null);
 
       const userId = getCurrentUserId();
-      if (!userId) {
-        throw new Error("Utilisateur non connecté");
+      
+      // Charger les faces par défaut même sans utilisateur
+      const defaultFacesData = await getDefaultFaces(); // Utilise le cache via syncService
+      
+      let userFacesData: DiceFace[] = [];
+      if (userId) {
+        // Charger les faces utilisateur seulement si connecté
+        userFacesData = await getUserFaces(userId);
       }
-
-      // Charger les faces en parallèle
-      const [defaultFacesData, userFacesData] = await Promise.all([
-        getDefaultFaces(),
-        getUserFaces(userId),
-      ]);
 
       const allFacesData = [...defaultFacesData, ...userFacesData];
       const pool = createWeightedPool(allFacesData);
+
+      console.log(`📱 Faces chargées depuis le cache: ${allFacesData.length} total (${defaultFacesData.length} par défaut + ${userFacesData.length} personnalisées)`);
 
       setDefaultFaces(defaultFacesData);
       setUserFaces(userFacesData);
@@ -79,7 +81,7 @@ export const useFaces = (): UseFacesReturn => {
           ? err.message
           : "Erreur lors du chargement des faces";
       setError(errorMessage);
-      // Erreur lors du chargement des faces ignorée
+      console.error("❌ Erreur dans loadFaces:", err);
     } finally {
       setLoading(false);
     }
@@ -222,6 +224,15 @@ export const useFaces = (): UseFacesReturn => {
   // Charger les faces au montage
   useEffect(() => {
     loadFaces();
+  }, [loadFaces]);
+
+  // Recharger les faces quand l'utilisateur se connecte
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    if (userId) {
+      console.log("👤 Utilisateur connecté, rechargement des faces...");
+      loadFaces();
+    }
   }, [loadFaces]);
 
   return {

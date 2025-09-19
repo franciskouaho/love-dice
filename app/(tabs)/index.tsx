@@ -447,7 +447,7 @@ export default function HomeScreen() {
           console.log("✅ Utilisateur créé pour le premier lancer:", newUser?.uid);
           // Attendre un peu que l'auth se propage
           await new Promise(resolve => setTimeout(resolve, 1000));
-          console.log("🔍 État après création:", { user: !!user, userUid: user?.uid });
+          console.log("🔍 État après création:", { user: !!user, userUid: user?.uid || "non défini" });
         } catch (error) {
           console.error("❌ Erreur création utilisateur:", error);
           console.warn("⚠️ Continuer quand même avec l'action");
@@ -493,58 +493,61 @@ export default function HomeScreen() {
           ]),
         ]),
       ]).start(async () => {
-        // Utiliser Firebase si disponible, sinon faces par défaut AVEC noms forcés
-        let facesToUse = allFaces;
-        if (allFaces.length === 0) {
-          // Noms forcés
-          const name1 = namesToUse.player1?.trim() || "Mon cœur";
-          const name2 = namesToUse.player2?.trim() || "Mon amour";
+          // Réinitialiser le roll précédent
+          setCurrentRoll(null);
+          
+          // Utiliser le cache local si disponible, sinon faces par défaut
+          let facesToUse = allFaces;
+          if (allFaces.length === 0) {
+            // Fallback avec des faces par défaut
+            const name1 = namesToUse.player1?.trim() || "Mon cœur";
+            const name2 = namesToUse.player2?.trim() || "Mon amour";
 
-          facesToUse = [
-            {
-              id: "default-payer-1",
-              label: `${name1} paie`,
-              emoji: "💰",
-              category: "payer",
-              weight: 1,
-            },
-            {
-              id: "default-payer-2",
-              label: `${name2} paie`,
-              emoji: "💝",
-              category: "payer",
-              weight: 1,
-            },
-            {
-              id: "default-repas-1",
-              label: "Pizza",
-              emoji: "🍕",
-              category: "repas",
-              weight: 1,
-            },
-            {
-              id: "default-repas-2",
-              label: "Sushi",
-              emoji: "🍣",
-              category: "repas",
-              weight: 1,
-            },
-            {
-              id: "default-activite-1",
-              label: "Cinéma",
-              emoji: "🎬",
-              category: "activite",
-              weight: 1,
-            },
-            {
-              id: "default-activite-2",
-              label: "Balade",
-              emoji: "🚶",
-              category: "activite",
-              weight: 1,
-            },
-          ];
-        }
+            facesToUse = [
+              {
+                id: "default-payer-1",
+                label: `${name1} paie`,
+                emoji: "💰",
+                category: "payer",
+                weight: 1,
+              },
+              {
+                id: "default-payer-2",
+                label: `${name2} paie`,
+                emoji: "💝",
+                category: "payer",
+                weight: 1,
+              },
+              {
+                id: "default-repas-1",
+                label: "Pizza",
+                emoji: "🍕",
+                category: "repas",
+                weight: 1,
+              },
+              {
+                id: "default-repas-2",
+                label: "Sushi",
+                emoji: "🍣",
+                category: "repas",
+                weight: 1,
+              },
+              {
+                id: "default-activite-1",
+                label: "Cinéma",
+                emoji: "🎬",
+                category: "activite",
+                weight: 1,
+              },
+              {
+                id: "default-activite-2",
+                label: "Balade",
+                emoji: "🚶",
+                category: "activite",
+                weight: 1,
+              },
+            ];
+          }
 
         const completeResult = rollCompleteDice(
           facesToUse,

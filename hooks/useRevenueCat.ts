@@ -32,6 +32,9 @@ function useRevenueCat() {
         } else {
           Purchases.configure({ apiKey: APIKeys.apple });
         }
+        
+        // Désactiver les logs de debug
+        Purchases.setLogLevel(Purchases.LOG_LEVEL.ERROR);
 
         // Récupération des offerings et des infos client
         const [offerings, customerInfo] = await Promise.all([

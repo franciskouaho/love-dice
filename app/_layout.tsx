@@ -3,7 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { initializeAppWithRetry } from "../services/initialization";
+import { initializeApp } from "../services/initialization";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -11,9 +11,9 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   useEffect(() => {
-    // Initialiser tous les services Firebase avec retry automatique
-    initializeAppWithRetry(3, 1000).catch((error) => {
-      // Échec de l'initialisation complète de l'app
+    // Initialiser tous les services Firebase
+    initializeApp().catch((error) => {
+      console.error('Erreur lors de l\'initialisation de l\'app:', error);
     });
   }, []);
 

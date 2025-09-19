@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  canRollDice,
-  consumeFreeRoll,
-  getLifetimeStatus,
-  getQuotaSummary,
-  saveLifetimeStatus,
+    canRollDice,
+    consumeFreeRoll,
+    getLifetimeStatus,
+    getQuotaSummary,
+    saveLifetimeStatus,
 } from "../utils/quota";
 import { useAuth } from "./useFirebase";
 
@@ -246,14 +246,26 @@ const useQuota = (): QuotaState & QuotaActions => {
     return () => clearInterval(interval);
   }, [loadQuotaState]);
 
-  // Log de l'état final retourné (seulement si pas en loading)
-  if (!quotaState.isLoading) {
-    console.log("📤 useQuota: État retourné:", {
-      canRoll: quotaState.canRoll,
-      remaining: quotaState.remaining,
-      isLoading: quotaState.isLoading
-    });
-  }
+  // Log de l'état final retourné (seulement si changement significatif)
+  const prevStateRef = useRef<QuotaState | null>(null);
+  useEffect(() => {
+    if (!quotaState.isLoading && prevStateRef.current) {
+      const prev = prevStateRef.current;
+      const current = quotaState;
+      
+      // Log seulement si changement significatif
+      if (prev.canRoll !== current.canRoll || 
+          prev.remaining !== current.remaining || 
+          prev.hasLifetime !== current.hasLifetime) {
+        console.log("📤 useQuota: État mis à jour:", {
+          canRoll: current.canRoll,
+          remaining: current.remaining,
+          hasLifetime: current.hasLifetime
+        });
+      }
+    }
+    prevStateRef.current = quotaState;
+  }, [quotaState]);
 
   return {
     // État

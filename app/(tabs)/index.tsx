@@ -205,6 +205,7 @@ export default function HomeScreen() {
     loadLastRoll()
     refreshQuota()
 
+
     // Afficher automatiquement la modal des noms SEULEMENT au premier lancement
     const checkFirstLaunch = async () => {
       try {

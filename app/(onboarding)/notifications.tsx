@@ -7,66 +7,49 @@ import {
     PanGestureHandler,
 } from "react-native-gesture-handler";
 import useAnalytics from "../../hooks/useAnalytics";
-import { createAnonymousUser, initAuth } from "../../services/firebase";
-import * as FirestoreService from "../../services/firestore";
+import useNotifications from "../../hooks/useNotifications";
 import { nav } from "../../utils/navigation";
 
-export default function OnboardingFeatures() {
+export default function OnboardingNotifications() {
   const { logOnboardingView } = useAnalytics();
+  const { requestPermissions, hasPermissions } = useNotifications();
 
   useEffect(() => {
-    logOnboardingView(4, "Fonctionnalités avancées");
+    logOnboardingView(4, "Notifications");
   }, [logOnboardingView]);
 
   const handleSwipeLeft = async () => {
     await Haptics.selectionAsync();
-    
-    console.log("🚀 DEBUT handleSwipeLeft - Création utilisateur");
-
-    try {
-      // Vérifier l'état initial
-      console.log("🔍 État initial Firebase...");
-      const initialUserId = FirestoreService.getCurrentUserId();
-      console.log("📍 UserId initial:", initialUserId || "AUCUN");
-
-      // Vérifier l'état Firebase
-      console.log("🔧 Vérification Firebase Auth...");
-      const authResult = await initAuth();
-      console.log("🔧 Résultat initAuth:", authResult);
-
-      // Vérifier si un utilisateur existe déjà
-      const userId = FirestoreService.getCurrentUserId();
-      console.log("✅ Utilisateur Firebase:", userId || "AUCUN");
-
-      // Créer un utilisateur Firebase si nécessaire
-      if (!userId) {
-        console.log("🔧 Création d'un utilisateur Firebase...");
-        try {
-          const newUser = await createAnonymousUser();
-          console.log("✅ Utilisateur créé:", newUser?.uid);
-          // Attendre que l'auth se propage
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-          console.warn("⚠️ Erreur création utilisateur:", error);
-          console.log("ℹ️ L'app continuera quand même");
-        }
-      } else {
-        console.log("ℹ️ Utilisateur déjà existant, pas de création nécessaire");
-      }
-
-      // Rediriger vers l'app principale
-      console.log("🎯 Redirection vers l'app principale...");
-      nav.goTabs();
-    } catch (error) {
-      console.error("❌ Erreur lors de la création de l'utilisateur anonyme:", error);
-      // Rediriger quand même vers l'app principale
-      nav.goTabs();
-    }
+    nav.onboarding.features();
   };
 
   const handleSwipeRight = async () => {
     await Haptics.selectionAsync();
     nav.back();
+  };
+
+  const handleEnableNotifications = async () => {
+    await Haptics.selectionAsync();
+    
+    try {
+      console.log("🔔 Demande des permissions de notifications...");
+      await requestPermissions();
+      console.log("✅ Permissions de notifications accordées");
+      
+      // Continuer vers features après un court délai
+      setTimeout(() => {
+        nav.onboarding.features();
+      }, 1000);
+    } catch (error) {
+      console.error("❌ Erreur lors de la demande de permissions:", error);
+      // Continuer quand même vers features
+      nav.onboarding.features();
+    }
+  };
+
+  const handleSkip = async () => {
+    await Haptics.selectionAsync();
+    nav.onboarding.features();
   };
 
   const onGestureEvent = (event: any) => {
@@ -100,79 +83,78 @@ export default function OnboardingFeatures() {
           <PanGestureHandler onGestureEvent={onGestureEvent}>
             <View style={styles.main}>
               <View style={styles.content}>
-                {/* Fonctionnalités avancées */}
-                <View style={styles.featuresContainer}>
-                  <View style={styles.featureCard}>
-                    <Text style={styles.featureEmoji}>🎨</Text>
-                    <Text style={styles.featureTitle}>Personnalisation</Text>
-                    <Text style={styles.featureDescription}>
-                      Créez vos propres faces de dé personnalisées
-                    </Text>
-                  </View>
-
-                  <View style={styles.featureCard}>
-                    <Text style={styles.featureEmoji}>📊</Text>
-                    <Text style={styles.featureTitle}>Historique</Text>
-                    <Text style={styles.featureDescription}>
-                      Retrouvez tous vos lancers précédents
-                    </Text>
-                  </View>
-
-                  <View style={styles.featureCard}>
-                    <Text style={styles.featureEmoji}>⚙️</Text>
-                    <Text style={styles.featureTitle}>Paramètres</Text>
-                    <Text style={styles.featureDescription}>
-                      Ajustez l'expérience à vos préférences
-                    </Text>
-                  </View>
-
-                  <View style={styles.featureCard}>
-                    <Text style={styles.featureEmoji}>💎</Text>
-                    <Text style={styles.featureTitle}>Premium</Text>
-                    <Text style={styles.featureDescription}>
-                      Débloquez des fonctionnalités exclusives
-                    </Text>
+                {/* Icône notifications */}
+                <View style={styles.iconContainer}>
+                  <Text style={styles.notificationIcon}>🔔</Text>
+                  <View style={styles.sparkles}>
+                    <Text style={styles.sparkle}>✨</Text>
+                    <Text style={styles.sparkle}>✨</Text>
+                    <Text style={styles.sparkle}>✨</Text>
                   </View>
                 </View>
 
                 {/* Titre principal */}
-                <Text style={styles.title}>Fonctionnalités avancées</Text>
+                <Text style={styles.title}>Ne ratez rien !</Text>
 
                 {/* Sous-titre */}
                 <Text style={styles.subtitle}>
-                  Découvrez tout le potentiel de Love Dice
+                  Activez les notifications pour des rappels personnalisés
                 </Text>
 
                 {/* Description */}
                 <Text style={styles.description}>
-                  Au-delà du simple lancer de dé, Love Dice vous offre une 
-                  expérience complète avec personnalisation, historique et 
-                  bien plus encore.
+                  Recevez des rappels quotidiens pour vos soirées en couple et 
+                  des notifications spéciales pour vos jalons importants. 
+                  Vos données restent privées et sécurisées.
                 </Text>
+
+                {/* Avantages des notifications */}
+                <View style={styles.benefitsContainer}>
+                  <View style={styles.benefitItem}>
+                    <Text style={styles.benefitEmoji}>⏰</Text>
+                    <Text style={styles.benefitText}>Rappels quotidiens</Text>
+                  </View>
+                  <View style={styles.benefitItem}>
+                    <Text style={styles.benefitEmoji}>🎉</Text>
+                    <Text style={styles.benefitText}>Jalons spéciaux</Text>
+                  </View>
+                  <View style={styles.benefitItem}>
+                    <Text style={styles.benefitEmoji}>🔒</Text>
+                    <Text style={styles.benefitText}>100% privé</Text>
+                  </View>
+                </View>
 
                 {/* Indicateurs de progression */}
                 <View style={styles.progressContainer}>
                   <View style={styles.progressDot} />
                   <View style={styles.progressDot} />
                   <View style={styles.progressDot} />
-                  <View style={styles.progressDot} />
                   <View style={[styles.progressDot, styles.activeDot]} />
+                  <View style={styles.progressDot} />
                 </View>
               </View>
 
-              {/* Bouton Commencer */}
+              {/* Boutons d'action */}
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                  style={styles.commencerButton}
-                  onPress={handleSwipeLeft}
+                  style={styles.enableButton}
+                  onPress={handleEnableNotifications}
                   activeOpacity={0.8}
                 >
                   <View style={styles.glassBackground}>
                     <View style={styles.glassInner}>
                       <View style={styles.glassHighlight} />
-                      <Text style={styles.buttonText}>Commencer l'aventure</Text>
+                      <Text style={styles.buttonText}>Activer les notifications</Text>
                     </View>
                   </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.skipButton}
+                  onPress={handleSkip}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.skipButtonText}>Passer pour l'instant</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -212,42 +194,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  featuresContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    width: "100%",
-    marginBottom: 32,
-  },
-  featureCard: {
-    width: "48%",
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+  iconContainer: {
+    position: "relative",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    marginBottom: 48,
   },
-  featureEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  featureTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FFFFFF",
+  notificationIcon: {
+    fontSize: 80,
     textAlign: "center",
-    marginBottom: 4,
-    fontFamily: "System",
   },
-  featureDescription: {
-    fontSize: 11,
-    color: "#FFF3F6",
-    textAlign: "center",
-    lineHeight: 16,
+  sparkles: {
+    position: "absolute",
+    top: -10,
+    left: -20,
+    right: -20,
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  sparkle: {
+    fontSize: 20,
     opacity: 0.8,
-    fontFamily: "System",
   },
   title: {
     fontSize: 32,
@@ -275,6 +241,31 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     paddingHorizontal: 16,
   },
+  benefitsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginBottom: 32,
+    paddingHorizontal: 16,
+  },
+  benefitItem: {
+    alignItems: "center",
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  benefitEmoji: {
+    fontSize: 28,
+    marginBottom: 8,
+  },
+  benefitText: {
+    fontSize: 12,
+    color: "#FFF3F6",
+    textAlign: "center",
+    fontFamily: "System",
+    opacity: 0.9,
+    fontWeight: "500",
+    lineHeight: 16,
+  },
   progressContainer: {
     flexDirection: "row",
     justifyContent: "center",
@@ -296,7 +287,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingBottom: 48,
   },
-  commencerButton: {
+  enableButton: {
     borderRadius: 48,
     overflow: "hidden",
     elevation: 8,
@@ -307,6 +298,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    marginBottom: 16,
   },
   glassBackground: {
     borderRadius: 48,
@@ -346,5 +338,17 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  skipButton: {
+    alignSelf: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  skipButtonText: {
+    fontSize: 16,
+    color: "#FFF3F6",
+    fontFamily: "System",
+    opacity: 0.8,
+    textDecorationLine: "underline",
   },
 });

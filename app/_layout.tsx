@@ -19,7 +19,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+          animation: "slide_from_right",
+        }}
+      >
         <Stack.Screen
           name="index"
           options={{
@@ -44,6 +50,20 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="(onboarding)/experience"
+          options={{
+            headerShown: false,
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="(onboarding)/notifications"
+          options={{
+            headerShown: false,
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="(onboarding)/features"
           options={{
             headerShown: false,
             gestureEnabled: true,
@@ -91,7 +111,7 @@ export default function RootLayout() {
           }}
         />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" hidden={true} />
     </GestureHandlerRootView>
   );
 }

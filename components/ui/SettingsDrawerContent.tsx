@@ -1,27 +1,27 @@
-import React, { useState, useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Switch,
   Alert,
   Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { router } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import useAnalytics from "../../hooks/useAnalytics";
 
 import { useInAppReview } from "../../hooks/useInAppReview";
+import useNotifications from "../../hooks/useNotifications";
 import {
   getUserPreferences,
   saveUserPreferences,
   UserPreferences,
 } from "../../utils/quota";
-import useNotifications from "../../hooks/useNotifications";
 
 interface SettingsDrawerContentProps {
   onClose: () => void;
@@ -422,7 +422,9 @@ export default function SettingsDrawerContent({
 
         {/* About Section */}
         <View style={styles.aboutSection}>
-          <Text style={styles.versionText}>Love Dice v1.1.1 (3)</Text>
+          <Text style={styles.versionText}>
+            Love Dice v{Constants.expoConfig?.version}
+          </Text>
           <Text style={styles.madeWithLove}>Fait avec 💕 pour les couples</Text>
         </View>
       </ScrollView>

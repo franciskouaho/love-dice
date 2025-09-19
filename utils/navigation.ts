@@ -40,6 +40,7 @@ export const Routes = {
     welcome: "/(onboarding)/welcome" as const,
     howItWorks: "/(onboarding)/how-it-works" as const,
     experience: "/(onboarding)/experience" as const,
+    notifications: "/(onboarding)/notifications" as const,
     features: "/(onboarding)/features" as const,
   },
   paywall: "/paywall" as const,
@@ -92,6 +93,7 @@ export function isAppPath(p: string): p is AppPath {
     case Routes.onboarding.welcome:
     case Routes.onboarding.howItWorks:
     case Routes.onboarding.experience:
+    case Routes.onboarding.notifications:
     case Routes.onboarding.features:
       return true;
     default:
@@ -162,10 +164,11 @@ export const nav = {
   goCustomFaces: () => _push(Routes.customFaces),
 
   onboarding: {
-    welcome: () => _replace(Routes.onboarding.welcome),
-    howItWorks: () => _replace(Routes.onboarding.howItWorks),
-    experience: () => _replace(Routes.onboarding.experience),
-    features: () => _replace(Routes.onboarding.features),
+    welcome: () => _push(Routes.onboarding.welcome),
+    howItWorks: () => _push(Routes.onboarding.howItWorks),
+    experience: () => _push(Routes.onboarding.experience),
+    notifications: () => _push(Routes.onboarding.notifications),
+    features: () => _push(Routes.onboarding.features),
   },
 };
 
@@ -187,6 +190,7 @@ function _assertAllRoutesAreAppPath() {
     Routes.onboarding.welcome,
     Routes.onboarding.howItWorks,
     Routes.onboarding.experience,
+    Routes.onboarding.notifications,
     Routes.onboarding.features,
   ];
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

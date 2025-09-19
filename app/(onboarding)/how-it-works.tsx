@@ -115,6 +115,7 @@ export default function OnboardingStep2() {
                   <View style={styles.progressDot} />
                   <View style={[styles.progressDot, styles.activeDot]} />
                   <View style={styles.progressDot} />
+                  <View style={styles.progressDot} />
                 </View>
               </View>
             </View>

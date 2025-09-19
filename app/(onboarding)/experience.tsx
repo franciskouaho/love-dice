@@ -1,24 +1,20 @@
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect } from "react";
 import {
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View
 } from "react-native";
 import {
-    GestureHandlerRootView,
-    PanGestureHandler,
+  GestureHandlerRootView,
+  PanGestureHandler,
 } from "react-native-gesture-handler";
 import { nav } from "../../utils/navigation";
 
 import * as Haptics from "expo-haptics";
 import useAnalytics from "../../hooks/useAnalytics";
-import { createAnonymousUser, initAuth } from "../../services/firebase";
-import * as FirestoreService from "../../services/firestore";
-import { markOnboardingCompleted } from "../../utils/onboarding";
 
 export default function OnboardingStep3() {
   const { logOnboardingView } = useAnalytics();
@@ -27,59 +23,10 @@ export default function OnboardingStep3() {
     logOnboardingView(3, "Secouez & découvrez");
   }, [logOnboardingView]);
 
-  const handleCommencer = async () => {
+
+  const handleSwipeLeft = async () => {
     await Haptics.selectionAsync();
-
-    console.log("🚀 DEBUT handleCommencer");
-
-    try {
-      // Vérifier l'état initial
-      console.log("🔍 État initial Firebase...");
-      const initialUserId = FirestoreService.getCurrentUserId();
-      console.log("📍 UserId initial:", initialUserId || "AUCUN");
-
-      // Vérifier l'état Firebase sans forcer la création d'un nouvel utilisateur
-      console.log("🔧 Vérification Firebase Auth...");
-      const authResult = await initAuth();
-      console.log("🔧 Résultat initAuth:", authResult);
-
-      // Si pas d'utilisateur, l'app peut fonctionner en mode "offline" ou avec des valeurs par défaut
-      const userId = FirestoreService.getCurrentUserId();
-      console.log(
-        "✅ Utilisateur Firebase:",
-        userId || "AUCUN (mode par défaut)",
-      );
-
-      // Créer un utilisateur Firebase à la fin de l'onboarding
-      if (!userId) {
-        console.log("🔧 Fin d'onboarding - création d'un utilisateur Firebase...");
-        try {
-          const newUser = await createAnonymousUser();
-          console.log("✅ Utilisateur créé à la fin de l'onboarding:", newUser?.uid);
-          // Attendre que l'auth se propage
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-          console.warn("⚠️ Erreur création utilisateur onboarding:", error);
-          console.log("ℹ️ L'app continuera quand même");
-        }
-      } else {
-        console.log("ℹ️ Utilisateur déjà existant, pas de création nécessaire");
-      }
-
-      // Marquer l'onboarding comme complété
-      console.log("📝 Marquage onboarding complété...");
-      await markOnboardingCompleted();
-
-      // Rediriger vers la page des fonctionnalités
-      console.log("🎨 Redirection vers features...");
-      nav.onboarding.features();
-    } catch (error) {
-      console.error("❌ Erreur initialisation Firebase:", error);
-      console.error("❌ Stack trace:", (error as Error).stack);
-      // En cas d'erreur, aller quand même vers l'app
-      await markOnboardingCompleted();
-      nav.goTabs();
-    }
+    nav.onboarding.notifications();
   };
 
   const handleSwipeRight = async () => {
@@ -89,6 +36,11 @@ export default function OnboardingStep3() {
 
   const onGestureEvent = (event: any) => {
     if (
+      event.nativeEvent.translationX < -100 &&
+      event.nativeEvent.velocityX < -500
+    ) {
+      handleSwipeLeft();
+    } else if (
       event.nativeEvent.translationX > 100 &&
       event.nativeEvent.velocityX > 500
     ) {
@@ -172,24 +124,11 @@ export default function OnboardingStep3() {
                   <View style={styles.progressDot} />
                   <View style={styles.progressDot} />
                   <View style={[styles.progressDot, styles.activeDot]} />
+                  <View style={styles.progressDot} />
+                  <View style={styles.progressDot} />
                 </View>
               </View>
 
-              {/* Bouton Commencer */}
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={styles.commencerButton}
-                  onPress={handleCommencer}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.glassBackground}>
-                    <View style={styles.glassInner}>
-                      <View style={styles.glassHighlight} />
-                      <Text style={styles.buttonText}>Commencer</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              </View>
             </View>
           </PanGestureHandler>
         </SafeAreaView>
@@ -313,61 +252,6 @@ const styles = StyleSheet.create({
     width: 24,
   },
 
-  buttonContainer: {
-    paddingHorizontal: 32,
-    paddingBottom: 48,
-  },
-  commencerButton: {
-    borderRadius: 48,
-    overflow: "hidden",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  glassBackground: {
-    borderRadius: 48,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-    shadowColor: "rgba(255, 255, 255, 0.5)",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    overflow: "hidden",
-  },
-  glassInner: {
-    paddingVertical: 18,
-    paddingHorizontal: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 56,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    position: "relative",
-  },
-  glassHighlight: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "40%",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderTopLeftRadius: 48,
-    borderTopRightRadius: 48,
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    fontFamily: "System",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
   instructionsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",

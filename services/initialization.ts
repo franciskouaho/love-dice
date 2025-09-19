@@ -61,6 +61,7 @@ export class InitializationService {
 
   /**
    * Charger les données publiques depuis le cache (faces par défaut, config)
+   * Si le cache est vide, charger depuis Firebase
    */
   private async loadPublicDataFromCache(): Promise<void> {
     try {
@@ -76,6 +77,12 @@ export class InitializationService {
       // Log des résultats
       if (defaultFaces.status === 'fulfilled') {
         console.log(`📱 ${defaultFaces.value.length} faces par défaut chargées`);
+        
+        // Si pas de faces dans le cache, charger depuis Firebase
+        if (defaultFaces.value.length === 0) {
+          console.log('🔄 Cache vide, chargement depuis Firebase...');
+          await this.loadDefaultFacesFromFirebase();
+        }
       } else if (defaultFaces.status === 'rejected') {
         console.error('❌ Erreur chargement faces par défaut:', defaultFaces.reason);
       }
@@ -87,6 +94,29 @@ export class InitializationService {
       }
     } catch (error) {
       console.error('❌ Erreur lors du chargement des données publiques:', error);
+    }
+  }
+
+  /**
+   * Charger les faces par défaut depuis Firebase et les mettre en cache
+   */
+  private async loadDefaultFacesFromFirebase(): Promise<void> {
+    try {
+      console.log('🔥 Chargement des faces par défaut depuis Firebase...');
+      
+      // Importer la fonction de récupération depuis Firebase
+      const { fetchDefaultFacesFromFirebase } = await import('./faces');
+      
+      // Récupérer depuis Firebase
+      const faces = await fetchDefaultFacesFromFirebase();
+      console.log(`🔥 ${faces.length} faces récupérées depuis Firebase`);
+      
+      // Mettre en cache
+      await cacheService.setDefaultFaces(faces);
+      console.log('💾 Faces mises en cache local');
+      
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement depuis Firebase:', error);
     }
   }
 

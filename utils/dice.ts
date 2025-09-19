@@ -55,6 +55,9 @@ export const rollCompleteDice = (
   playerNames?: { player1: string; player2: string },
   preferredPayerName?: string,
 ): CompleteDiceResult => {
+  console.log(`🎯 rollCompleteDice - preferredPayerName:`, preferredPayerName);
+  console.log(`🎯 rollCompleteDice - playerNames:`, playerNames);
+  
   if (!faces || faces.length === 0) {
     throw new Error("Aucune face disponible pour le lancer");
   }
@@ -113,11 +116,11 @@ export const rollCompleteDice = (
     if (preferredPayerName) {
       // Utiliser le nom préféré (celui affiché dans le modal)
       chosenName = preferredPayerName.replace(" paie", "");
-      console.log(`🎯 Face personnalisée avec nom préféré: "${payer.label}" → "${chosenName} paie"`);
+      console.log(`🎯 Face personnalisée avec nom préféré: "${payer.label}" → "${chosenName} paie" (preferredPayerName: "${preferredPayerName}")`);
     } else {
       // Choisir aléatoirement entre les deux noms
       chosenName = Math.random() < 0.5 ? name1 : name2;
-      console.log(`🎯 Face personnalisée aléatoire: "${payer.label}" → "${chosenName} paie"`);
+      console.log(`🎯 Face personnalisée aléatoire: "${payer.label}" → "${chosenName} paie" (pas de preferredPayerName)`);
     }
     payer.label = `${chosenName} paie`;
   } else {

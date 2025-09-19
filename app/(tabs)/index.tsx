@@ -387,27 +387,19 @@ export default function HomeScreen() {
       // Ajouter un feedback haptique spécial pour la secousse
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-      // PRIORITÉ 1: Noms du modal (currentPayerDisplay)
-      // PRIORITÉ 2: Firebase (noms sauvegardés)
+
+      // PRIORITÉ 1: Noms saisis dans le modal (playerNames)
+      // PRIORITÉ 2: Firebase (noms sauvegardés)  
       // PRIORITÉ 3: Noms par défaut
       let finalNames = { player1: "Mon cœur", player2: "Mon amour" };
 
       // D'ABORD utiliser les noms du modal si disponibles
-      if (stablePayerName) {
-        // Utiliser les noms actuels du modal (pas de noms par défaut)
-        const currentModalNames = {
-          player1: playerNames.player1.trim() || "Mon cœur",
-          player2: playerNames.player2.trim() || "Mon amour",
-        };
-        finalNames = currentModalNames;
-        console.log("🎯 SECOUSSE - Noms depuis le modal (noms actuels):", finalNames);
-      } else if (playerNames.player1.trim() && playerNames.player2.trim()) {
-        // Fallback: état React local
+      if (playerNames.player1.trim() && playerNames.player2.trim()) {
         finalNames = {
           player1: playerNames.player1.trim(),
           player2: playerNames.player2.trim(),
         };
-        console.log("🎯 SECOUSSE - Noms depuis l'état React:", finalNames);
+        console.log("🎯 SECOUSSE - Noms depuis le modal (noms actuels):", finalNames);
       } else {
         // Fallback: Firebase
         try {

@@ -97,8 +97,14 @@ export default function HomeScreen() {
       setCurrentPayerDisplay(`${chosenName} paie`);
     } else {
       console.log(`🎯 updateCurrentPayerDisplay - Noms incomplets:`, names);
-      setCurrentPayerDisplay("");
-      setStablePayerName("");
+      // Ne vider stablePayerName que si on force vraiment
+      if (forceUpdate) {
+        setCurrentPayerDisplay("");
+        setStablePayerName("");
+      } else {
+        // Garder l'affichage actuel si on ne force pas
+        console.log(`🎯 updateCurrentPayerDisplay - Garde l'affichage actuel: ${currentPayerDisplay}`);
+      }
     }
   };
 
@@ -287,6 +293,14 @@ export default function HomeScreen() {
       setStablePayerName("");
     }
   }, [playerNames.player1, playerNames.player2]);
+
+  // Garder currentPayerDisplay stable même après fermeture du modal
+  useEffect(() => {
+    if (stablePayerName && !currentPayerDisplay) {
+      console.log(`🎯 Restauration currentPayerDisplay depuis stablePayerName: ${stablePayerName}`);
+      setCurrentPayerDisplay(`${stablePayerName} paie`);
+    }
+  }, [stablePayerName, currentPayerDisplay]);
 
   // Animation effects
   useEffect(() => {

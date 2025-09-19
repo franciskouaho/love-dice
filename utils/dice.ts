@@ -53,6 +53,7 @@ export const rollCompleteDice = (
   faces: DiceFace[],
   lastResult?: CompleteDiceResult,
   playerNames?: { player1: string; player2: string },
+  preferredPayerName?: string,
 ): CompleteDiceResult => {
   if (!faces || faces.length === 0) {
     throw new Error("Aucune face disponible pour le lancer");
@@ -108,8 +109,16 @@ export const rollCompleteDice = (
 
   if (shouldPersonalize) {
     // Pour TOUTES ces faces, utiliser les noms personnalisés
-    const chosenName = Math.random() < 0.5 ? name1 : name2;
-    console.log(`🎯 Face personnalisée: "${payer.label}" → "${chosenName} paie"`);
+    let chosenName;
+    if (preferredPayerName) {
+      // Utiliser le nom préféré (celui affiché dans le modal)
+      chosenName = preferredPayerName.replace(" paie", "");
+      console.log(`🎯 Face personnalisée avec nom préféré: "${payer.label}" → "${chosenName} paie"`);
+    } else {
+      // Choisir aléatoirement entre les deux noms
+      chosenName = Math.random() < 0.5 ? name1 : name2;
+      console.log(`🎯 Face personnalisée aléatoire: "${payer.label}" → "${chosenName} paie"`);
+    }
     payer.label = `${chosenName} paie`;
   } else {
     // Pour les faces très spécialisées, les garder telles quelles

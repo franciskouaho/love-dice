@@ -535,6 +535,7 @@ export default function HomeScreen() {
           facesToUse,
           currentRoll || undefined,
           namesToUse,
+          currentPayerDisplay,
         );
 
         setCurrentRoll(completeResult);
@@ -753,7 +754,7 @@ export default function HomeScreen() {
                   id: "default",
                   payer: {
                     id: "default-payer",
-                    label: currentPayerDisplay || defaultPayerName || "Tu paies",
+                    label: currentPayerDisplay || defaultPayerName,
                     emoji: "💰",
                     category: "payer",
                     weight: 1,

@@ -1,24 +1,22 @@
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
   Alert,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import * as Haptics from "expo-haptics";
 import useAnalytics from "../hooks/useAnalytics";
-import useRevenueCat from "../hooks/useRevenueCat";
 import useQuota from "../hooks/useQuota";
+import useRevenueCat from "../hooks/useRevenueCat";
 import { getRemoteConfigValue } from "../services/firebase";
-import { markOnboardingCompleted } from "../utils/onboarding";
 import { nav } from "../utils/navigation";
-import { router } from "expo-router";
+import { markOnboardingCompleted } from "../utils/onboarding";
 
 export default function PaywallScreen() {
   const {
@@ -40,13 +38,16 @@ export default function PaywallScreen() {
   const [isRestoring, setIsRestoring] = useState(false);
 
   // Valeurs configurables via Remote Config
-  const [paywallTitle, setPaywallTitle] = useState("Accès à vie 💕");
+  const [paywallTitle, setPaywallTitle] = useState("Débloquez l'amour illimité 💕");
   const [paywallBullets, setPaywallBullets] = useState([
-    "Lancers illimités",
-    "Dés personnalisables",
-    "Aucune pub",
+    "🎲 Lancers illimités à vie",
+    "💕 Dés personnalisables pour vous deux",
+    "✨ Nouvelles faces ajoutées régulièrement",
+    "🍽️ Restaurants chics de Paris & environs",
+    "🎭 Activités insolites bientôt disponibles",
+    "💎 Accès prioritaire aux nouvelles fonctionnalités",
   ]);
-  const [price, setPrice] = useState("12,99 €");
+  const [price, setPrice] = useState("5,99 €");
 
   useEffect(() => {
     // Charger les valeurs Remote Config
@@ -241,36 +242,48 @@ export default function PaywallScreen() {
             <View style={styles.cardGlass}>
               <View style={styles.cardHighlight} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoIcon}>ℹ️</Text>
+                <Text style={styles.infoIcon}>⚠️</Text>
                 <Text style={styles.infoText}>
-                  1 seul lancer gratuit par jour. Sans abonnement, l&apos;accès
-                  est bloqué après utilisation.
+                  Vous avez utilisé votre lancer gratuit du jour. Pour continuer à créer des soirées magiques, débloquez l'accès illimité !
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Liste des avantages */}
-          <View style={styles.benefitsContainer}>
-            {paywallBullets.map((benefit, index) => (
-              <View key={index} style={styles.glassCard}>
-                <View style={styles.cardGlass}>
-                  <View style={styles.cardHighlight} />
-                  <View style={styles.benefitItem}>
-                    <View style={styles.checkIcon}>
-                      <Text style={styles.checkText}>✓</Text>
-                    </View>
-                    <Text style={styles.benefitText}>{benefit}</Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
+               {/* Liste des avantages */}
+               <View style={styles.benefitsContainer}>
+                 {paywallBullets.map((benefit, index) => (
+                   <View key={index} style={styles.glassCard}>
+                     <View style={styles.cardGlass}>
+                       <View style={styles.cardHighlight} />
+                       <View style={styles.benefitItem}>
+                         <View style={styles.checkIcon}>
+                           <Text style={styles.checkText}>✓</Text>
+                         </View>
+                         <View style={styles.benefitTextContainer}>
+                           <Text style={styles.benefitText}>{benefit}</Text>
+                           {(benefit.includes("Restaurants chics") || benefit.includes("Activités insolites")) && (
+                             <View style={styles.soonBadge}>
+                               <Text style={styles.soonBadgeText}>Bientôt</Text>
+                             </View>
+                           )}
+                         </View>
+                       </View>
+                     </View>
+                   </View>
+                 ))}
+               </View>
 
           {/* Prix et CTA */}
           <View style={styles.priceContainer}>
-            <Text style={styles.priceText}>{price} — rien de plus.</Text>
-            <Text style={styles.priceSubtext}>Achat unique, accès à vie</Text>
+            <View style={styles.priceBadge}>
+              <Text style={styles.priceBadgeText}>OFFRE LIMITÉE</Text>
+            </View>
+            <Text style={styles.priceText}>{price}</Text>
+            <Text style={styles.priceSubtext}>Achat unique • Accès à vie • Aucun renouvellement</Text>
+            <View style={styles.savingsContainer}>
+              <Text style={styles.savingsText}>Économisez 70% par rapport aux abonnements mensuels</Text>
+            </View>
           </View>
 
           {/* Bouton principal */}
@@ -287,11 +300,28 @@ export default function PaywallScreen() {
               <View style={styles.buttonGlassInner}>
                 <View style={styles.buttonGlassHighlight} />
                 <Text style={styles.buttonText}>
-                  {isPurchasing ? "Achat en cours..." : "Continuer →"}
+                  {isPurchasing ? "Achat en cours..." : "Débloquer maintenant →"}
                 </Text>
               </View>
             </View>
           </TouchableOpacity>
+
+          {/* Témoignages */}
+          <View style={styles.testimonialsContainer}>
+            <Text style={styles.testimonialsTitle}>💕 Ce qu'ils disent</Text>
+            <View style={styles.testimonialCard}>
+              <Text style={styles.testimonialText}>
+                "Love Dice a transformé nos soirées ! On ne se demande plus jamais quoi faire. C'est devenu notre rituel quotidien !"
+              </Text>
+              <Text style={styles.testimonialAuthor}>- Sarah & Marc</Text>
+            </View>
+            <View style={styles.testimonialCard}>
+              <Text style={styles.testimonialText}>
+                "5,99€ pour des années de soirées parfaites ? C'est le meilleur investissement qu'on ait fait !"
+              </Text>
+              <Text style={styles.testimonialAuthor}>- Emma & Tom</Text>
+            </View>
+          </View>
 
           {/* Bouton restaurer */}
           <TouchableOpacity
@@ -346,9 +376,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 32,
-    paddingTop: 80,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -362,44 +392,44 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 16,
   },
   iconContainer: {
     position: "relative",
     alignItems: "center",
   },
   diceIcon: {
-    fontSize: 80,
+    fontSize: 50,
   },
   heartIcon: {
-    fontSize: 32,
+    fontSize: 20,
     position: "absolute",
-    top: -8,
-    right: -16,
+    top: -4,
+    right: -10,
   },
   title: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 48,
+    marginBottom: 16,
     fontFamily: "System",
   },
   benefitsContainer: {
-    marginBottom: 48,
+    marginBottom: 16,
   },
   glassCard: {
-    marginBottom: 16,
-    borderRadius: 20,
+    marginBottom: 6,
+    borderRadius: 12,
     overflow: "hidden",
   },
   cardGlass: {
     backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.25)",
-    borderRadius: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     position: "relative",
     shadowColor: "rgba(255, 255, 255, 0.3)",
     shadowOffset: { width: 0, height: 2 },
@@ -413,57 +443,106 @@ const styles = StyleSheet.create({
     right: 0,
     height: "30%",
     backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   benefitItem: {
     flexDirection: "row",
     alignItems: "center",
   },
   checkIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: "#F4C869",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 16,
+    marginRight: 10,
   },
   checkText: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: "bold",
     color: "#A50848",
   },
+  benefitTextContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   benefitText: {
-    fontSize: 18,
+    fontSize: 13,
     color: "#FFFFFF",
     fontFamily: "System",
     fontWeight: "500",
     flex: 1,
   },
+  soonBadge: {
+    backgroundColor: "#FF6B35",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  soonBadgeText: {
+    fontSize: 9,
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
   priceContainer: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 16,
+  },
+  priceBadge: {
+    backgroundColor: "#F4C869",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  priceBadgeText: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#A50848",
+    textAlign: "center",
+    letterSpacing: 0.5,
   },
   priceText: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#F4C869",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 4,
     fontFamily: "System",
   },
   priceSubtext: {
-    fontSize: 16,
+    fontSize: 12,
     color: "#FFF3F6",
     textAlign: "center",
     opacity: 0.8,
     fontFamily: "System",
   },
+  savingsContainer: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "rgba(244, 200, 105, 0.2)",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(244, 200, 105, 0.3)",
+  },
+  savingsText: {
+    fontSize: 12,
+    color: "#F4C869",
+    textAlign: "center",
+    fontWeight: "600",
+  },
   purchaseButton: {
     borderRadius: 48,
     overflow: "hidden",
-    marginBottom: 24,
+    marginBottom: 12,
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: {
@@ -488,11 +567,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   buttonGlassInner: {
-    paddingVertical: 20,
-    paddingHorizontal: 48,
+    paddingVertical: 14,
+    paddingHorizontal: 36,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 64,
+    minHeight: 50,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
     position: "relative",
   },
@@ -507,7 +586,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 48,
   },
   buttonText: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#FFFFFF",
     fontFamily: "System",
@@ -516,21 +595,52 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
     zIndex: 10,
   },
+  testimonialsContainer: {
+    marginBottom: 16,
+  },
+  testimonialsTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  testimonialCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  testimonialText: {
+    fontSize: 11,
+    color: "#FFFFFF",
+    fontStyle: "italic",
+    lineHeight: 14,
+    marginBottom: 4,
+  },
+  testimonialAuthor: {
+    fontSize: 9,
+    color: "#F4C869",
+    fontWeight: "600",
+    textAlign: "right",
+  },
   restoreButton: {
     alignSelf: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    marginBottom: 32,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    marginBottom: 12,
   },
   restoreText: {
-    fontSize: 16,
+    fontSize: 12,
     color: "#FFF3F6",
     fontFamily: "System",
     textAlign: "center",
     textDecorationLine: "underline",
   },
   legalContainer: {
-    marginBottom: 24,
+    marginBottom: 12,
     paddingHorizontal: 16,
   },
   legalText: {
@@ -541,26 +651,26 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
   infoCard: {
-    marginBottom: 24,
-    borderRadius: 16,
+    marginBottom: 12,
+    borderRadius: 12,
     overflow: "hidden",
   },
   infoContent: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   infoIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: 16,
+    marginRight: 10,
   },
   infoText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#F4C869",
     fontFamily: "System",
     fontWeight: "600",
     flex: 1,
-    lineHeight: 18,
+    lineHeight: 16,
   },
 });

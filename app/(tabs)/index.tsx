@@ -507,56 +507,10 @@ export default function HomeScreen() {
           
           let facesToUse = cachedFaces || allFaces;
           
-          // Si toujours pas de faces, utiliser un fallback minimal
+          // Si pas de faces disponibles, ne pas lancer le dé
           if (!facesToUse || facesToUse.length === 0) {
-            console.log("⚠️ LANCEMENT - Aucune face disponible, utilisation du fallback minimal");
-            const name1 = namesToUse.player1?.trim() || "Mon cœur";
-            const name2 = namesToUse.player2?.trim() || "Mon amour";
-
-            facesToUse = [
-              {
-                id: "default-payer-1",
-                label: `${name1} paie`,
-                emoji: "💰",
-                category: "payer",
-                weight: 1,
-              },
-              {
-                id: "default-payer-2",
-                label: `${name2} paie`,
-                emoji: "💝",
-                category: "payer",
-                weight: 1,
-              },
-              {
-                id: "default-repas-1",
-                label: "Pizza",
-                emoji: "🍕",
-                category: "repas",
-                weight: 1,
-              },
-              {
-                id: "default-repas-2",
-                label: "Sushi",
-                emoji: "🍣",
-                category: "repas",
-                weight: 1,
-              },
-              {
-                id: "default-activite-1",
-                label: "Cinéma",
-                emoji: "🎬",
-                category: "activite",
-                weight: 1,
-              },
-              {
-                id: "default-activite-2",
-                label: "Balade",
-                emoji: "🚶",
-                category: "activite",
-                weight: 1,
-              },
-            ];
+            console.log("⚠️ LANCEMENT - Aucune face disponible, lancement annulé");
+            return;
           }
 
         const completeResult = rollCompleteDice(

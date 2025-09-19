@@ -266,6 +266,9 @@ export default function HomeScreen() {
   useEffect(() => {
     if (playerNames.player1.trim() && playerNames.player2.trim()) {
       updateCurrentPayerDisplay(playerNames);
+    } else {
+      // Si les noms ne sont pas complets, vider l'affichage
+      setCurrentPayerDisplay("");
     }
   }, [playerNames.player1, playerNames.player2]);
 
@@ -750,7 +753,7 @@ export default function HomeScreen() {
                   id: "default",
                   payer: {
                     id: "default-payer",
-                    label: defaultPayerName || "Tu paies",
+                    label: currentPayerDisplay || defaultPayerName || "Tu paies",
                     emoji: "💰",
                     category: "payer",
                     weight: 1,

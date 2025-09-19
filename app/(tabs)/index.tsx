@@ -417,25 +417,36 @@ export default function HomeScreen() {
           };
           console.log("🎯 SECOUSSE - Noms depuis l'état React:", finalNames);
         } else {
-        // Fallback: Firebase
-        try {
-          if (user?.uid) {
-            console.log("🔄 SECOUSSE - Lecture depuis Firebase car pas de noms locaux");
-            const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
-            if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
-              finalNames = {
-                player1: firebaseNames.player1.trim() || "Mon cœur",
-                player2: firebaseNames.player2.trim() || "Mon amour",
-              };
-              console.log("🎯 SECOUSSE - Noms depuis Firebase:", finalNames);
+          // Fallback: Firebase
+          try {
+            if (user?.uid) {
+              console.log("🔄 SECOUSSE - Lecture depuis Firebase car pas de noms locaux");
+              const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
+              if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
+                finalNames = {
+                  player1: firebaseNames.player1.trim() || "Mon cœur",
+                  player2: firebaseNames.player2.trim() || "Mon amour",
+                };
+                console.log("🎯 SECOUSSE - Noms depuis Firebase:", finalNames);
+              } else {
+                console.log("⚠️ SECOUSSE - Pas de noms Firebase, noms par défaut");
+              }
             } else {
-              console.log("⚠️ SECOUSSE - Pas de noms Firebase, noms par défaut");
+              console.log("⚠️ SECOUSSE - Pas d'utilisateur, noms par défaut");
             }
-          } else {
-            console.log("⚠️ SECOUSSE - Pas d'utilisateur, noms par défaut");
+          } catch (error) {
+            console.warn("⚠️ SECOUSSE - Erreur Firebase, noms par défaut:", error);
           }
-        } catch (error) {
-          console.warn("⚠️ SECOUSSE - Erreur Firebase, noms par défaut:", error);
+        }
+      } catch (error) {
+        console.error("❌ Erreur lors de la récupération du cache local:", error);
+        // Fallback vers l'état React
+        if (playerNames.player1.trim() && playerNames.player2.trim()) {
+          finalNames = {
+            player1: playerNames.player1.trim(),
+            player2: playerNames.player2.trim(),
+          };
+          console.log("🎯 SECOUSSE - Noms depuis l'état React (fallback):", finalNames);
         }
       }
 

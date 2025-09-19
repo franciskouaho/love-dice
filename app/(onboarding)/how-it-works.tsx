@@ -56,35 +56,58 @@ export default function OnboardingStep2() {
           <PanGestureHandler onGestureEvent={onGestureEvent}>
             <View style={styles.main}>
               <View style={styles.content}>
-                {/* Illustration des catégories */}
-                <View style={styles.categoriesContainer}>
-                  <View style={styles.categoryItem}>
-                    <Text style={styles.categoryEmoji}>🍷</Text>
-                    <Text style={styles.categoryText}>Qui paie</Text>
+                {/* Étapes d'utilisation */}
+                <View style={styles.stepsContainer}>
+                  <View style={styles.stepItem}>
+                    <View style={styles.stepNumber}>
+                      <Text style={styles.stepNumberText}>1</Text>
+                    </View>
+                    <View style={styles.stepContent}>
+                      <Text style={styles.stepTitle}>Personnalisez vos noms</Text>
+                      <Text style={styles.stepDescription}>
+                        Entrez vos prénoms pour des résultats personnalisés
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.categoryItem}>
-                    <Text style={styles.categoryEmoji}>🍽️</Text>
-                    <Text style={styles.categoryText}>Où manger</Text>
+
+                  <View style={styles.stepItem}>
+                    <View style={styles.stepNumber}>
+                      <Text style={styles.stepNumberText}>2</Text>
+                    </View>
+                    <View style={styles.stepContent}>
+                      <Text style={styles.stepTitle}>Secouez votre téléphone</Text>
+                      <Text style={styles.stepDescription}>
+                        Un geste simple pour lancer le dé magique
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.categoryItem}>
-                    <Text style={styles.categoryEmoji}>🎬</Text>
-                    <Text style={styles.categoryText}>Quelle activité</Text>
+
+                  <View style={styles.stepItem}>
+                    <View style={styles.stepNumber}>
+                      <Text style={styles.stepNumberText}>3</Text>
+                    </View>
+                    <View style={styles.stepContent}>
+                      <Text style={styles.stepTitle}>Découvrez votre soirée</Text>
+                      <Text style={styles.stepDescription}>
+                        Qui paie, où manger, quelle activité vous attend
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
                 {/* Titre principal */}
-                <Text style={styles.title}>Un seul dé, une décision</Text>
+                <Text style={styles.title}>Comment ça marche ?</Text>
 
                 {/* Sous-titre */}
                 <Text style={styles.subtitle}>
-                  Qui paie, où manger, quelle activité.
+                  Simple, rapide et magique
                 </Text>
 
                 {/* Description */}
                 <Text style={styles.description}>
-                  Love Dice transforme les moments d&apos;hésitation en instants
-                  de découverte. Un lancer, et votre soirée prend forme
-                  naturellement.
+                  Love Dice utilise un système de dés intelligents qui combinent 
+                  plusieurs catégories : qui paie, où manger, quelle activité. 
+                  Chaque lancer est unique et personnalisé à vos noms.
                 </Text>
 
                 {/* Indicateurs de progression */}
@@ -195,5 +218,48 @@ const styles = StyleSheet.create({
   activeDot: {
     backgroundColor: "#F4C869",
     width: 24,
+  },
+  stepsContainer: {
+    width: "100%",
+    marginBottom: 32,
+  },
+  stepItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F4C869",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+    marginTop: 4,
+  },
+  stepNumberText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#A50848",
+    fontFamily: "System",
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginBottom: 4,
+    fontFamily: "System",
+  },
+  stepDescription: {
+    fontSize: 14,
+    color: "#FFF3F6",
+    lineHeight: 20,
+    opacity: 0.8,
+    fontFamily: "System",
   },
 });

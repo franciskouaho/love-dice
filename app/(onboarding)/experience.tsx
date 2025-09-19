@@ -70,9 +70,9 @@ export default function OnboardingStep3() {
       console.log("📝 Marquage onboarding complété...");
       await markOnboardingCompleted();
 
-      // Rediriger vers l'app principale (pas le paywall)
-      console.log("🏠 Redirection vers tabs...");
-      nav.goTabs();
+      // Rediriger vers la page des fonctionnalités
+      console.log("🎨 Redirection vers features...");
+      nav.onboarding.features();
     } catch (error) {
       console.error("❌ Erreur initialisation Firebase:", error);
       console.error("❌ Stack trace:", (error as Error).stack);
@@ -130,19 +130,41 @@ export default function OnboardingStep3() {
                   </View>
                 </View>
 
+                {/* Instructions d'utilisation */}
+                <View style={styles.instructionsContainer}>
+                  <View style={styles.instructionItem}>
+                    <Text style={styles.instructionEmoji}>📱</Text>
+                    <Text style={styles.instructionText}>
+                      Tenez votre téléphone fermement
+                    </Text>
+                  </View>
+                  <View style={styles.instructionItem}>
+                    <Text style={styles.instructionEmoji}>📳</Text>
+                    <Text style={styles.instructionText}>
+                      Secouez d'avant en arrière
+                    </Text>
+                  </View>
+                  <View style={styles.instructionItem}>
+                    <Text style={styles.instructionEmoji}>🎯</Text>
+                    <Text style={styles.instructionText}>
+                      Découvrez votre soirée !
+                    </Text>
+                  </View>
+                </View>
+
                 {/* Titre principal */}
-                <Text style={styles.title}>Secouez & découvrez</Text>
+                <Text style={styles.title}>Prêt à commencer ?</Text>
 
                 {/* Sous-titre */}
                 <Text style={styles.subtitle}>
-                  Animation satisfaisante, résultat instantané.
+                  Votre aventure vous attend
                 </Text>
 
                 {/* Description */}
                 <Text style={styles.description}>
-                  Chaque lancer est une petite aventure. Ressentez la magie du
-                  hasard et laissez-vous surprendre par des soirées
-                  inoubliables.
+                  Vous avez maintenant toutes les clés pour transformer vos soirées. 
+                  Chaque secousse révèlera une nouvelle surprise et créera des 
+                  souvenirs inoubliables à deux.
                 </Text>
 
                 {/* Indicateurs de progression */}
@@ -345,5 +367,31 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  instructionsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 24,
+    marginBottom: 32,
+    paddingHorizontal: 16,
+  },
+  instructionItem: {
+    alignItems: "center",
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  instructionEmoji: {
+    fontSize: 28,
+    marginBottom: 8,
+  },
+  instructionText: {
+    fontSize: 11,
+    color: "#FFF3F6",
+    textAlign: "center",
+    fontFamily: "System",
+    opacity: 0.9,
+    fontWeight: "500",
+    lineHeight: 14,
   },
 });

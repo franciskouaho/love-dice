@@ -53,17 +53,33 @@ export default function OnboardingStep1() {
                 </View>
 
                 {/* Titre principal */}
-                <Text style={styles.title}>Randomisez votre soirée</Text>
+                <Text style={styles.title}>Bienvenue dans Love Dice</Text>
 
                 {/* Sous-titre */}
-                <Text style={styles.subtitle}>Fini les prises de tête.</Text>
+                <Text style={styles.subtitle}>Votre assistant décisionnel amoureux</Text>
 
                 {/* Description */}
                 <Text style={styles.description}>
-                  Une soirée parfaite commence par une décision simple. Laissez
-                  Love Dice choisir pour vous et découvrez de nouveaux moments
-                  magiques ensemble.
+                  Fini les "Qu'est-ce qu'on fait ce soir ?" et "Qui paie ?". 
+                  Love Dice transforme vos hésitations en aventures spontanées 
+                  et vos soirées en moments magiques.
                 </Text>
+
+                {/* Fonctionnalités clés */}
+                <View style={styles.featuresContainer}>
+                  <View style={styles.featureItem}>
+                    <Text style={styles.featureEmoji}>🎲</Text>
+                    <Text style={styles.featureText}>Secouez pour décider</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <Text style={styles.featureEmoji}>💕</Text>
+                    <Text style={styles.featureText}>Personnalisez vos noms</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <Text style={styles.featureEmoji}>✨</Text>
+                    <Text style={styles.featureText}>Découvrez l'inattendu</Text>
+                  </View>
+                </View>
 
                 {/* Indicateurs de progression */}
                 <View style={styles.progressContainer}>
@@ -164,5 +180,30 @@ const styles = StyleSheet.create({
   activeDot: {
     backgroundColor: "#F4C869",
     width: 24,
+  },
+  featuresContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 24,
+    marginBottom: 32,
+    paddingHorizontal: 16,
+  },
+  featureItem: {
+    alignItems: "center",
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  featureEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  featureText: {
+    fontSize: 12,
+    color: "#FFF3F6",
+    textAlign: "center",
+    fontFamily: "System",
+    opacity: 0.9,
+    fontWeight: "500",
   },
 });

@@ -40,6 +40,7 @@ export const Routes = {
     welcome: "/(onboarding)/welcome" as const,
     howItWorks: "/(onboarding)/how-it-works" as const,
     experience: "/(onboarding)/experience" as const,
+    features: "/(onboarding)/features" as const,
   },
   paywall: "/paywall" as const,
   history: "/history" as const,
@@ -91,6 +92,7 @@ export function isAppPath(p: string): p is AppPath {
     case Routes.onboarding.welcome:
     case Routes.onboarding.howItWorks:
     case Routes.onboarding.experience:
+    case Routes.onboarding.features:
       return true;
     default:
       return false;
@@ -163,6 +165,7 @@ export const nav = {
     welcome: () => _replace(Routes.onboarding.welcome),
     howItWorks: () => _replace(Routes.onboarding.howItWorks),
     experience: () => _replace(Routes.onboarding.experience),
+    features: () => _replace(Routes.onboarding.features),
   },
 };
 
@@ -184,6 +187,7 @@ function _assertAllRoutesAreAppPath() {
     Routes.onboarding.welcome,
     Routes.onboarding.howItWorks,
     Routes.onboarding.experience,
+    Routes.onboarding.features,
   ];
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _: AppPath[] = all;

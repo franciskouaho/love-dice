@@ -69,6 +69,7 @@ export default function HomeScreen() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [justSavedNames, setJustSavedNames] = useState(false); // Pour éviter de recharger après sauvegarde
   const [currentPayerDisplay, setCurrentPayerDisplay] = useState(""); // Nom affiché pour qui paie
+  const [stablePayerName, setStablePayerName] = useState(""); // Nom stable du payeur (pas de random)
   const safetyTimeoutRef = useRef<number | null>(null);
 
 
@@ -80,14 +81,24 @@ export default function HomeScreen() {
   const glowAnimation = useRef(new Animated.Value(0)).current;
 
   // Fonction pour mettre à jour l'affichage du payeur
-  const updateCurrentPayerDisplay = (names: { player1: string; player2: string }) => {
+  const updateCurrentPayerDisplay = (names: { player1: string; player2: string }, forceUpdate: boolean = false) => {
     if (names.player1.trim() && names.player2.trim()) {
+      // Si on a déjà un nom stable et qu'on ne force pas la mise à jour, garder le même
+      if (stablePayerName && !forceUpdate) {
+        console.log(`🎯 updateCurrentPayerDisplay - Garde le nom stable: ${stablePayerName}`);
+        setCurrentPayerDisplay(`${stablePayerName} paie`);
+        return;
+      }
+      
+      // Sinon, choisir un nouveau nom et le garder stable
       const chosenName = Math.random() < 0.5 ? names.player1.trim() : names.player2.trim();
-      console.log(`🎯 updateCurrentPayerDisplay - Noms:`, names, `→ Choisi: ${chosenName}`);
+      console.log(`🎯 updateCurrentPayerDisplay - Nouveau nom choisi:`, names, `→ Choisi: ${chosenName}`);
+      setStablePayerName(chosenName);
       setCurrentPayerDisplay(`${chosenName} paie`);
     } else {
       console.log(`🎯 updateCurrentPayerDisplay - Noms incomplets:`, names);
       setCurrentPayerDisplay("");
+      setStablePayerName("");
     }
   };
 
@@ -137,7 +148,7 @@ export default function HomeScreen() {
           Math.random() < 0.5 ? cleanNames.player1 : cleanNames.player2;
         setDefaultPayerName(`${randomName} paie`);
         // Mettre à jour l'affichage du payeur dans le modal
-        updateCurrentPayerDisplay(cleanNames);
+        updateCurrentPayerDisplay(cleanNames, true);
       } else {
         // Pas de noms sauvegardés, utiliser des noms par défaut
         console.log("⚠️ loadPlayerNames - Pas de noms Firebase, utilisation des défauts");
@@ -148,7 +159,7 @@ export default function HomeScreen() {
           Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
         setDefaultPayerName(`${randomName} paie`);
         // Mettre à jour l'affichage du payeur dans le modal
-        updateCurrentPayerDisplay(defaultNames);
+        updateCurrentPayerDisplay(defaultNames, true);
       }
     } catch (error) {
       // Erreur lors du chargement des noms depuis Firebase - utiliser des noms par défaut
@@ -158,7 +169,7 @@ export default function HomeScreen() {
         Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
       setDefaultPayerName(`${randomName} paie`);
       // Mettre à jour l'affichage du payeur dans le modal
-      updateCurrentPayerDisplay(defaultNames);
+      updateCurrentPayerDisplay(defaultNames, true);
     } finally {
       setPlayerNamesLoaded(true);
     }
@@ -267,10 +278,13 @@ export default function HomeScreen() {
   // Mettre à jour l'affichage du payeur quand les noms changent
   useEffect(() => {
     if (playerNames.player1.trim() && playerNames.player2.trim()) {
-      updateCurrentPayerDisplay(playerNames);
+      // Forcer la mise à jour seulement si les noms ont vraiment changé
+      const newNames = { player1: playerNames.player1.trim(), player2: playerNames.player2.trim() };
+      updateCurrentPayerDisplay(newNames, true);
     } else {
       // Si les noms ne sont pas complets, vider l'affichage
       setCurrentPayerDisplay("");
+      setStablePayerName("");
     }
   }, [playerNames.player1, playerNames.player2]);
 
@@ -644,7 +658,7 @@ export default function HomeScreen() {
     setJustSavedNames(true);
     
     // Mettre à jour l'affichage du payeur avec les nouveaux noms
-    updateCurrentPayerDisplay(playerNames);
+    updateCurrentPayerDisplay(playerNames, true);
     
     // PAS de rechargement - on garde les noms qui viennent d'être saisis
     console.log("✅ Noms conservés localement, pas de rechargement depuis Firebase");
@@ -684,7 +698,7 @@ export default function HomeScreen() {
     await savePlayerNamesLocal(defaultNames);
 
     // Mettre à jour l'affichage du payeur avec les noms par défaut
-    updateCurrentPayerDisplay(defaultNames);
+    updateCurrentPayerDisplay(defaultNames, true);
 
     setIsNamesModalVisible(false);
     await Haptics.selectionAsync();

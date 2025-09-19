@@ -30,6 +30,7 @@ import useQuota from "../../hooks/useQuota";
 import useRevenueCat from "../../hooks/useRevenueCat";
 import { useShake } from "../../hooks/useShake";
 
+import { cacheService } from "../../services/cache";
 import { createAnonymousUser } from "../../services/firebase";
 import * as FirestoreService from "../../services/firestore";
 import { CompleteDiceResult, rollCompleteDice } from "../../utils/dice";
@@ -496,10 +497,19 @@ export default function HomeScreen() {
           // Réinitialiser le roll précédent
           setCurrentRoll(null);
           
-          // Utiliser le cache local si disponible, sinon faces par défaut
-          let facesToUse = allFaces;
-          if (allFaces.length === 0) {
-            // Fallback avec des faces par défaut
+          // TOUJOURS utiliser le cache local directement
+          console.log("🔍 LANCEMENT - allFaces.length:", allFaces.length);
+          console.log("🔍 LANCEMENT - allFaces:", allFaces.slice(0, 3)); // Premières 3 faces
+          
+          // Récupérer directement depuis le cache local
+          const cachedFaces = await cacheService.getDefaultFaces();
+          console.log("🔍 LANCEMENT - Cache direct:", cachedFaces?.length || 0, "faces");
+          
+          let facesToUse = cachedFaces || allFaces;
+          
+          // Si toujours pas de faces, utiliser un fallback minimal
+          if (!facesToUse || facesToUse.length === 0) {
+            console.log("⚠️ LANCEMENT - Aucune face disponible, utilisation du fallback minimal");
             const name1 = namesToUse.player1?.trim() || "Mon cœur";
             const name2 = namesToUse.player2?.trim() || "Mon amour";
 

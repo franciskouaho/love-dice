@@ -5,9 +5,6 @@ import {
     fetchConfigFromFirebase as fetchAppConfig
 } from './config';
 import {
-    fetchDefaultFacesFromFirebase as fetchDefaultFaces
-} from './faces';
-import {
     CustomFace,
     fetchCustomFacesFromFirebase as fetchCustomFaces,
     fetchHistoryFromFirebase as fetchUserHistory,
@@ -67,23 +64,19 @@ export class SyncService {
       this.setSyncInProgress(syncKey, true);
 
       // 1. Essayer de récupérer depuis le cache d'abord
-      if (!forceRefresh) {
-        const cached = await cacheService.getDefaultFaces();
-        if (cached) {
-          console.log('📱 Faces par défaut récupérées depuis le cache');
-          return cached;
-        }
+      console.log('🔍 syncDefaultFaces - Vérification du cache LOCAL uniquement...');
+      const cached = await cacheService.getDefaultFaces();
+      console.log('🔍 syncDefaultFaces - Cache trouvé:', !!cached, 'longueur:', cached?.length || 0);
+      
+      if (cached && cached.length > 0) {
+        console.log('📱 Faces par défaut récupérées depuis le cache LOCAL:', cached.length, 'faces');
+        console.log('📱 Première face du cache:', cached[0]);
+        return cached;
       }
 
-      // 2. Récupérer depuis Firebase
-      console.log('🔥 Récupération des faces par défaut depuis Firebase...');
-      const faces = await fetchDefaultFaces();
-      
-      // 3. Mettre en cache
-      await cacheService.setDefaultFaces(faces);
-      console.log('💾 Faces par défaut mises en cache');
-
-      return faces;
+      // 2. Si pas de cache, retourner un tableau vide (pas de Firebase)
+      console.log('⚠️ Aucune donnée dans le cache local, retour tableau vide');
+      return [];
     } catch (error) {
       console.error('❌ Erreur lors de la synchronisation des faces par défaut:', error);
       

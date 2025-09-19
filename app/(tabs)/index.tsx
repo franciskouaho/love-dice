@@ -187,15 +187,20 @@ export default function HomeScreen() {
     player2: string;
   }) => {
     try {
-      if (!user?.uid) {
-        // Pas d'utilisateur connecté pour sauvegarder les noms
-        return;
-      }
+      // Sauvegarder dans le cache local d'abord
+      const { cacheService } = await import("../../services/cache");
+      await cacheService.setCache('player_names', names, 24 * 60 * 60 * 1000); // 24h cache
+      console.log("💾 Noms sauvegardés dans le cache local:", names);
 
-      const success = await FirestoreService.savePlayerNames(user.uid, names);
-      // Sauvegarde réalisée
+      if (user?.uid) {
+        // Sauvegarder aussi dans Firebase
+        const success = await FirestoreService.savePlayerNames(user.uid, names);
+        console.log("🔥 Noms sauvegardés dans Firebase:", success);
+      } else {
+        console.log("ℹ️ Pas d'utilisateur connecté, sauvegarde locale seulement");
+      }
     } catch (error) {
-      // Erreur lors de la sauvegarde des noms
+      console.error("❌ Erreur lors de la sauvegarde des noms:", error);
     }
   };
 
@@ -388,19 +393,30 @@ export default function HomeScreen() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
 
-      // PRIORITÉ 1: Noms saisis dans le modal (playerNames)
+      // PRIORITÉ 1: Cache local (noms saisis dans le modal)
       // PRIORITÉ 2: Firebase (noms sauvegardés)  
       // PRIORITÉ 3: Noms par défaut
       let finalNames = { player1: "Mon cœur", player2: "Mon amour" };
 
-      // D'ABORD utiliser les noms du modal si disponibles
-      if (playerNames.player1.trim() && playerNames.player2.trim()) {
-        finalNames = {
-          player1: playerNames.player1.trim(),
-          player2: playerNames.player2.trim(),
-        };
-        console.log("🎯 SECOUSSE - Noms depuis le modal (noms actuels):", finalNames);
-      } else {
+      // D'ABORD vérifier le cache local pour les noms du modal
+      try {
+        const { cacheService } = await import("../../services/cache");
+        const cachedNames = await cacheService.getCache<{ player1: string; player2: string }>('player_names', 24 * 60 * 60 * 1000); // 24h cache
+        
+        if (cachedNames && cachedNames.player1?.trim() && cachedNames.player2?.trim()) {
+          finalNames = {
+            player1: cachedNames.player1.trim(),
+            player2: cachedNames.player2.trim(),
+          };
+          console.log("🎯 SECOUSSE - Noms depuis le cache local:", finalNames);
+        } else if (playerNames.player1.trim() && playerNames.player2.trim()) {
+          // Fallback: état React local
+          finalNames = {
+            player1: playerNames.player1.trim(),
+            player2: playerNames.player2.trim(),
+          };
+          console.log("🎯 SECOUSSE - Noms depuis l'état React:", finalNames);
+        } else {
         // Fallback: Firebase
         try {
           if (user?.uid) {

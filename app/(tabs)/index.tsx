@@ -750,6 +750,7 @@ export default function HomeScreen() {
       router.push("/history")
     }
   }
+
   const remainingText = hasLifetime || rcHasLifetime ? "∞" : `${remaining}`
 
   return (
@@ -874,12 +875,13 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Bouton Noms au milieu */}
-        <TouchableOpacity style={styles.bottomButton} onPress={() => setIsNamesModalVisible(true)}>
-          <View style={styles.bottomBlur}>
-            <Ionicons name="people" size={20} color="#FFFFFF" />
-          </View>
-        </TouchableOpacity>
+            {/* Bouton Noms au milieu */}
+            <TouchableOpacity style={styles.bottomButton} onPress={() => setIsNamesModalVisible(true)}>
+              <View style={styles.bottomBlur}>
+                <Ionicons name="people" size={20} color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+
 
         {/* Bouton compteur de lancers à droite */}
         <TouchableOpacity style={styles.bottomButton}>

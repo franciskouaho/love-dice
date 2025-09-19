@@ -1,13 +1,13 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, SafeAreaView, StatusBar } from "react-native";
-import {
-  PanGestureHandler,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
-import { nav } from "../../utils/navigation";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useEffect } from "react";
+import { SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
+import {
+    GestureHandlerRootView,
+    PanGestureHandler,
+} from "react-native-gesture-handler";
 import useAnalytics from "../../hooks/useAnalytics";
+import { nav } from "../../utils/navigation";
 
 export default function OnboardingStep2() {
   const { logOnboardingView } = useAnalytics();

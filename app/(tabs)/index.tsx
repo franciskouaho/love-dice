@@ -855,6 +855,29 @@ export default function HomeScreen() {
           </Animated.View>
         </View>
 
+        {/* Résultats textuels */}
+        {currentRoll && (
+          <View style={styles.resultsContainer}>
+            <View style={styles.resultsCard}>
+              <Text style={styles.resultsTitle}>Votre soirée</Text>
+              <View style={styles.resultsList}>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultEmoji}>{currentRoll.payer.emoji}</Text>
+                  <Text style={styles.resultLabel}>{currentRoll.payer.label}</Text>
+                </View>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultEmoji}>{currentRoll.repas.emoji}</Text>
+                  <Text style={styles.resultLabel}>{currentRoll.repas.label}</Text>
+                </View>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultEmoji}>{currentRoll.activite.emoji}</Text>
+                  <Text style={styles.resultLabel}>{currentRoll.activite.label}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Side Controls */}
         <View style={styles.sideControls}>
           {/* Left Side */}
@@ -1451,6 +1474,54 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
     marginTop: 300,
+  },
+  resultsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  resultsCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    shadowColor: "rgba(0, 0, 0, 0.1)",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  resultsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginBottom: 16,
+    fontFamily: "System",
+  },
+  resultsList: {
+    gap: 12,
+  },
+  resultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+  },
+  resultEmoji: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  resultLabel: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    fontFamily: "System",
+    fontWeight: "500",
+    flex: 1,
   },
   blockedBlur: {
     backgroundColor: "rgba(255, 107, 107, 0.3)",

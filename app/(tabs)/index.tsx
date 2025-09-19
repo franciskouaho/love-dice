@@ -1,10 +1,12 @@
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BlurView } from "expo-blur";
-import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+"use client"
+
+import { Ionicons } from "@expo/vector-icons"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { BlurView } from "expo-blur"
+import * as Haptics from "expo-haptics"
+import { LinearGradient } from "expo-linear-gradient"
+import { router } from "expo-router"
+import { useEffect, useRef, useState } from "react"
 import {
   Alert,
   Animated,
@@ -17,295 +19,281 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
-import { AnimatedDice } from "../../components/AnimatedDice";
-import BottomDrawer from "../../components/ui/BottomDrawer";
-import SettingsDrawerContent from "../../components/ui/SettingsDrawerContent";
-import useAnalytics from "../../hooks/useAnalytics";
-import { useFaces } from "../../hooks/useFaces";
-import { useAuth } from "../../hooks/useFirebase";
-import { useInAppReview } from "../../hooks/useInAppReview";
-import useNotifications from "../../hooks/useNotifications";
-import useQuota from "../../hooks/useQuota";
-import useRevenueCat from "../../hooks/useRevenueCat";
-import { useShake } from "../../hooks/useShake";
+} from "react-native"
+import { AnimatedDice } from "../../components/AnimatedDice"
+import BottomDrawer from "../../components/ui/BottomDrawer"
+import ResultsDrawer from "../../components/ui/ResultsDrawer"
+import SettingsDrawerContent from "../../components/ui/SettingsDrawerContent"
+import useAnalytics from "../../hooks/useAnalytics"
+import { useFaces } from "../../hooks/useFaces"
+import { useAuth } from "../../hooks/useFirebase"
+import { useInAppReview } from "../../hooks/useInAppReview"
+import useNotifications from "../../hooks/useNotifications"
+import useQuota from "../../hooks/useQuota"
+import useRevenueCat from "../../hooks/useRevenueCat"
+import { useShake } from "../../hooks/useShake"
 
-import { cacheService } from "../../services/cache";
-import { createAnonymousUser } from "../../services/firebase";
-import * as FirestoreService from "../../services/firestore";
-import { getCurrentUserId } from "../../services/firestore";
-import { CompleteDiceResult, rollCompleteDice } from "../../utils/dice";
-import { getLastRoll, getLifetimeStatus, getQuotaSummary, saveLastRoll } from "../../utils/quota";
+import { cacheService } from "../../services/cache"
+import { createAnonymousUser } from "../../services/firebase"
+import * as FirestoreService from "../../services/firestore"
+import { getCurrentUserId } from "../../services/firestore"
+import { type CompleteDiceResult, rollCompleteDice } from "../../utils/dice"
+import { getLastRoll, getLifetimeStatus, getQuotaSummary, saveLastRoll } from "../../utils/quota"
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get("window")
 
 export default function HomeScreen() {
-  const { user, loading: authLoading } = useAuth();
-  const { logDiceRoll, logFreeLimitHit } = useAnalytics();
-  const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } =
-    useQuota();
-  const { hasLifetime: rcHasLifetime } = useRevenueCat();
-  const { triggerReviewAfterSuccess } = useInAppReview();
-  const { allFaces, loading: facesLoading } = useFaces();
+  const { user, loading: authLoading } = useAuth()
+  const { logDiceRoll, logFreeLimitHit } = useAnalytics()
+  const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } = useQuota()
+  const { hasLifetime: rcHasLifetime } = useRevenueCat()
+  const { triggerReviewAfterSuccess } = useInAppReview()
+  const { allFaces, loading: facesLoading } = useFaces()
   const {
     hasPermissions,
     notifyMilestone,
     requestPermissions,
     isInitialized: notificationsInitialized,
-  } = useNotifications();
+  } = useNotifications()
 
-  const [currentRoll, setCurrentRoll] = useState<CompleteDiceResult | null>(
-    null,
-  );
-  const [isRolling, setIsRolling] = useState(false);
-  const [isShakingDice, setIsShakingDice] = useState(false);
-  const [isSettingsDrawerVisible, setIsSettingsDrawerVisible] = useState(false);
-  const [isNamesModalVisible, setIsNamesModalVisible] = useState(false);
-  const [playerNames, setPlayerNames] = useState({ player1: "", player2: "" });
-  const [playerNamesLoaded, setPlayerNamesLoaded] = useState(false);
-  const [defaultPayerName, setDefaultPayerName] = useState("");
-  const [rollCount, setRollCount] = useState(0);
-  const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [justSavedNames, setJustSavedNames] = useState(false); // Pour éviter de recharger après sauvegarde
-  const [currentPayerDisplay, setCurrentPayerDisplay] = useState(""); // Nom affiché pour qui paie
-  const [stablePayerName, setStablePayerName] = useState(""); // Nom stable du payeur (pas de random)
-  const safetyTimeoutRef = useRef<number | null>(null);
-
+  const [currentRoll, setCurrentRoll] = useState<CompleteDiceResult | null>(null)
+  const [isRolling, setIsRolling] = useState(false)
+  const [isShakingDice, setIsShakingDice] = useState(false)
+  const [isSettingsDrawerVisible, setIsSettingsDrawerVisible] = useState(false)
+  const [isResultsDrawerVisible, setIsResultsDrawerVisible] = useState(false)
+  const [isNamesModalVisible, setIsNamesModalVisible] = useState(false)
+  const [playerNames, setPlayerNames] = useState({ player1: "", player2: "" })
+  const [playerNamesLoaded, setPlayerNamesLoaded] = useState(false)
+  const [defaultPayerName, setDefaultPayerName] = useState("")
+  const [rollCount, setRollCount] = useState(0)
+  const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false)
+  const [isBlocked, setIsBlocked] = useState(false)
+  const [justSavedNames, setJustSavedNames] = useState(false) // Pour éviter de recharger après sauvegarde
+  const [currentPayerDisplay, setCurrentPayerDisplay] = useState("") // Nom affiché pour qui paie
+  const [stablePayerName, setStablePayerName] = useState("") // Nom stable du payeur (pas de random)
+  const safetyTimeoutRef = useRef<number | null>(null)
 
   // Animation refs
-  const diceRotation = useRef(new Animated.Value(0)).current;
-  const diceScale = useRef(new Animated.Value(1)).current;
-  const resultOpacity = useRef(new Animated.Value(0)).current;
-  const floatAnimation = useRef(new Animated.Value(0)).current;
-  const glowAnimation = useRef(new Animated.Value(0)).current;
+  const diceRotation = useRef(new Animated.Value(0)).current
+  const diceScale = useRef(new Animated.Value(1)).current
+  const resultOpacity = useRef(new Animated.Value(0)).current
+  const floatAnimation = useRef(new Animated.Value(0)).current
+  const glowAnimation = useRef(new Animated.Value(0)).current
 
   // Fonction pour mettre à jour l'affichage du payeur
-  const updateCurrentPayerDisplay = (names: { player1: string; player2: string }, forceUpdate: boolean = false) => {
+  const updateCurrentPayerDisplay = (names: { player1: string; player2: string }, forceUpdate = false) => {
     if (names.player1.trim() && names.player2.trim()) {
       // Si on a déjà un nom stable et qu'on ne force pas la mise à jour, garder le même
       if (stablePayerName && !forceUpdate) {
-        console.log(`🎯 updateCurrentPayerDisplay - Garde le nom stable: ${stablePayerName}`);
-        setCurrentPayerDisplay(`${stablePayerName} paie`);
-        return;
+        console.log(`🎯 updateCurrentPayerDisplay - Garde le nom stable: ${stablePayerName}`)
+        setCurrentPayerDisplay(`${stablePayerName} paie`)
+        return
       }
-      
+
       // Sinon, choisir un nouveau nom et le garder stable
-      const chosenName = Math.random() < 0.5 ? names.player1.trim() : names.player2.trim();
-      console.log(`🎯 updateCurrentPayerDisplay - Nouveau nom choisi:`, names, `→ Choisi: ${chosenName}`);
-      setStablePayerName(chosenName);
-      setCurrentPayerDisplay(`${chosenName} paie`);
+      const chosenName = Math.random() < 0.5 ? names.player1.trim() : names.player2.trim()
+      console.log(`🎯 updateCurrentPayerDisplay - Nouveau nom choisi:`, names, `→ Choisi: ${chosenName}`)
+      setStablePayerName(chosenName)
+      setCurrentPayerDisplay(`${chosenName} paie`)
     } else {
-      console.log(`🎯 updateCurrentPayerDisplay - Noms incomplets:`, names);
+      console.log(`🎯 updateCurrentPayerDisplay - Noms incomplets:`, names)
       // Ne vider stablePayerName que si on force vraiment
       if (forceUpdate) {
-        setCurrentPayerDisplay("");
-        setStablePayerName("");
+        setCurrentPayerDisplay("")
+        setStablePayerName("")
       } else {
         // Garder l'affichage actuel si on ne force pas
-        console.log(`🎯 updateCurrentPayerDisplay - Garde l'affichage actuel: ${currentPayerDisplay}`);
+        console.log(`🎯 updateCurrentPayerDisplay - Garde l'affichage actuel: ${currentPayerDisplay}`)
       }
     }
-  };
+  }
 
   // Fonction pour charger les noms sauvegardés depuis Firebase
   const loadPlayerNames = async () => {
     try {
-      console.log("🔄 loadPlayerNames - DÉBUT", { 
-        justSavedNames, 
-        userUid: user?.uid, 
-        authLoading, 
-        playerNamesLoaded 
-      });
-      
+      console.log("🔄 loadPlayerNames - DÉBUT", {
+        justSavedNames,
+        userUid: user?.uid,
+        authLoading,
+        playerNamesLoaded,
+      })
+
       // Ne pas recharger si on vient de sauvegarder des noms
       if (justSavedNames) {
-        console.log("🛑 loadPlayerNames - Éviter le rechargement, noms viennent d'être sauvegardés");
-        setPlayerNamesLoaded(true);
-        return;
-      }
-      
-      // Utiliser l'utilisateur du hook useAuth au lieu de getCurrentUserId
-      if (!user?.uid) {
-        console.log("ℹ️ loadPlayerNames - Pas d'utilisateur connecté, utilisation des noms par défaut");
-        const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
-        setPlayerNames(defaultNames);
-        const randomName =
-          Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
-        setDefaultPayerName(`${randomName} paie`);
-        setPlayerNamesLoaded(true);
-        return;
+        console.log("🛑 loadPlayerNames - Éviter le rechargement, noms viennent d'être sauvegardés")
+        setPlayerNamesLoaded(true)
+        return
       }
 
-      console.log("📖 loadPlayerNames - Lecture Firebase pour:", user.uid);
-      const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
-      console.log("📖 loadPlayerNames - Résultat Firebase:", firebaseNames);
-      
+      // Utiliser l'utilisateur du hook useAuth au lieu de getCurrentUserId
+      if (!user?.uid) {
+        console.log("ℹ️ loadPlayerNames - Pas d'utilisateur connecté, utilisation des noms par défaut")
+        const defaultNames = { player1: "Mon cœur", player2: "Mon amour" }
+        setPlayerNames(defaultNames)
+        const randomName = Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2
+        setDefaultPayerName(`${randomName} paie`)
+        setPlayerNamesLoaded(true)
+        return
+      }
+
+      console.log("📖 loadPlayerNames - Lecture Firebase pour:", user.uid)
+      const firebaseNames = await FirestoreService.getPlayerNames(user.uid)
+      console.log("📖 loadPlayerNames - Résultat Firebase:", firebaseNames)
+
       if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
         // Nettoyer les noms dès le chargement
         const cleanNames = {
           player1: firebaseNames.player1.trim(),
           player2: firebaseNames.player2.trim(),
-        };
-        console.log("✅ loadPlayerNames - Noms Firebase trouvés:", cleanNames);
-        setPlayerNames(cleanNames);
+        }
+        console.log("✅ loadPlayerNames - Noms Firebase trouvés:", cleanNames)
+        setPlayerNames(cleanNames)
         // Créer un nom par défaut stable pour l'affichage
-        const randomName =
-          Math.random() < 0.5 ? cleanNames.player1 : cleanNames.player2;
-        setDefaultPayerName(`${randomName} paie`);
+        const randomName = Math.random() < 0.5 ? cleanNames.player1 : cleanNames.player2
+        setDefaultPayerName(`${randomName} paie`)
         // Mettre à jour l'affichage du payeur dans le modal
-        updateCurrentPayerDisplay(cleanNames, true);
+        updateCurrentPayerDisplay(cleanNames, true)
       } else {
         // Pas de noms sauvegardés, utiliser des noms par défaut
-        console.log("⚠️ loadPlayerNames - Pas de noms Firebase, utilisation des défauts");
-        const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
-        setPlayerNames(defaultNames);
+        console.log("⚠️ loadPlayerNames - Pas de noms Firebase, utilisation des défauts")
+        const defaultNames = { player1: "Mon cœur", player2: "Mon amour" }
+        setPlayerNames(defaultNames)
         // Créer un nom par défaut stable
-        const randomName =
-          Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
-        setDefaultPayerName(`${randomName} paie`);
+        const randomName = Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2
+        setDefaultPayerName(`${randomName} paie`)
         // Mettre à jour l'affichage du payeur dans le modal
-        updateCurrentPayerDisplay(defaultNames, true);
+        updateCurrentPayerDisplay(defaultNames, true)
       }
     } catch (error) {
       // Erreur lors du chargement des noms depuis Firebase - utiliser des noms par défaut
-      const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
-      setPlayerNames(defaultNames);
-      const randomName =
-        Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
-      setDefaultPayerName(`${randomName} paie`);
+      const defaultNames = { player1: "Mon cœur", player2: "Mon amour" }
+      setPlayerNames(defaultNames)
+      const randomName = Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2
+      setDefaultPayerName(`${randomName} paie`)
       // Mettre à jour l'affichage du payeur dans le modal
-      updateCurrentPayerDisplay(defaultNames, true);
+      updateCurrentPayerDisplay(defaultNames, true)
     } finally {
-      setPlayerNamesLoaded(true);
+      setPlayerNamesLoaded(true)
     }
-  };
+  }
 
   // Fonction pour sauvegarder les noms dans Firebase
   const savePlayerNamesLocal = async (names: {
-    player1: string;
-    player2: string;
+    player1: string
+    player2: string
   }) => {
     try {
       // Sauvegarder dans le cache local d'abord
-      const { cacheService } = await import("../../services/cache");
-      await cacheService.setCache('player_names', names, 24 * 60 * 60 * 1000); // 24h cache
-      console.log("💾 Noms sauvegardés dans le cache local:", names);
+      const { cacheService } = await import("../../services/cache")
+      await cacheService.setCache("player_names", names, 24 * 60 * 60 * 1000) // 24h cache
+      console.log("💾 Noms sauvegardés dans le cache local:", names)
 
       if (user?.uid) {
         // Sauvegarder aussi dans Firebase
-        const success = await FirestoreService.savePlayerNames(user.uid, names);
-        console.log("🔥 Noms sauvegardés dans Firebase:", success);
+        const success = await FirestoreService.savePlayerNames(user.uid, names)
+        console.log("🔥 Noms sauvegardés dans Firebase:", success)
       } else {
-        console.log("ℹ️ Pas d'utilisateur connecté, sauvegarde locale seulement");
+        console.log("ℹ️ Pas d'utilisateur connecté, sauvegarde locale seulement")
       }
     } catch (error) {
-      console.error("❌ Erreur lors de la sauvegarde des noms:", error);
+      console.error("❌ Erreur lors de la sauvegarde des noms:", error)
     }
-  };
+  }
 
   useEffect(() => {
     // Charger le dernier lancer au démarrage
-    loadLastRoll();
-    refreshQuota();
+    loadLastRoll()
+    refreshQuota()
 
     // Afficher automatiquement la modal des noms SEULEMENT au premier lancement
     const checkFirstLaunch = async () => {
       try {
-        const hasSeenNamesModal = await AsyncStorage.getItem(
-          "has_seen_names_modal",
-        );
+        const hasSeenNamesModal = await AsyncStorage.getItem("has_seen_names_modal")
 
         // Vérifier si l'utilisateur a des noms dans Firebase
-        let hasNames = false;
+        let hasNames = false
         if (user?.uid) {
-          const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
-          hasNames = !!(
-            firebaseNames &&
-            firebaseNames.player1.trim() &&
-            firebaseNames.player2.trim()
-          );
+          const firebaseNames = await FirestoreService.getPlayerNames(user.uid)
+          hasNames = !!(firebaseNames && firebaseNames.player1.trim() && firebaseNames.player2.trim())
         }
 
         if (!hasSeenNamesModal && !hasNames) {
           setTimeout(() => {
-            setIsNamesModalVisible(true);
-          }, 1000);
+            setIsNamesModalVisible(true)
+          }, 1000)
           // Marquer comme vu pour ne plus jamais le reproposer automatiquement
-          await AsyncStorage.setItem("has_seen_names_modal", "true");
+          await AsyncStorage.setItem("has_seen_names_modal", "true")
         }
       } catch (error) {
         // Erreur vérification premier lancement ignorée
       }
-    };
+    }
 
-    checkFirstLaunch();
+    checkFirstLaunch()
 
     // Réinitialiser le flag paywall chaque jour
     const checkPaywallFlag = async () => {
       try {
-        const today = new Date().toISOString().split("T")[0];
-        const lastPaywallDate = await AsyncStorage.getItem("last_paywall_date");
+        const today = new Date().toISOString().split("T")[0]
+        const lastPaywallDate = await AsyncStorage.getItem("last_paywall_date")
 
         if (lastPaywallDate !== today) {
-          setHasSeenPaywallToday(false);
-          await AsyncStorage.setItem("last_paywall_date", today);
+          setHasSeenPaywallToday(false)
+          await AsyncStorage.setItem("last_paywall_date", today)
         } else {
-          const hasSeenToday = await AsyncStorage.getItem(
-            "has_seen_paywall_today",
-          );
-          setHasSeenPaywallToday(hasSeenToday === "true");
+          const hasSeenToday = await AsyncStorage.getItem("has_seen_paywall_today")
+          setHasSeenPaywallToday(hasSeenToday === "true")
         }
       } catch (error) {
         // Erreur gestion paywall flag ignorée
       }
-    };
-    checkPaywallFlag();
+    }
+    checkPaywallFlag()
 
     // Demander les permissions de notifications si pas encore accordées
     if (notificationsInitialized && !hasPermissions) {
-      requestPermissions();
+      requestPermissions()
     }
-  }, [hasPermissions, notificationsInitialized, requestPermissions]);
+  }, [hasPermissions, notificationsInitialized, requestPermissions])
 
   // Charger les noms des joueurs quand l'utilisateur est disponible
   // SEULEMENT au premier chargement, pas quand user change pendant une session
   useEffect(() => {
-    console.log("🔄 useEffect loadPlayerNames - Conditions:", { 
-      authLoading, 
-      playerNamesLoaded, 
+    console.log("🔄 useEffect loadPlayerNames - Conditions:", {
+      authLoading,
+      playerNamesLoaded,
       userUid: user?.uid,
-      shouldLoad: !authLoading && !playerNamesLoaded
-    });
-    
+      shouldLoad: !authLoading && !playerNamesLoaded,
+    })
+
     if (!authLoading && !playerNamesLoaded) {
-      console.log("✅ useEffect - Déclenchement loadPlayerNames");
-      loadPlayerNames();
+      console.log("✅ useEffect - Déclenchement loadPlayerNames")
+      loadPlayerNames()
     } else {
-      console.log("❌ useEffect - loadPlayerNames NON déclenché");
+      console.log("❌ useEffect - loadPlayerNames NON déclenché")
     }
-  }, [user?.uid, authLoading, playerNamesLoaded]);
+  }, [user?.uid, authLoading, playerNamesLoaded])
 
   // Mettre à jour l'affichage du payeur quand les noms changent
   useEffect(() => {
     if (playerNames.player1.trim() && playerNames.player2.trim()) {
       // Forcer la mise à jour seulement si les noms ont vraiment changé
-      const newNames = { player1: playerNames.player1.trim(), player2: playerNames.player2.trim() };
-      updateCurrentPayerDisplay(newNames, true);
+      const newNames = { player1: playerNames.player1.trim(), player2: playerNames.player2.trim() }
+      updateCurrentPayerDisplay(newNames, true)
     } else {
       // Si les noms ne sont pas complets, vider l'affichage
-      setCurrentPayerDisplay("");
-      setStablePayerName("");
+      setCurrentPayerDisplay("")
+      setStablePayerName("")
     }
-  }, [playerNames.player1, playerNames.player2]);
+  }, [playerNames.player1, playerNames.player2])
 
   // Garder currentPayerDisplay stable même après fermeture du modal
   useEffect(() => {
     if (stablePayerName && !currentPayerDisplay) {
-      console.log(`🎯 Restauration currentPayerDisplay depuis stablePayerName: ${stablePayerName}`);
-      setCurrentPayerDisplay(`${stablePayerName} paie`);
+      console.log(`🎯 Restauration currentPayerDisplay depuis stablePayerName: ${stablePayerName}`)
+      setCurrentPayerDisplay(`${stablePayerName} paie`)
     }
-  }, [stablePayerName, currentPayerDisplay]);
+  }, [stablePayerName, currentPayerDisplay])
 
   // Animation effects
   useEffect(() => {
@@ -323,7 +311,7 @@ export default function HomeScreen() {
           useNativeDriver: true,
         }),
       ]),
-    ).start();
+    ).start()
 
     // Start glow animation
     Animated.loop(
@@ -339,16 +327,16 @@ export default function HomeScreen() {
           useNativeDriver: false,
         }),
       ]),
-    ).start();
-  }, []);
+    ).start()
+  }, [])
 
   const loadLastRoll = async () => {
     try {
-      await getLastRoll();
+      await getLastRoll()
     } catch (error) {
       // Erreur chargement dernier roll ignorée
     }
-  };
+  }
 
   // Hook pour détecter la secousse du téléphone
   // Hook pour détecter la secousse et lancer le dé
@@ -358,113 +346,115 @@ export default function HomeScreen() {
     onShake: async () => {
       // Éviter les multiples secousses pendant un lancement ou si déjà bloqué
       if (isRolling || isBlocked) {
-        return;
+        return
       }
 
       // VÉRIFIER LES QUOTAS DIRECTEMENT DEPUIS FIREBASE (valeurs en temps réel)
-      const userId = getCurrentUserId();
+      const userId = getCurrentUserId()
       if (!userId) {
-        console.log("❌ SHAKE - Pas d'utilisateur connecté");
-        return;
+        console.log("❌ SHAKE - Pas d'utilisateur connecté")
+        return
       }
 
       // Récupérer le statut lifetime d'abord
-      const hasLifetime = await getLifetimeStatus();
-      console.log("🔍 SHAKE - Statut lifetime:", hasLifetime);
-      
+      const hasLifetime = await getLifetimeStatus()
+      console.log("🔍 SHAKE - Statut lifetime:", hasLifetime)
+
       // Récupérer les quotas directement depuis Firebase
-      const quotaSummary = await getQuotaSummary(hasLifetime);
-      console.log("🔍 SHAKE - Quotas Firebase directs:", quotaSummary);
-      
+      const quotaSummary = await getQuotaSummary(hasLifetime)
+      console.log("🔍 SHAKE - Quotas Firebase directs:", quotaSummary)
+
       // Vérifier si l'utilisateur peut lancer
       if (!quotaSummary.canRoll && !quotaSummary.hasLifetime) {
-        console.log("❌ SHAKE - QUOTA BLOQUÉ - Redirection paywall");
-        router.push("/paywall");
-        return;
+        console.log("❌ SHAKE - QUOTA BLOQUÉ - Redirection paywall")
+        router.push("/paywall")
+        return
       }
-      
-      console.log("✅ SHAKE - QUOTA OK - CONTINUE");
+
+      console.log("✅ SHAKE - QUOTA OK - CONTINUE")
 
       // Déclencher l'animation de secousse des dés
-      setIsShakingDice(true);
-      setTimeout(() => setIsShakingDice(false), 300);
+      setIsShakingDice(true)
+      setTimeout(() => setIsShakingDice(false), 300)
 
       // Ajouter un feedback haptique spécial pour la secousse
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
 
       // PRIORITÉ 1: Cache local (noms saisis dans le modal)
-      // PRIORITÉ 2: Firebase (noms sauvegardés)  
+      // PRIORITÉ 2: Firebase (noms sauvegardés)
       // PRIORITÉ 3: Noms par défaut
-      let finalNames = { player1: "Mon cœur", player2: "Mon amour" };
+      let finalNames = { player1: "Mon cœur", player2: "Mon amour" }
 
       // D'ABORD vérifier le cache local pour les noms du modal
       try {
-        const { cacheService } = await import("../../services/cache");
-        const cachedNames = await cacheService.getCache<{ player1: string; player2: string }>('player_names', 24 * 60 * 60 * 1000); // 24h cache
-        
+        const { cacheService } = await import("../../services/cache")
+        const cachedNames = await cacheService.getCache<{ player1: string; player2: string }>(
+          "player_names",
+          24 * 60 * 60 * 1000,
+        ) // 24h cache
+
         if (cachedNames && cachedNames.player1?.trim() && cachedNames.player2?.trim()) {
           finalNames = {
             player1: cachedNames.player1.trim(),
             player2: cachedNames.player2.trim(),
-          };
-          console.log("🎯 SECOUSSE - Noms depuis le cache local:", finalNames);
+          }
+          console.log("🎯 SECOUSSE - Noms depuis le cache local:", finalNames)
         } else if (playerNames.player1.trim() && playerNames.player2.trim()) {
           // Fallback: état React local
           finalNames = {
             player1: playerNames.player1.trim(),
             player2: playerNames.player2.trim(),
-          };
-          console.log("🎯 SECOUSSE - Noms depuis l'état React:", finalNames);
+          }
+          console.log("🎯 SECOUSSE - Noms depuis l'état React:", finalNames)
         } else {
           // Fallback: Firebase
           try {
             if (user?.uid) {
-              console.log("🔄 SECOUSSE - Lecture depuis Firebase car pas de noms locaux");
-              const firebaseNames = await FirestoreService.getPlayerNames(user.uid);
+              console.log("🔄 SECOUSSE - Lecture depuis Firebase car pas de noms locaux")
+              const firebaseNames = await FirestoreService.getPlayerNames(user.uid)
               if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
                 finalNames = {
                   player1: firebaseNames.player1.trim() || "Mon cœur",
                   player2: firebaseNames.player2.trim() || "Mon amour",
-                };
-                console.log("🎯 SECOUSSE - Noms depuis Firebase:", finalNames);
+                }
+                console.log("🎯 SECOUSSE - Noms depuis Firebase:", finalNames)
               } else {
-                console.log("⚠️ SECOUSSE - Pas de noms Firebase, noms par défaut");
+                console.log("⚠️ SECOUSSE - Pas de noms Firebase, noms par défaut")
               }
             } else {
-              console.log("⚠️ SECOUSSE - Pas d'utilisateur, noms par défaut");
+              console.log("⚠️ SECOUSSE - Pas d'utilisateur, noms par défaut")
             }
           } catch (error) {
-            console.warn("⚠️ SECOUSSE - Erreur Firebase, noms par défaut:", error);
+            console.warn("⚠️ SECOUSSE - Erreur Firebase, noms par défaut:", error)
           }
         }
       } catch (error) {
-        console.error("❌ Erreur lors de la récupération du cache local:", error);
+        console.error("❌ Erreur lors de la récupération du cache local:", error)
         // Fallback vers l'état React
         if (playerNames.player1.trim() && playerNames.player2.trim()) {
           finalNames = {
             player1: playerNames.player1.trim(),
             player2: playerNames.player2.trim(),
-          };
-          console.log("🎯 SECOUSSE - Noms depuis l'état React (fallback):", finalNames);
+          }
+          console.log("🎯 SECOUSSE - Noms depuis l'état React (fallback):", finalNames)
         }
       }
 
-      handleRollWithNames(finalNames);
+      handleRollWithNames(finalNames)
     },
-  });
+  })
 
   const handleRollWithNames = async (customNames?: {
-    player1: string;
-    player2: string;
+    player1: string
+    player2: string
   }) => {
-    const namesToUse = customNames || playerNames;
-    return performRollWithNames(namesToUse);
-  };
+    const namesToUse = customNames || playerNames
+    return performRollWithNames(namesToUse)
+  }
 
   const handleRoll = async () => {
     if (isRolling || isBlocked) {
-      return;
+      return
     }
 
     // Vérifier si les faces sont chargées (mais ne pas bloquer)
@@ -475,80 +465,85 @@ export default function HomeScreen() {
     // Vérifier si l'utilisateur peut lancer
     if (!hasLifetime && !rcHasLifetime && !canRoll) {
       // Bloquer temporairement pour éviter le spam
-      setIsBlocked(true);
-      setTimeout(() => setIsBlocked(false), 3000); // 3 secondes de blocage
+      setIsBlocked(true)
+      setTimeout(() => setIsBlocked(false), 3000) // 3 secondes de blocage
 
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      logFreeLimitHit(0, "home_button");
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      logFreeLimitHit(0, "home_button")
 
       // Ne rediriger vers le paywall que si pas encore vu aujourd'hui
       if (!hasSeenPaywallToday) {
-        setHasSeenPaywallToday(true);
-        AsyncStorage.setItem("has_seen_paywall_today", "true");
-        router.push("/paywall");
+        setHasSeenPaywallToday(true)
+        AsyncStorage.setItem("has_seen_paywall_today", "true")
+        router.push("/paywall")
       } else {
         // Afficher un message simple si déjà vu le paywall
         Alert.alert(
           "Quota épuisé",
           "Vous avez utilisé votre lancer gratuit quotidien. Achetez l'accès illimité pour continuer !",
-          [
-            { text: "Plus tard" },
-            { text: "Acheter", onPress: () => router.push("/paywall") },
-          ],
-        );
+          [{ text: "Plus tard" }, { text: "Acheter", onPress: () => router.push("/paywall") }],
+        )
       }
-      return;
+      return
     }
 
     // Les noms sont maintenant gérés avant l'appel à handleRoll
-    performRollWithNames(playerNames);
-  };
+    performRollWithNames(playerNames)
+  }
 
   const handleDiceAnimationComplete = () => {
-    setIsRolling(false);
-  };
+    setIsRolling(false)
+    // Ouvrir le drawer des résultats après l'animation
+    if (currentRoll) {
+      setIsResultsDrawerVisible(true)
+    }
+  }
 
   const performRollWithNames = async (namesToUse: {
-    player1: string;
-    player2: string;
+    player1: string
+    player2: string
   }) => {
     try {
-      setIsRolling(true);
+      setIsRolling(true)
 
       // Créer un utilisateur Firebase si nécessaire SEULEMENT au moment du premier lancer
-      console.log("🔍 État avant création utilisateur:", { user: !!user, authLoading, userUid: user?.uid });
+      console.log("🔍 État avant création utilisateur:", { user: !!user, authLoading, userUid: user?.uid })
       if (!user && !authLoading) {
-        console.log("🔧 Premier lancer détecté - création d'un utilisateur Firebase...");
+        console.log("🔧 Premier lancer détecté - création d'un utilisateur Firebase...")
         try {
-          const newUser = await createAnonymousUser();
-          console.log("✅ Utilisateur créé pour le premier lancer:", newUser?.uid);
+          const newUser = await createAnonymousUser()
+          console.log("✅ Utilisateur créé pour le premier lancer:", newUser?.uid)
           // Attendre un peu que l'auth se propage
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          console.log("🔍 État après création:", { user: !!user, userUid: user?.uid || "non défini", newUserUid: newUser?.uid || "non défini" });
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+          console.log("🔍 État après création:", {
+            user: !!user,
+            userUid: user?.uid || "non défini",
+            newUserUid: newUser?.uid || "non défini",
+          })
         } catch (error) {
-          console.error("❌ Erreur création utilisateur:", error);
-          console.warn("⚠️ Continuer quand même avec l'action");
+          console.error("❌ Erreur création utilisateur:", error)
+          console.warn("⚠️ Continuer quand même avec l'action")
         }
       } else {
-        console.log("ℹ️ Pas besoin de créer d'utilisateur:", { hasUser: !!user, isLoading: authLoading });
+        console.log("ℹ️ Pas besoin de créer d'utilisateur:", { hasUser: !!user, isLoading: authLoading })
       }
 
       // Timeout de sécurité pour débloquer isRolling
       safetyTimeoutRef.current = setTimeout(() => {
-        setIsRolling(false);
-      }, 5000);
+        setIsRolling(false)
+      }, 5000)
 
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
       // Masquer le résultat précédent
       Animated.timing(resultOpacity, {
         toValue: 0,
         duration: 200,
         useNativeDriver: true,
-      }).start();
+      }).start()
 
       // Animation de rotation du dé
-      diceRotation.setValue(0);
+      diceRotation.setValue(0)
       Animated.sequence([
         Animated.parallel([
           Animated.timing(diceRotation, {
@@ -570,37 +565,32 @@ export default function HomeScreen() {
           ]),
         ]),
       ]).start(async () => {
-          // Réinitialiser le roll précédent
-          setCurrentRoll(null);
-          
-          // TOUJOURS utiliser le cache local directement
-          console.log("🔍 LANCEMENT - allFaces.length:", allFaces.length);
-          console.log("🔍 LANCEMENT - allFaces:", allFaces.slice(0, 3)); // Premières 3 faces
-          
-          // Récupérer directement depuis le cache local
-          const cachedFaces = await cacheService.getDefaultFaces();
-          console.log("🔍 LANCEMENT - Cache direct:", cachedFaces?.length || 0, "faces");
-          
-          let facesToUse = cachedFaces || allFaces;
-          
-          // Si pas de faces disponibles, ne pas lancer le dé
-          if (!facesToUse || facesToUse.length === 0) {
-            console.log("⚠️ LANCEMENT - Aucune face disponible, lancement annulé");
-            return;
-          }
+        // Réinitialiser le roll précédent
+        setCurrentRoll(null)
 
-        console.log(`🎯 LANCEMENT - currentPayerDisplay:`, currentPayerDisplay);
-        const completeResult = rollCompleteDice(
-          facesToUse,
-          currentRoll || undefined,
-          namesToUse,
-          currentPayerDisplay,
-        );
+        // TOUJOURS utiliser le cache local directement
+        console.log("🔍 LANCEMENT - allFaces.length:", allFaces.length)
+        console.log("🔍 LANCEMENT - allFaces:", allFaces.slice(0, 3)) // Premières 3 faces
 
-        setCurrentRoll(completeResult);
+        // Récupérer directement depuis le cache local
+        const cachedFaces = await cacheService.getDefaultFaces()
+        console.log("🔍 LANCEMENT - Cache direct:", cachedFaces?.length || 0, "faces")
+
+        const facesToUse = cachedFaces || allFaces
+
+        // Si pas de faces disponibles, ne pas lancer le dé
+        if (!facesToUse || facesToUse.length === 0) {
+          console.log("⚠️ LANCEMENT - Aucune face disponible, lancement annulé")
+          return
+        }
+
+        console.log(`🎯 LANCEMENT - currentPayerDisplay:`, currentPayerDisplay)
+        const completeResult = rollCompleteDice(facesToUse, currentRoll || undefined, namesToUse, currentPayerDisplay)
+
+        setCurrentRoll(completeResult)
 
         // Sauvegarder le résultat
-        await saveLastRoll(completeResult.id);
+        await saveLastRoll(completeResult.id)
 
         // Afficher le résultat avec une animation
         setTimeout(() => {
@@ -610,11 +600,11 @@ export default function HomeScreen() {
             useNativeDriver: true,
           }).start(() => {
             if (safetyTimeoutRef.current) {
-              clearTimeout(safetyTimeoutRef.current);
+              clearTimeout(safetyTimeoutRef.current)
             }
-            setIsRolling(false);
-          });
-        }, 200);
+            setIsRolling(false)
+          })
+        }, 200)
 
         // Analytics - log chaque catégorie séparément
         logDiceRoll({
@@ -623,161 +613,151 @@ export default function HomeScreen() {
           face_id: completeResult.payer.id,
           is_custom: false,
           roll_number_today: rollCount + 1,
-        });
+        })
         logDiceRoll({
           category: "repas",
           label: completeResult.repas.label,
           face_id: completeResult.repas.id,
           is_custom: false,
           roll_number_today: rollCount + 1,
-        });
+        })
         logDiceRoll({
           category: "activite",
           label: completeResult.activite.label,
           face_id: completeResult.activite.id,
           is_custom: false,
           roll_number_today: rollCount + 1,
-        });
+        })
 
         // Consommer un lancer si pas premium
         if (!hasLifetime && !rcHasLifetime) {
-          const consumed = await consumeRoll();
+          const consumed = await consumeRoll()
           if (!consumed) {
-            router.push("/paywall");
-            return;
+            router.push("/paywall")
+            return
           }
         }
 
         // Trigger notification pour milestones
-        const newCount = rollCount + 1;
-        setRollCount(newCount);
-        notifyMilestone(newCount);
+        const newCount = rollCount + 1
+        setRollCount(newCount)
+        notifyMilestone(newCount)
 
         // Trigger review après succès
-        triggerReviewAfterSuccess();
-      });
+        triggerReviewAfterSuccess()
+      })
     } catch (error) {
       if (safetyTimeoutRef.current) {
-        clearTimeout(safetyTimeoutRef.current);
+        clearTimeout(safetyTimeoutRef.current)
       }
-      setIsRolling(false);
+      setIsRolling(false)
     }
-  };
+  }
 
   const handleNamesSubmit = async () => {
-    console.log("🏷️ handleNamesSubmit - DÉBUT - Noms saisis:", playerNames);
-    
+    console.log("🏷️ handleNamesSubmit - DÉBUT - Noms saisis:", playerNames)
+
     if (!playerNames.player1.trim() || !playerNames.player2.trim()) {
-      console.log("❌ handleNamesSubmit - Noms vides, affichage alert");
-      Alert.alert(
-        "Noms requis",
-        "Veuillez saisir les deux prénoms pour continuer.",
-      );
-      return;
+      console.log("❌ handleNamesSubmit - Noms vides, affichage alert")
+      Alert.alert("Noms requis", "Veuillez saisir les deux prénoms pour continuer.")
+      return
     }
-    
-    console.log("✅ handleNamesSubmit - Noms valides, début sauvegarde");
+
+    console.log("✅ handleNamesSubmit - Noms valides, début sauvegarde")
 
     // Créer un utilisateur Firebase si nécessaire pour sauvegarder les noms
     if (!user && !authLoading) {
-      console.log("🔧 Sauvegarde des noms - création d'un utilisateur Firebase...");
+      console.log("🔧 Sauvegarde des noms - création d'un utilisateur Firebase...")
       try {
-        await createAnonymousUser();
-        console.log("✅ Utilisateur créé pour sauvegarder les noms");
+        await createAnonymousUser()
+        console.log("✅ Utilisateur créé pour sauvegarder les noms")
         // Attendre un peu que l'auth se propage
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       } catch (error) {
-        console.warn("⚠️ Erreur création utilisateur, continuer quand même:", error);
+        console.warn("⚠️ Erreur création utilisateur, continuer quand même:", error)
       }
     }
 
     // Sauvegarder les noms dans Firebase
-    console.log("🏷️ handleNamesSubmit - Sauvegarde des noms:", playerNames);
-    await savePlayerNamesLocal(playerNames);
-    console.log("✅ Noms sauvegardés dans Firebase");
+    console.log("🏷️ handleNamesSubmit - Sauvegarde des noms:", playerNames)
+    await savePlayerNamesLocal(playerNames)
+    console.log("✅ Noms sauvegardés dans Firebase")
 
     // Marquer qu'on vient de sauvegarder pour éviter de recharger
-    setJustSavedNames(true);
-    
+    setJustSavedNames(true)
+
     // Mettre à jour l'affichage du payeur avec les nouveaux noms
-    updateCurrentPayerDisplay(playerNames, true);
-    
+    updateCurrentPayerDisplay(playerNames, true)
+
     // PAS de rechargement - on garde les noms qui viennent d'être saisis
-    console.log("✅ Noms conservés localement, pas de rechargement depuis Firebase");
+    console.log("✅ Noms conservés localement, pas de rechargement depuis Firebase")
 
     // Noms sauvegardés avec succès
-    setIsNamesModalVisible(false);
-    await Haptics.selectionAsync();
+    setIsNamesModalVisible(false)
+    await Haptics.selectionAsync()
 
     // Réinitialiser le flag après 3 secondes
     setTimeout(() => {
-      setJustSavedNames(false);
-      console.log("🔄 Flag justSavedNames réinitialisé");
-    }, 3000);
+      setJustSavedNames(false)
+      console.log("🔄 Flag justSavedNames réinitialisé")
+    }, 3000)
 
     // NE PAS lancer les dés ici - seulement sauvegarder
     // Les dés se lancent uniquement en secouant le téléphone
-  };
+  }
 
   const handleSkipNames = async () => {
-    const defaultNames = { player1: "Mon cœur", player2: "Mon amour" };
-    setPlayerNames(defaultNames);
+    const defaultNames = { player1: "Mon cœur", player2: "Mon amour" }
+    setPlayerNames(defaultNames)
 
     // Créer un utilisateur Firebase si nécessaire pour sauvegarder les noms par défaut
     if (!user && !authLoading) {
-      console.log("🔧 Sauvegarde des noms par défaut - création d'un utilisateur Firebase...");
+      console.log("🔧 Sauvegarde des noms par défaut - création d'un utilisateur Firebase...")
       try {
-        await createAnonymousUser();
-        console.log("✅ Utilisateur créé pour sauvegarder les noms par défaut");
+        await createAnonymousUser()
+        console.log("✅ Utilisateur créé pour sauvegarder les noms par défaut")
         // Attendre un peu que l'auth se propage
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       } catch (error) {
-        console.warn("⚠️ Erreur création utilisateur, continuer quand même:", error);
+        console.warn("⚠️ Erreur création utilisateur, continuer quand même:", error)
       }
     }
 
     // Sauvegarder les noms par défaut
-    await savePlayerNamesLocal(defaultNames);
+    await savePlayerNamesLocal(defaultNames)
 
     // Mettre à jour l'affichage du payeur avec les noms par défaut
-    updateCurrentPayerDisplay(defaultNames, true);
+    updateCurrentPayerDisplay(defaultNames, true)
 
-    setIsNamesModalVisible(false);
-    await Haptics.selectionAsync();
+    setIsNamesModalVisible(false)
+    await Haptics.selectionAsync()
 
     // NE PAS lancer les dés ici non plus - seulement sauvegarder
     // Les dés se lancent uniquement en secouant le téléphone
-  };
+  }
 
   const openSettings = async () => {
-    await Haptics.selectionAsync();
-    setIsSettingsDrawerVisible(true);
-  };
+    await Haptics.selectionAsync()
+    setIsSettingsDrawerVisible(true)
+  }
 
   const closeSettingsDrawer = () => {
-    setIsSettingsDrawerVisible(false);
-  };
+    setIsSettingsDrawerVisible(false)
+  }
 
   const openHistory = () => {
     if (hasLifetime || rcHasLifetime) {
-      router.push("/history");
+      router.push("/history")
     }
-  };
-  const remainingText = hasLifetime || rcHasLifetime ? "∞" : `${remaining}`;
+  }
+  const remainingText = hasLifetime || rcHasLifetime ? "∞" : `${remaining}`
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
-      />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       {/* Background Gradient */}
-      <LinearGradient
-        colors={["#A50848", "#E0115F", "#FF4F7B"]}
-        style={styles.backgroundGradient}
-      />
+      <LinearGradient colors={["#A50848", "#E0115F", "#FF4F7B"]} style={styles.backgroundGradient} />
 
       {/* Background Blur Effect */}
       <BlurView intensity={15} style={styles.backgroundBlur} />
@@ -846,37 +826,12 @@ export default function HomeScreen() {
           </View>
 
           {/* Instruction de secousse */}
-          <Animated.View
-            style={[styles.shakeInstruction, { opacity: floatAnimation }]}
-          >
+          <Animated.View style={[styles.shakeInstruction, { opacity: floatAnimation }]}>
             <Text style={styles.shakeText} numberOfLines={1}>
               Secouez pour lancer
             </Text>
           </Animated.View>
         </View>
-
-        {/* Résultats textuels */}
-        {currentRoll && (
-          <View style={styles.resultsContainer}>
-            <View style={styles.resultsCard}>
-              <Text style={styles.resultsTitle}>Votre soirée</Text>
-              <View style={styles.resultsList}>
-                <View style={styles.resultItem}>
-                  <Text style={styles.resultEmoji}>{currentRoll.payer.emoji}</Text>
-                  <Text style={styles.resultLabel}>{currentRoll.payer.label}</Text>
-                </View>
-                <View style={styles.resultItem}>
-                  <Text style={styles.resultEmoji}>{currentRoll.repas.emoji}</Text>
-                  <Text style={styles.resultLabel}>{currentRoll.repas.label}</Text>
-                </View>
-                <View style={styles.resultItem}>
-                  <Text style={styles.resultEmoji}>{currentRoll.activite.emoji}</Text>
-                  <Text style={styles.resultLabel}>{currentRoll.activite.label}</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Side Controls */}
         <View style={styles.sideControls}>
@@ -884,10 +839,7 @@ export default function HomeScreen() {
           <View style={styles.leftControls}>
             {(hasLifetime || rcHasLifetime) && (
               <>
-                <TouchableOpacity
-                  style={styles.sideButton}
-                  onPress={openHistory}
-                >
+                <TouchableOpacity style={styles.sideButton} onPress={openHistory}>
                   <View style={styles.sideBlur}>
                     <Text style={styles.sideEmoji}>📝</Text>
                   </View>
@@ -913,8 +865,8 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.bottomButton}
           onPress={async () => {
-            await Haptics.selectionAsync();
-            router.push("/paywall");
+            await Haptics.selectionAsync()
+            router.push("/paywall")
           }}
         >
           <View style={styles.bottomBlur}>
@@ -922,13 +874,8 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-
-
         {/* Bouton Noms au milieu */}
-        <TouchableOpacity
-          style={styles.bottomButton}
-          onPress={() => setIsNamesModalVisible(true)}
-        >
+        <TouchableOpacity style={styles.bottomButton} onPress={() => setIsNamesModalVisible(true)}>
           <View style={styles.bottomBlur}>
             <Ionicons name="people" size={20} color="#FFFFFF" />
           </View>
@@ -937,9 +884,7 @@ export default function HomeScreen() {
         {/* Bouton compteur de lancers à droite */}
         <TouchableOpacity style={styles.bottomButton}>
           <View style={[styles.bottomBlur, isBlocked && styles.blockedBlur]}>
-            <Text
-              style={[styles.remainingText, isBlocked && styles.blockedText]}
-            >
+            <Text style={[styles.remainingText, isBlocked && styles.blockedText]}>
               {isBlocked ? "⏳" : remainingText}
             </Text>
           </View>
@@ -976,36 +921,21 @@ export default function HomeScreen() {
         statusBarTranslucent
         onRequestClose={() => setIsNamesModalVisible(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setIsNamesModalVisible(false)}
-        >
-          <TouchableOpacity 
-            style={styles.modalContainer}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsNamesModalVisible(false)}>
+          <TouchableOpacity style={styles.modalContainer} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>👫 Prénoms des joueurs</Text>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setIsNamesModalVisible(false)}
-              >
+              <TouchableOpacity style={styles.closeButton} onPress={() => setIsNamesModalVisible(false)}>
                 <Text style={styles.closeButtonText}>✕</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.modalSubtitle}>
-              Pour personnaliser vos résultats
-            </Text>
+            <Text style={styles.modalSubtitle}>Pour personnaliser vos résultats</Text>
 
             {/* Affichage de qui paie actuellement */}
             {currentPayerDisplay && (
               <View style={styles.currentPayerContainer}>
                 <Text style={styles.currentPayerLabel}>Actuellement :</Text>
-                <Text style={styles.currentPayerName}>
-                  {currentPayerDisplay}
-                </Text>
+                <Text style={styles.currentPayerName}>{currentPayerDisplay}</Text>
               </View>
             )}
 
@@ -1015,9 +945,7 @@ export default function HomeScreen() {
                 placeholder="Prénom du premier joueur"
                 placeholderTextColor="#A50848"
                 value={playerNames.player1}
-                onChangeText={(text) =>
-                  setPlayerNames((prev) => ({ ...prev, player1: text }))
-                }
+                onChangeText={(text) => setPlayerNames((prev) => ({ ...prev, player1: text }))}
                 maxLength={20}
               />
             </View>
@@ -1028,9 +956,7 @@ export default function HomeScreen() {
                 placeholder="Prénom du second joueur"
                 placeholderTextColor="#A50848"
                 value={playerNames.player2}
-                onChangeText={(text) =>
-                  setPlayerNames((prev) => ({ ...prev, player2: text }))
-                }
+                onChangeText={(text) => setPlayerNames((prev) => ({ ...prev, player2: text }))}
                 maxLength={20}
               />
             </View>
@@ -1056,15 +982,19 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </Modal>
 
+      {/* Results Drawer */}
+      <ResultsDrawer
+        visible={isResultsDrawerVisible}
+        onClose={() => setIsResultsDrawerVisible(false)}
+        result={currentRoll}
+      />
+
       {/* Settings Drawer */}
-      <BottomDrawer
-        visible={isSettingsDrawerVisible}
-        onClose={closeSettingsDrawer}
-      >
+      <BottomDrawer visible={isSettingsDrawerVisible} onClose={closeSettingsDrawer}>
         <SettingsDrawerContent onClose={closeSettingsDrawer} />
       </BottomDrawer>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -1475,54 +1405,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 300,
   },
-  resultsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  resultsCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    shadowColor: "rgba(0, 0, 0, 0.1)",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  resultsTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    textAlign: "center",
-    marginBottom: 16,
-    fontFamily: "System",
-  },
-  resultsList: {
-    gap: 12,
-  },
-  resultItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-  },
-  resultEmoji: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  resultLabel: {
-    fontSize: 16,
-    color: "#FFFFFF",
-    fontFamily: "System",
-    fontWeight: "500",
-    flex: 1,
-  },
   blockedBlur: {
     backgroundColor: "rgba(255, 107, 107, 0.3)",
     borderColor: "rgba(255, 107, 107, 0.5)",
@@ -1530,4 +1412,4 @@ const styles = StyleSheet.create({
   blockedText: {
     color: "#FF6B6B",
   },
-});
+})

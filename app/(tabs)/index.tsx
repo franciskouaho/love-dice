@@ -394,13 +394,13 @@ export default function HomeScreen() {
 
       // D'ABORD utiliser les noms du modal si disponibles
       if (stablePayerName) {
-        // Utiliser le nom stable du modal
-        const otherName = stablePayerName === "Francis" ? "Olivia" : "Francis";
-        finalNames = {
-          player1: stablePayerName,
-          player2: otherName,
+        // Utiliser les noms actuels du modal (pas de noms par défaut)
+        const currentModalNames = {
+          player1: playerNames.player1.trim() || "Mon cœur",
+          player2: playerNames.player2.trim() || "Mon amour",
         };
-        console.log("🎯 SECOUSSE - Noms depuis le modal (stablePayerName):", finalNames);
+        finalNames = currentModalNames;
+        console.log("🎯 SECOUSSE - Noms depuis le modal (noms actuels):", finalNames);
       } else if (playerNames.player1.trim() && playerNames.player2.trim()) {
         // Fallback: état React local
         finalNames = {

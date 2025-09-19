@@ -83,8 +83,10 @@ export default function HomeScreen() {
   const updateCurrentPayerDisplay = (names: { player1: string; player2: string }) => {
     if (names.player1.trim() && names.player2.trim()) {
       const chosenName = Math.random() < 0.5 ? names.player1.trim() : names.player2.trim();
+      console.log(`🎯 updateCurrentPayerDisplay - Noms:`, names, `→ Choisi: ${chosenName}`);
       setCurrentPayerDisplay(`${chosenName} paie`);
     } else {
+      console.log(`🎯 updateCurrentPayerDisplay - Noms incomplets:`, names);
       setCurrentPayerDisplay("");
     }
   };
@@ -531,6 +533,7 @@ export default function HomeScreen() {
             return;
           }
 
+        console.log(`🎯 LANCEMENT - currentPayerDisplay:`, currentPayerDisplay);
         const completeResult = rollCompleteDice(
           facesToUse,
           currentRoll || undefined,

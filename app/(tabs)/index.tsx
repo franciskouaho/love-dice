@@ -68,6 +68,7 @@ export default function HomeScreen() {
   const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [justSavedNames, setJustSavedNames] = useState(false); // Pour éviter de recharger après sauvegarde
+  const [currentPayerDisplay, setCurrentPayerDisplay] = useState(""); // Nom affiché pour qui paie
   const safetyTimeoutRef = useRef<number | null>(null);
 
 
@@ -77,6 +78,16 @@ export default function HomeScreen() {
   const resultOpacity = useRef(new Animated.Value(0)).current;
   const floatAnimation = useRef(new Animated.Value(0)).current;
   const glowAnimation = useRef(new Animated.Value(0)).current;
+
+  // Fonction pour mettre à jour l'affichage du payeur
+  const updateCurrentPayerDisplay = (names: { player1: string; player2: string }) => {
+    if (names.player1.trim() && names.player2.trim()) {
+      const chosenName = Math.random() < 0.5 ? names.player1.trim() : names.player2.trim();
+      setCurrentPayerDisplay(`${chosenName} paie`);
+    } else {
+      setCurrentPayerDisplay("");
+    }
+  };
 
   // Fonction pour charger les noms sauvegardés depuis Firebase
   const loadPlayerNames = async () => {
@@ -123,6 +134,8 @@ export default function HomeScreen() {
         const randomName =
           Math.random() < 0.5 ? cleanNames.player1 : cleanNames.player2;
         setDefaultPayerName(`${randomName} paie`);
+        // Mettre à jour l'affichage du payeur dans le modal
+        updateCurrentPayerDisplay(cleanNames);
       } else {
         // Pas de noms sauvegardés, utiliser des noms par défaut
         console.log("⚠️ loadPlayerNames - Pas de noms Firebase, utilisation des défauts");
@@ -132,6 +145,8 @@ export default function HomeScreen() {
         const randomName =
           Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
         setDefaultPayerName(`${randomName} paie`);
+        // Mettre à jour l'affichage du payeur dans le modal
+        updateCurrentPayerDisplay(defaultNames);
       }
     } catch (error) {
       // Erreur lors du chargement des noms depuis Firebase - utiliser des noms par défaut
@@ -140,6 +155,8 @@ export default function HomeScreen() {
       const randomName =
         Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2;
       setDefaultPayerName(`${randomName} paie`);
+      // Mettre à jour l'affichage du payeur dans le modal
+      updateCurrentPayerDisplay(defaultNames);
     } finally {
       setPlayerNamesLoaded(true);
     }
@@ -244,6 +261,13 @@ export default function HomeScreen() {
       console.log("❌ useEffect - loadPlayerNames NON déclenché");
     }
   }, [user?.uid, authLoading, playerNamesLoaded]);
+
+  // Mettre à jour l'affichage du payeur quand les noms changent
+  useEffect(() => {
+    if (playerNames.player1.trim() && playerNames.player2.trim()) {
+      updateCurrentPayerDisplay(playerNames);
+    }
+  }, [playerNames.player1, playerNames.player2]);
 
   // Animation effects
   useEffect(() => {
@@ -439,7 +463,7 @@ export default function HomeScreen() {
           console.log("✅ Utilisateur créé pour le premier lancer:", newUser?.uid);
           // Attendre un peu que l'auth se propage
           await new Promise(resolve => setTimeout(resolve, 1000));
-          console.log("🔍 État après création:", { user: !!user, userUid: user?.uid || "non défini" });
+          console.log("🔍 État après création:", { user: !!user, userUid: user?.uid || "non défini", newUserUid: newUser?.uid || "non défini" });
         } catch (error) {
           console.error("❌ Erreur création utilisateur:", error);
           console.warn("⚠️ Continuer quand même avec l'action");
@@ -612,6 +636,9 @@ export default function HomeScreen() {
     // Marquer qu'on vient de sauvegarder pour éviter de recharger
     setJustSavedNames(true);
     
+    // Mettre à jour l'affichage du payeur avec les nouveaux noms
+    updateCurrentPayerDisplay(playerNames);
+    
     // PAS de rechargement - on garde les noms qui viennent d'être saisis
     console.log("✅ Noms conservés localement, pas de rechargement depuis Firebase");
 
@@ -648,6 +675,9 @@ export default function HomeScreen() {
 
     // Sauvegarder les noms par défaut
     await savePlayerNamesLocal(defaultNames);
+
+    // Mettre à jour l'affichage du payeur avec les noms par défaut
+    updateCurrentPayerDisplay(defaultNames);
 
     setIsNamesModalVisible(false);
     await Haptics.selectionAsync();
@@ -882,6 +912,16 @@ export default function HomeScreen() {
             <Text style={styles.modalSubtitle}>
               Pour personnaliser vos résultats
             </Text>
+
+            {/* Affichage de qui paie actuellement */}
+            {currentPayerDisplay && (
+              <View style={styles.currentPayerContainer}>
+                <Text style={styles.currentPayerLabel}>Actuellement :</Text>
+                <Text style={styles.currentPayerName}>
+                  {currentPayerDisplay}
+                </Text>
+              </View>
+            )}
 
             <View style={styles.inputContainer}>
               <TextInput
@@ -1263,6 +1303,26 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 24,
     opacity: 0.8,
+  },
+  currentPayerContainer: {
+    backgroundColor: "#FFF3F6",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(224, 17, 95, 0.2)",
+    alignItems: "center",
+  },
+  currentPayerLabel: {
+    fontSize: 14,
+    color: "#A50848",
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  currentPayerName: {
+    fontSize: 18,
+    color: "#E0115F",
+    fontWeight: "bold",
   },
   inputContainer: {
     marginBottom: 16,

@@ -1,25 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Restaurant } from '../types/restaurant';
-
-// Import conditionnel pour react-native-maps
-let MapView: any = null;
-let Marker: any = null;
-let Region: any = null;
-
-try {
-  const maps = require('react-native-maps');
-  MapView = maps.default;
-  Marker = maps.Marker;
-  Region = maps.Region;
-} catch (error) {
-  console.log('react-native-maps not available in Expo Go');
-}
-
-// Types pour TypeScript
-type MapViewType = typeof MapView;
-type MarkerType = typeof Marker;
-type RegionType = typeof Region;
 
 interface RestaurantMapProps {
   restaurant: Restaurant;
@@ -34,7 +16,7 @@ interface Coordinates {
 }
 
 export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) {
-  const mapRef = useRef<MapViewType>(null);
+  const mapRef = useRef<MapView>(null);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +30,10 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
     try {
       // Utiliser l'API de géocodage de Google Maps
       const encodedAddress = encodeURIComponent(address);
-      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=AIzaSyCRZPqnSHTVf2MuHvUCuwdcUXo3Zpm0CLI`;
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=AIzaSyAXrDxGHxOgHcFxRfHEL2Qi82KpE29CJMY`
+      );
       
-      const response = await fetch(url);
       const data = await response.json();
       
       if (data.status === 'OK' && data.results.length > 0) {
@@ -104,7 +87,6 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
           });
         }
       } catch (err) {
-        console.error('Erreur lors du chargement des coordonnées:', err);
         setError('Erreur de géolocalisation');
         setCoordinates({
           latitude: defaultLatitude,
@@ -120,8 +102,8 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
 
   // Centrer la carte sur le restaurant quand les coordonnées sont chargées
   useEffect(() => {
-    if (coordinates && mapRef.current && MapView) {
-      const region: RegionType = {
+    if (coordinates && mapRef.current) {
+      const region: Region = {
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
         latitudeDelta: 0.01,
@@ -151,27 +133,11 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
     );
   }
 
-  // Si MapView n'est pas disponible (Expo Go), afficher un placeholder
-  if (!MapView) {
-    return (
-      <View style={[styles.container, { height }]}>
-        <View style={styles.mapPlaceholder}>
-          <Text style={styles.placeholderText}>🗺️ Carte temporairement indisponible</Text>
-          <Text style={styles.placeholderSubtext}>
-            {restaurant.address}
-          </Text>
-          <Text style={styles.placeholderNote}>
-            Disponible dans le build complet
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { height }]}>
       <MapView
         ref={mapRef}
+        provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{
           latitude: coordinates.latitude,
@@ -179,20 +145,14 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         }}
-        showsUserLocation={false}
-        showsMyLocationButton={false}
-        showsCompass={false}
-        showsScale={false}
+        showsUserLocation={true}
+        showsMyLocationButton={true}
+        showsCompass={true}
+        showsScale={true}
         mapType="standard"
         loadingEnabled={true}
         loadingIndicatorColor="#E0115F"
         loadingBackgroundColor="rgba(255, 255, 255, 0.1)"
-        onMapReady={() => {
-          // Map ready
-        }}
-        onError={(error) => {
-          console.error('Map error:', error);
-        }}
       >
         <Marker
           coordinate={{
@@ -240,33 +200,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
-  },
-  mapPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 20,
-  },
-  placeholderText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  placeholderSubtext: {
-    color: '#F4C869',
-    fontSize: 14,
-    textAlign: 'center',
-    opacity: 0.8,
-    marginBottom: 8,
-  },
-  placeholderNote: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    textAlign: 'center',
-    opacity: 0.6,
-    fontStyle: 'italic',
   },
 });

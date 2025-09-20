@@ -4,18 +4,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { router } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { RestaurantCard } from "../components/RestaurantCard";
@@ -24,33 +24,11 @@ import { useCuisineTypes, useRegions, useRestaurants } from "../hooks/useRestaur
 import { RestaurantFilters as Filters, Restaurant } from "../types/restaurant";
 
 export default function RestaurantsScreen() {
-  const { cuisine_type, search_query } = useLocalSearchParams<{ 
-    cuisine_type?: string; 
-    search_query?: string; 
-  }>();
-  
   const [filters, setFilters] = useState<Filters>({});
 
   const { restaurants, loading, error, hasMore, refresh, loadMore } = useRestaurants(filters);
   const { cuisineTypes, loading: cuisineLoading } = useCuisineTypes();
   const { regions, loading: regionsLoading } = useRegions();
-
-  // Appliquer les filtres depuis les paramètres d'URL
-  useEffect(() => {
-    const urlFilters: Filters = {};
-    
-    if (cuisine_type) {
-      urlFilters.cuisine_type = cuisine_type;
-    }
-    
-    if (search_query) {
-      urlFilters.search_query = search_query;
-    }
-    
-    if (Object.keys(urlFilters).length > 0) {
-      setFilters(urlFilters);
-    }
-  }, [cuisine_type, search_query]);
 
   const hasActiveFilters = 
     filters.cuisine_type || 

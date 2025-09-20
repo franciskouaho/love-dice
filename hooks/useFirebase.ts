@@ -1,23 +1,23 @@
 import {
-  onAuthStateChanged,
-  signInAnonymously,
-  signOut,
-  User,
+    onAuthStateChanged,
+    signInAnonymously,
+    signOut,
+    User,
 } from 'firebase/auth';
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  setDoc,
-  Timestamp,
-  where,
+    addDoc,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    orderBy,
+    query,
+    setDoc,
+    Timestamp,
+    where,
 } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { auth, db } from '../services/firebase';
+import { db, getAuthInstance, initializeAuthAsync } from '../services/firebase';
 
 // Fonction pour attribuer un quota de 50 lancers à un utilisateur
 const grantStarterQuota = async (userId: string) => {
@@ -41,17 +41,48 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
+    // Initialiser l'Auth de manière asynchrone
+    const initAuth = async () => {
+      try {
+        const authInstance = await initializeAuthAsync();
+        if (!authInstance) {
+          console.warn("⚠️ Impossible d'initialiser Firebase Auth");
+          setLoading(false);
+          return;
+        }
+
+        const unsubscribe = onAuthStateChanged(authInstance, (user) => {
+          setUser(user);
+          setLoading(false);
+        });
+        
+        return unsubscribe;
+      } catch (error) {
+        console.error("❌ Erreur initialisation Auth:", error);
+        setLoading(false);
+      }
+    };
+
+    let unsubscribe: (() => void) | undefined;
+    initAuth().then((unsub) => {
+      unsubscribe = unsub;
     });
-    
-    return unsubscribe;
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const signInAnonymous = async () => {
     try {
-      const result = await signInAnonymously(auth);
+      const authInstance = getAuthInstance();
+      if (!authInstance) {
+        return { success: false, error: "Instance d'authentification non disponible" };
+      }
+
+      const result = await signInAnonymously(authInstance);
       
       // Attribuer automatiquement un quota de 2 lancers au nouvel utilisateur
       if (result.user) {
@@ -66,7 +97,12 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      const authInstance = getAuthInstance();
+      if (!authInstance) {
+        return { success: false, error: "Instance d'authentification non disponible" };
+      }
+
+      await signOut(authInstance);
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };

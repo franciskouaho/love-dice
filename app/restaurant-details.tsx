@@ -8,7 +8,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
     Alert,
-    Animated,
     Linking,
     SafeAreaView,
     ScrollView,
@@ -19,6 +18,7 @@ import {
     View
 } from "react-native";
 
+import { ActionButton } from "../components/ActionButton";
 import { ImageSlider } from "../components/ImageSlider";
 import { RestaurantMap } from "../components/RestaurantMap";
 import { getRestaurantById } from "../services/restaurants";
@@ -64,37 +64,15 @@ export default function RestaurantDetailsScreen() {
     router.back();
   }, []);
 
-  const callButtonScale = React.useRef(new Animated.Value(1)).current;
-  const websiteButtonScale = React.useRef(new Animated.Value(1)).current;
-
-  const animateButton = (scale: Animated.Value, callback: () => void) => {
-    Animated.sequence([
-      Animated.timing(scale, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    
-    setTimeout(callback, 150);
-  };
-
   const handleCall = useCallback(async () => {
     if (!restaurant?.phone || restaurant.phone === "N/A" || restaurant.phone.trim() === "") {
       Alert.alert("Information manquante", "Numéro de téléphone non disponible");
       return;
     }
     
-    animateButton(callButtonScale, async () => {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      Linking.openURL(`tel:${restaurant.phone}`);
-    });
-  }, [restaurant, callButtonScale]);
+    await Haptics.selectionAsync();
+    Linking.openURL(`tel:${restaurant.phone}`);
+  }, [restaurant]);
 
   const handleWebsite = useCallback(async () => {
     if (!restaurant?.website || restaurant.website === "N/A" || restaurant.website.trim() === "") {
@@ -102,11 +80,9 @@ export default function RestaurantDetailsScreen() {
       return;
     }
     
-    animateButton(websiteButtonScale, async () => {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      Linking.openURL(restaurant.website);
-    });
-  }, [restaurant, websiteButtonScale]);
+    await Haptics.selectionAsync();
+    Linking.openURL(restaurant.website);
+  }, [restaurant]);
 
   const handleMaps = useCallback(async () => {
     if (!restaurant?.address) {
@@ -193,7 +169,13 @@ export default function RestaurantDetailsScreen() {
           </BlurView>
         </TouchableOpacity>
         
-        <View style={styles.headerRight} />
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleMaps}>
+            <BlurView intensity={20} style={styles.actionButtonBlur}>
+              <Ionicons name="location" size={20} color="#FFFFFF" />
+            </BlurView>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Content */}
@@ -242,22 +224,7 @@ export default function RestaurantDetailsScreen() {
         {/* Map Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📍 Localisation</Text>
-          <View style={styles.mapContainer}>
-            <RestaurantMap restaurant={restaurant} height={220} />
-            <View style={styles.mapOverlay}>
-              <TouchableOpacity style={styles.directionsButton} onPress={handleMaps}>
-                <LinearGradient
-                  colors={['#4285F4', '#1A73E8']}
-                  style={styles.directionsButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Ionicons name="navigate" size={16} color="#FFFFFF" />
-                  <Text style={styles.directionsButtonText}>Itinéraire</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <RestaurantMap restaurant={restaurant} height={250} />
         </View>
 
         {/* Contact & Hours Section */}
@@ -266,59 +233,43 @@ export default function RestaurantDetailsScreen() {
           
           {/* Contact Cards */}
           <View style={styles.cardsContainer}>
-            <Animated.View style={{ transform: [{ scale: callButtonScale }] }}>
-              <TouchableOpacity 
-                style={[styles.contactCard, styles.callCard, !(restaurant.phone && restaurant.phone !== "N/A") && styles.disabledCard]} 
-                onPress={restaurant.phone && restaurant.phone !== "N/A" ? handleCall : undefined}
-                disabled={!(restaurant.phone && restaurant.phone !== "N/A")}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={restaurant.phone && restaurant.phone !== "N/A" ? ['#4CAF50', '#45A049'] : ['#666666', '#555555']}
-                  style={styles.cardIconGradient}
-                >
-                  <Ionicons name="call" size={22} color="#FFFFFF" />
-                </LinearGradient>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle}>📞 Téléphone</Text>
-                  <Text style={styles.cardValue}>
-                    {restaurant.phone && restaurant.phone !== "N/A" ? restaurant.phone : "Non disponible"}
-                  </Text>
-                </View>
-                {restaurant.phone && restaurant.phone !== "N/A" && (
-                  <View style={styles.actionIndicator}>
-                    <Ionicons name="call-outline" size={18} color="#4CAF50" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
+            <TouchableOpacity 
+              style={[styles.contactCard, !(restaurant.phone && restaurant.phone !== "N/A") && styles.disabledCard]} 
+              onPress={restaurant.phone && restaurant.phone !== "N/A" ? handleCall : undefined}
+              disabled={!(restaurant.phone && restaurant.phone !== "N/A")}
+            >
+              <View style={styles.cardIcon}>
+                <Ionicons name="call" size={24} color="#FFFFFF" />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>Téléphone</Text>
+                <Text style={styles.cardValue}>
+                  {restaurant.phone && restaurant.phone !== "N/A" ? restaurant.phone : "Non disponible"}
+                </Text>
+              </View>
+              {restaurant.phone && restaurant.phone !== "N/A" && (
+                <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.7)" />
+              )}
+            </TouchableOpacity>
 
-            <Animated.View style={{ transform: [{ scale: websiteButtonScale }] }}>
-              <TouchableOpacity 
-                style={[styles.contactCard, styles.websiteCard, !(restaurant.website && restaurant.website !== "N/A") && styles.disabledCard]} 
-                onPress={restaurant.website && restaurant.website !== "N/A" ? handleWebsite : undefined}
-                disabled={!(restaurant.website && restaurant.website !== "N/A")}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={restaurant.website && restaurant.website !== "N/A" ? ['#2196F3', '#1976D2'] : ['#666666', '#555555']}
-                  style={styles.cardIconGradient}
-                >
-                  <Ionicons name="globe" size={22} color="#FFFFFF" />
-                </LinearGradient>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle}>🌐 Site web</Text>
-                  <Text style={styles.cardValue}>
-                    {restaurant.website && restaurant.website !== "N/A" ? "Visiter le site" : "Non disponible"}
-                  </Text>
-                </View>
-                {restaurant.website && restaurant.website !== "N/A" && (
-                  <View style={styles.actionIndicator}>
-                    <Ionicons name="open-outline" size={18} color="#2196F3" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
+            <TouchableOpacity 
+              style={[styles.contactCard, !(restaurant.website && restaurant.website !== "N/A") && styles.disabledCard]} 
+              onPress={restaurant.website && restaurant.website !== "N/A" ? handleWebsite : undefined}
+              disabled={!(restaurant.website && restaurant.website !== "N/A")}
+            >
+              <View style={styles.cardIcon}>
+                <Ionicons name="globe" size={24} color="#FFFFFF" />
+              </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>Site web</Text>
+                <Text style={styles.cardValue}>
+                  {restaurant.website && restaurant.website !== "N/A" ? "Visiter le site" : "Non disponible"}
+                </Text>
+              </View>
+              {restaurant.website && restaurant.website !== "N/A" && (
+                <Ionicons name="chevron-forward" size={20} color="rgba(255, 255, 255, 0.7)" />
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* Hours Card */}
@@ -333,8 +284,35 @@ export default function RestaurantDetailsScreen() {
           </View>
         </View>
 
-        {/* Espace pour le scroll */}
-        <View style={styles.bottomSpacing} />
+        {/* Actions */}
+        <View style={styles.actionsSection}>
+          <ActionButton
+            onPress={handleMaps}
+            icon="location"
+            label="Voir sur la carte"
+            variant="primary"
+          />
+          
+          {restaurant.phone && restaurant.phone !== "N/A" && (
+            <ActionButton
+              onPress={handleCall}
+              icon="call"
+              label="Appeler"
+              variant="secondary"
+              style={styles.actionButtonSpacing}
+            />
+          )}
+          
+          {restaurant.website && restaurant.website !== "N/A" && (
+            <ActionButton
+              onPress={handleWebsite}
+              icon="globe"
+              label="Site web"
+              variant="secondary"
+              style={styles.actionButtonSpacing}
+            />
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -518,34 +496,24 @@ const styles = StyleSheet.create({
   contactCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 18,
-    padding: 18,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.25)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
     gap: 16,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-    transform: [{ scale: 1 }],
-  },
-  callCard: {
-    borderColor: "rgba(76, 175, 80, 0.3)",
-    backgroundColor: "rgba(76, 175, 80, 0.1)",
-  },
-  websiteCard: {
-    borderColor: "rgba(33, 150, 243, 0.3)",
-    backgroundColor: "rgba(33, 150, 243, 0.1)",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   disabledCard: {
-    opacity: 0.5,
+    opacity: 0.6,
     backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   hoursCard: {
     flexDirection: "row",
@@ -580,21 +548,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
-  },
-  cardIconGradient: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
   },
   cardContent: {
     flex: 1,
@@ -658,71 +611,13 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.9)",
     lineHeight: 20,
   },
-  mapContainer: {
-    position: "relative",
-    borderRadius: 16,
-    overflow: "hidden",
-    backgroundColor: "rgba(0, 0, 0, 0.1)",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+  actionsSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    gap: 12,
   },
-  mapOverlay: {
-    position: "absolute",
-    bottom: 12,
-    right: 12,
-    zIndex: 10,
-  },
-  directionsButton: {
-    borderRadius: 25,
-    overflow: "hidden",
-    shadowColor: "#4285F4",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  directionsButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  directionsButtonText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  actionIndicator: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  bottomSpacing: {
-    height: 40,
+  actionButtonSpacing: {
+    marginTop: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -773,3 +668,4 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 });
+

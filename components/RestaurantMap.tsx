@@ -31,7 +31,7 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
       console.log('🗺️ Tentative de géocodage pour:', address);
       // Utiliser l'API de géocodage de Google Maps
       const encodedAddress = encodeURIComponent(address);
-      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=AIzaSyAXrDxGHxOgHcFxRfHEL2Qi82KpE29CJMY`;
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=AIzaSyCRZPqnSHTVf2MuHvUCuwdcUXo3Zpm0CLI`;
       console.log('🔗 URL API:', url);
       
       const response = await fetch(url);

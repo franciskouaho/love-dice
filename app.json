@@ -21,7 +21,7 @@
         "NSUserNotificationsUsageDescription": "Love Dice vous envoie des rappels personnalisés pour vos soirées romantiques."
       },
       "config": {
-        "googleMapsApiKey": "AIzaSyAXrDxGHxOgHcFxRfHEL2Qi82KpE29CJMY"
+        "googleMapsApiKey": "AIzaSyCRZPqnSHTVf2MuHvUCuwdcUXo3Zpm0CLI"
       }
     },
     "android": {
@@ -46,7 +46,7 @@
       "predictiveBackGestureEnabled": false,
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyAXrDxGHxOgHcFxRfHEL2Qi82KpE29CJMY"
+          "apiKey": "AIzaSyCRZPqnSHTVf2MuHvUCuwdcUXo3Zpm0CLI"
         }
       }
     },

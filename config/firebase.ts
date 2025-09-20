@@ -1,20 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FirebaseApp, getApps, initializeApp } from "firebase/app";
 import {
-  Auth,
-  getAuth,
-  getReactNativePersistence,
-  initializeAuth,
-  onAuthStateChanged,
-  signInAnonymously,
-  User
+    Auth,
+    getAuth,
+    getReactNativePersistence,
+    initializeAuth,
+    onAuthStateChanged,
+    signInAnonymously,
+    User
 } from "firebase/auth";
 import { doc, Firestore, getFirestore, setDoc, Timestamp } from "firebase/firestore";
 import {
-  fetchAndActivate,
-  getRemoteConfig,
-  getValue,
-  RemoteConfig
+    fetchAndActivate,
+    getRemoteConfig,
+    getValue,
+    RemoteConfig
 } from "firebase/remote-config";
 
 // Configuration Firebase - Expo va automatiquement utiliser les credentials natifs

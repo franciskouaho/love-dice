@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getConfigValue } from "../services/config";
 import {
-  getCurrentUserId
+    getCurrentUserId
 } from "../services/firestore";
 
 // Clés pour le stockage local (cache + lifetime status)

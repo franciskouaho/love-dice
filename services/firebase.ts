@@ -1,22 +1,26 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getApps, initializeApp } from "firebase/app";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApps, initializeApp } from 'firebase/app';
 import {
-  Auth,
   getAuth,
   getReactNativePersistence,
   initializeAuth,
   onAuthStateChanged,
   signInAnonymously,
-  User,
-} from "firebase/auth";
-import { doc, getFirestore, setDoc, Timestamp } from "firebase/firestore";
+  User
+} from 'firebase/auth';
+import {
+  doc,
+  getFirestore,
+  setDoc,
+  Timestamp
+} from 'firebase/firestore';
 import {
   fetchAndActivate,
   getRemoteConfig,
-  getValue,
-} from "firebase/remote-config";
+  getValue
+} from 'firebase/remote-config';
 
-// Configuration Firebase - Expo va automatiquement utiliser les credentials natifs
+// Configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAXrDxGHxOgHcFxRfHEL2Qi82KpE29CJMY",
   authDomain: "love-dice-7a878.firebaseapp.com",
@@ -24,253 +28,150 @@ const firebaseConfig = {
   storageBucket: "love-dice-7a878.firebasestorage.app",
   messagingSenderId: "916106041141",
   appId: "1:916106041141:web:a41b259be98ae885cd9e7c",
-  measurementId: "G-7Z5GB9RCT5",
+  measurementId: "G-7Z5GB9RCT5"
 };
 
-// Initialize Firebase avec protection contre les multiples initialisations
-const app =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+// Initialiser Firebase App
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize Firestore
+// Initialiser Firestore
 export const db = getFirestore(app);
 
-// Auth will be initialized lazily to avoid Expo Go issues
-let _auth: Auth | null = null;
+// Initialiser Firebase Auth avec persistence
+let auth: any = null;
 
-export const getAuthInstance = () => {
-  if (!_auth) {
-    try {
-      // 🔥 Utiliser initializeAuth avec AsyncStorage pour VRAIE persistance
-      try {
-        _auth = initializeAuth(app, {
-          persistence: getReactNativePersistence(AsyncStorage)
-        });
-      } catch (error) {
-        // Si initializeAuth échoue, essayer getAuth
-        console.log("initializeAuth failed, trying getAuth:", error);
-        _auth = getAuth(app);
-      }
-      
-      // Écouter les changements d'authentification pour debug
-      if (_auth) {
-        onAuthStateChanged(_auth, (user: User | null) => {
-          if (user) {
-            console.log("✅ User authenticated:", user.uid);
-          } else {
-            console.log("❌ User not authenticated");
-          }
-        });
-      }
-    } catch (error) {
-      console.error("❌ Erreur getAuth:", error);
-      console.error("❌ Type d'erreur:", typeof error);
-      console.error("❌ Message:", (error as Error)?.message);
-      console.error("❌ Stack:", (error as Error)?.stack);
-      return null;
-    }
-  }
-  return _auth;
-};
+try {
+  // Essayer d'initialiser Auth avec persistence
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+  console.log("✅ Firebase Auth initialisé avec AsyncStorage persistence");
+} catch {
+  // Si l'Auth est déjà initialisé, récupérer l'instance existante
+  console.log("ℹ️ Firebase Auth déjà initialisé, récupération de l'instance");
+  auth = getAuth(app);
+}
 
-// Legacy export for backward compatibility - but this will be lazy loaded
-export const auth = new Proxy({} as Auth, {
-  get(target, prop) {
-    const authInstance = getAuthInstance();
-    if (!authInstance) {
-      return undefined;
-    }
-    return (authInstance as any)[prop];
-  },
-});
+export { auth };
 
-// Remote Config will be initialized lazily to avoid Expo Go issues
-let _remoteConfig: any = null;
+// Initialiser Remote Config
+export const remoteConfig = getRemoteConfig(app);
 
-export const getRemoteConfigInstance = () => {
-  if (!_remoteConfig) {
-    try {
-      _remoteConfig = getRemoteConfig(app);
-    } catch (error) {
-      return null;
-    }
-  }
-  return _remoteConfig;
-};
-
-// Legacy export for backward compatibility
-export const remoteConfig = new Proxy({} as any, {
-  get(target, prop) {
-    const configInstance = getRemoteConfigInstance();
-    if (!configInstance) {
-      return undefined;
-    }
-    return configInstance[prop];
-  },
-});
-
-// Remote Config defaults
-const remoteConfigDefaults = {
-  FREE_ROLLS_PER_DAY: 3,
-  LIFETIME_PRICE: "12,99 €",
-  PAYWALL_TITLE: "Accès à vie 💕",
-  PAYWALL_BULLETS: "Lancers illimités|Dés personnalisables|Aucune pub",
-  FEATURE_FLAGS: '{"customFaces":true,"history":true}',
-};
-
-// Initialize Remote Config
-export const initRemoteConfig = async () => {
-  const configInstance = getRemoteConfigInstance();
-  if (!configInstance) {
-    return;
-  }
-
+// Fonction pour créer un utilisateur anonyme
+export const createAnonymousUser = async (): Promise<User> => {
   try {
-    configInstance.defaultConfig = remoteConfigDefaults;
-    configInstance.settings = {
-      minimumFetchIntervalMillis: 3600000, // 1 heure
-      fetchTimeoutMillis: 60000, // 60 secondes
-    };
-
-    await fetchAndActivate(configInstance);
-  } catch (error) {
-    // Erreur Remote Config ignorée
-  }
-};
-
-// Helper pour récupérer les valeurs Remote Config
-export const getRemoteConfigValue = (key: string) => {
-  const configInstance = getRemoteConfigInstance();
-  if (!configInstance) {
-    return remoteConfigDefaults[key as keyof typeof remoteConfigDefaults] || "";
-  }
-
-  try {
-    return getValue(configInstance, key).asString();
-  } catch (error) {
-    return remoteConfigDefaults[key as keyof typeof remoteConfigDefaults] || "";
-  }
-};
-
-export const getRemoteConfigNumber = (key: string): number => {
-  const configInstance = getRemoteConfigInstance();
-  if (!configInstance) {
-    const defaultValue =
-      remoteConfigDefaults[key as keyof typeof remoteConfigDefaults];
-    return typeof defaultValue === "number" ? defaultValue : 0;
-  }
-
-  try {
-    return getValue(configInstance, key).asNumber();
-  } catch (error) {
-    const defaultValue =
-      remoteConfigDefaults[key as keyof typeof remoteConfigDefaults];
-    return typeof defaultValue === "number" ? defaultValue : 0;
-  }
-};
-
-export const getFeatureFlags = () => {
-  try {
-    const flags = getRemoteConfigValue("FEATURE_FLAGS");
-    return JSON.parse(String(flags));
-  } catch (error) {
-    return { customFaces: true, history: true };
-  }
-};
-
-// Auth anonyme automatique avec protection contre les appels multiples
-let authPromise: Promise<any> | null = null;
-
-// Fonction pour créer explicitement un nouvel utilisateur anonyme
-export const createAnonymousUser = async () => {
-  try {
-    const authInstance = getAuthInstance();
-    if (!authInstance) {
-      console.error("❌ Instance Auth non disponible");
-      throw new Error("Instance Auth non disponible");
-    }
-    const result = await signInAnonymously(authInstance);
-    const db = getFirestore();
-    const docRef = doc(db, "user_settings", result.user.uid);
-    await setDoc(
-      docRef,
-      {
-        hasLifetime: false,
-        unlimited: false,
-        dailyQuota: 50,
-        remainingRolls: 50,
-        lastReset: Timestamp.now(),
-        grantedAt: Timestamp.now(),
-        source: "anonymous_signup",
-      },
-      { merge: true },
-    );
+    console.log("🔄 Création utilisateur anonyme...");
+    const result = await signInAnonymously(auth);
+    console.log("✅ Utilisateur anonyme créé:", result.user.uid);
+    
+    // Créer les données utilisateur dans Firestore
+    const docRef = doc(db, 'user_settings', result.user.uid);
+    await setDoc(docRef, {
+      hasLifetime: false,
+      unlimited: false,
+      dailyQuota: 50,
+      remainingRolls: 50,
+      lastReset: Timestamp.now(),
+      grantedAt: Timestamp.now(),
+      source: 'anonymous_signup',
+    }, { merge: true });
+    
+    console.log("✅ Données utilisateur créées dans Firestore");
     return result.user;
   } catch (error) {
     console.error("❌ Erreur création utilisateur anonyme:", error);
-    console.error("❌ Type d'erreur:", error?.constructor?.name);
-    console.error("❌ Message:", (error as Error)?.message);
     throw error;
   }
 };
 
-export const initAuth = () => {
+// Promise pour l'initialisation de l'auth
+let authPromise: Promise<User | null> | null = null;
+
+// Fonction d'initialisation de l'auth
+export const initAuth = (): Promise<User | null> => {
   if (authPromise) {
     return authPromise;
   }
-  authPromise = new Promise((resolve, reject) => {
+  
+  authPromise = new Promise((resolve) => {
     try {
-      const authInstance = getAuthInstance();
-      if (!authInstance) {
+      console.log("🔄 Initialisation de l'Auth...");
+      
+      // Vérifier si un utilisateur est déjà connecté
+      if (auth.currentUser) {
+        console.log("✅ Utilisateur déjà connecté:", auth.currentUser.uid);
         authPromise = null;
-        resolve(null);
+        resolve(auth.currentUser);
         return;
       }
-      if (authInstance.currentUser) {
-        authPromise = null;
-        resolve(authInstance.currentUser);
-        return;
-      }
-      let isSigningIn = false;
-      const unsubscribe = onAuthStateChanged(authInstance, (user) => {
+      
+      // Écouter les changements d'état d'authentification
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
         if (user) {
+          console.log("✅ Utilisateur connecté via onAuthStateChanged:", user.uid);
           unsubscribe();
           authPromise = null;
           resolve(user);
-        } else if (!isSigningIn) {
+        } else {
+          console.log("ℹ️ Aucun utilisateur connecté");
           unsubscribe();
           authPromise = null;
           resolve(null);
         }
       });
+      
+      // Timeout de sécurité
       setTimeout(() => {
         if (authPromise) {
           unsubscribe();
           authPromise = null;
           resolve(null);
         }
-      }, 10000);
+      }, 5000);
+      
     } catch (error) {
       console.error("❌ Erreur dans initAuth:", error);
       authPromise = null;
       resolve(null);
     }
   });
+  
   return authPromise;
 };
 
-// Initialize Firebase services
-export const initFirebase = async () => {
+// Fonction pour récupérer l'instance Auth
+export const getAuthInstance = () => {
+  return auth;
+};
+
+// Configuration Remote Config
+export const setupRemoteConfig = async () => {
   try {
-    const authInstance = getAuthInstance();
-    if (authInstance) {
-      await initAuth();
-    }
+    remoteConfig.settings = {
+      minimumFetchIntervalMillis: 3600000, // 1 heure
+      fetchTimeoutMillis: 60000, // 60 secondes
+    };
 
-    await initRemoteConfig();
+    remoteConfig.defaultConfig = {
+      maintenance_mode: false,
+      feature_custom_faces: true,
+      feature_premium: true,
+    };
 
-    return true;
+    await fetchAndActivate(remoteConfig);
+    console.log("✅ Remote Config initialisé");
   } catch (error) {
-    return false;
+    console.error("❌ Erreur Remote Config:", error);
+  }
+};
+
+// Fonction pour récupérer une valeur Remote Config
+export const getRemoteConfigValue = (key: string) => {
+  try {
+    return getValue(remoteConfig, key);
+  } catch (error) {
+    console.error(`❌ Erreur récupération Remote Config ${key}:`, error);
+    return null;
   }
 };
 

@@ -1,23 +1,23 @@
 import {
-    onAuthStateChanged,
-    signInAnonymously,
-    signOut,
-    User,
+  onAuthStateChanged,
+  signInAnonymously,
+  signOut,
+  User,
 } from 'firebase/auth';
 import {
-    addDoc,
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    orderBy,
-    query,
-    setDoc,
-    Timestamp,
-    where,
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+  Timestamp,
+  where,
 } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { db, getAuthInstance, initializeAuthAsync } from '../services/firebase';
+import { db, getAuthInstance } from '../services/firebase';
 
 // Fonction pour attribuer un quota de 50 lancers à un utilisateur
 const grantStarterQuota = async (userId: string) => {
@@ -42,14 +42,17 @@ export function useAuth() {
 
   useEffect(() => {
     // Initialiser l'Auth de manière asynchrone
-    const initAuth = async () => {
+    const initializeAuth = async () => {
       try {
-        const authInstance = await initializeAuthAsync();
+        const authInstance = getAuthInstance();
         if (!authInstance) {
           console.warn("⚠️ Impossible d'initialiser Firebase Auth");
           setLoading(false);
           return;
         }
+
+        // Attendre l'initialisation complète
+        await initAuth();
 
         const unsubscribe = onAuthStateChanged(authInstance, (user) => {
           setUser(user);
@@ -64,7 +67,7 @@ export function useAuth() {
     };
 
     let unsubscribe: (() => void) | undefined;
-    initAuth().then((unsub) => {
+    initializeAuth().then((unsub) => {
       unsubscribe = unsub;
     });
 

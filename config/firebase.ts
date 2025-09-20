@@ -52,9 +52,7 @@ export const getAuthInstance = (): Auth | null => {
       // Écouter les changements d'authentification pour debug
       onAuthStateChanged(_auth, (user: User | null) => {
         if (user) {
-          // console.log("🔥 Utilisateur persisté détecté:", user.uid);
         } else {
-          // console.log("👤 Aucun utilisateur persisté");
         }
       });
     } catch (error) {

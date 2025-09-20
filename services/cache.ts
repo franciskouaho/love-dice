@@ -67,7 +67,6 @@ export class LocalCacheService {
         this.cacheMetadata = new Map(Object.entries(metadata));
       }
     } catch (error) {
-      console.warn('Erreur lors du chargement des métadonnées du cache:', error);
     }
   }
 
@@ -79,7 +78,6 @@ export class LocalCacheService {
       const metadataObj = Object.fromEntries(this.cacheMetadata);
       await AsyncStorage.setItem(CACHE_KEYS.CACHE_METADATA, JSON.stringify(metadataObj));
     } catch (error) {
-      console.warn('Erreur lors de la sauvegarde des métadonnées du cache:', error);
     }
   }
 
@@ -125,7 +123,6 @@ export class LocalCacheService {
       await AsyncStorage.setItem(key, JSON.stringify(cachedData));
       this.updateCacheMetadata(key, source);
     } catch (error) {
-      console.warn(`Erreur lors de la sauvegarde du cache pour ${key}:`, error);
     }
   }
 
@@ -151,7 +148,6 @@ export class LocalCacheService {
 
       return cachedData.data;
     } catch (error) {
-      console.warn(`❌ getCache - Erreur pour ${key}:`, error);
       return null;
     }
   }
@@ -165,7 +161,6 @@ export class LocalCacheService {
       this.cacheMetadata.delete(key);
       this.saveCacheMetadata();
     } catch (error) {
-      console.warn(`Erreur lors de la suppression du cache pour ${key}:`, error);
     }
   }
 
@@ -179,7 +174,6 @@ export class LocalCacheService {
       this.cacheMetadata.clear();
       this.saveCacheMetadata();
     } catch (error) {
-      console.warn('Erreur lors du vidage du cache:', error);
     }
   }
 
@@ -201,7 +195,6 @@ export class LocalCacheService {
 
       return totalSize;
     } catch (error) {
-      console.warn('Erreur lors du calcul de la taille du cache:', error);
       return 0;
     }
   }

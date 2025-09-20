@@ -29,29 +29,23 @@ export class InitializationService {
    */
   async initialize(): Promise<boolean> {
     if (this.isInitialized) {
-      console.log('📱 Application déjà initialisée');
       return true;
     }
 
     try {
-      console.log('🚀 Initialisation de l\'application avec cache...');
       
       // 1. Charger les données publiques (faces par défaut, config) même sans utilisateur
-      console.log('📱 Chargement des données publiques depuis le cache...');
       await this.loadPublicDataFromCache();
 
       // 2. Si un utilisateur est connecté, charger ses données personnelles
       const uid = getCurrentUserId();
       if (uid) {
-        console.log('📱 Utilisateur connecté, chargement des données personnelles...');
         await this.loadUserDataFromCache(uid);
         this.startBackgroundSync(uid);
       } else {
-        console.log('ℹ️ Aucun utilisateur connecté, données publiques seulement');
       }
 
       this.isInitialized = true;
-      console.log('✅ Application initialisée avec succès');
       return true;
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation:', error);
@@ -76,11 +70,9 @@ export class InitializationService {
 
       // Log des résultats
       if (defaultFaces.status === 'fulfilled') {
-        console.log(`📱 ${defaultFaces.value.length} faces par défaut chargées`);
         
         // Si pas de faces dans le cache, charger depuis Firebase
         if (defaultFaces.value.length === 0) {
-          console.log('🔄 Cache vide, chargement depuis Firebase...');
           await this.loadDefaultFacesFromFirebase();
         }
       } else if (defaultFaces.status === 'rejected') {
@@ -88,9 +80,7 @@ export class InitializationService {
       }
       
       if (appConfig.status === 'fulfilled') {
-        console.log('📱 Configuration chargée');
       } else if (appConfig.status === 'rejected') {
-        console.error('❌ Erreur chargement config:', appConfig.reason);
       }
     } catch (error) {
       console.error('❌ Erreur lors du chargement des données publiques:', error);
@@ -102,18 +92,15 @@ export class InitializationService {
    */
   private async loadDefaultFacesFromFirebase(): Promise<void> {
     try {
-      console.log('🔥 Chargement des faces par défaut depuis Firebase...');
       
       // Importer la fonction de récupération depuis Firebase
       const { fetchDefaultFacesFromFirebase } = await import('./faces');
       
       // Récupérer depuis Firebase
       const faces = await fetchDefaultFacesFromFirebase();
-      console.log(`🔥 ${faces.length} faces récupérées depuis Firebase`);
       
       // Mettre en cache
       await cacheService.setDefaultFaces(faces);
-      console.log('💾 Faces mises en cache local');
       
     } catch (error) {
       console.error('❌ Erreur lors du chargement depuis Firebase:', error);
@@ -136,15 +123,11 @@ export class InitializationService {
 
       // Log des résultats
       if (userProfile.status === 'fulfilled' && userProfile.value) {
-        console.log('📱 Profil utilisateur chargé');
       } else if (userProfile.status === 'rejected') {
-        console.error('❌ Erreur chargement profil:', userProfile.reason);
       }
       
       if (userFaces.status === 'fulfilled') {
-        console.log(`📱 ${userFaces.value.length} faces personnalisées chargées`);
       } else if (userFaces.status === 'rejected') {
-        console.error('❌ Erreur chargement faces utilisateur:', userFaces.reason);
       }
     } catch (error) {
       console.error('❌ Erreur lors du chargement des données utilisateur:', error);
@@ -192,17 +175,14 @@ export class InitializationService {
 
     switch (nextAppState) {
       case 'active':
-        console.log('📱 Application active - synchronisation...');
         // Synchroniser quand l'app redevient active
         syncService.backgroundSync(uid);
         break;
       case 'background':
-        console.log('📱 Application en arrière-plan');
         // Optionnel : arrêter la sync périodique en arrière-plan
         // this.stopBackgroundSync();
         break;
       case 'inactive':
-        console.log('📱 Application inactive');
         break;
     }
   }
@@ -213,11 +193,9 @@ export class InitializationService {
   async forceSyncAll(): Promise<void> {
     const uid = getCurrentUserId();
     if (!uid) {
-      console.warn('⚠️ Aucun utilisateur connecté pour la synchronisation forcée');
       return;
     }
 
-    console.log('🔄 Synchronisation forcée de toutes les données...');
     await syncService.forceSyncAll(uid);
   }
 
@@ -236,9 +214,7 @@ export class InitializationService {
    * Vider le cache
    */
   async clearCache(): Promise<void> {
-    console.log('🗑️ Vidage du cache...');
     await cacheService.clearAllCache();
-    console.log('✅ Cache vidé');
   }
 
   /**
@@ -264,7 +240,6 @@ export class InitializationService {
    * Re-initialiser l'application (utile après connexion utilisateur)
    */
   async reinitialize(): Promise<boolean> {
-    console.log('🔄 Ré-initialisation de l\'application...');
     this.cleanup();
     return await this.initialize();
   }
@@ -275,15 +250,12 @@ export class InitializationService {
   async initializeUserData(): Promise<void> {
     const uid = getCurrentUserId();
     if (!uid) {
-      console.log('⚠️ Aucun utilisateur connecté pour l\'initialisation des données');
       return;
     }
 
     try {
-      console.log('👤 Initialisation des données utilisateur...');
       await this.loadUserDataFromCache(uid);
       this.startBackgroundSync(uid);
-      console.log('✅ Données utilisateur initialisées');
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation des données utilisateur:', error);
     }

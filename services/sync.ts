@@ -298,7 +298,6 @@ export class SyncService {
    */
   async backgroundSync(uid: string): Promise<void> {
     try {
-      console.log('🔄 Début de la synchronisation en arrière-plan...');
       
       // Synchroniser toutes les données en parallèle
       await Promise.allSettled([
@@ -309,9 +308,7 @@ export class SyncService {
         this.syncAppConfig(true),
       ]);
 
-      console.log('✅ Synchronisation en arrière-plan terminée');
     } catch (error) {
-      console.error('❌ Erreur lors de la synchronisation en arrière-plan:', error);
     }
   }
 
@@ -319,7 +316,6 @@ export class SyncService {
    * Forcer la synchronisation de toutes les données
    */
   async forceSyncAll(uid: string): Promise<void> {
-    console.log('🔄 Synchronisation forcée de toutes les données...');
     
     // Invalider tout le cache
     await cacheService.clearAllCache();

@@ -56,7 +56,6 @@ export const saveUserPreferences = async (preferences: UserPreferences): Promise
   try {
     await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
   } catch (error) {
-    console.warn("Erreur sauvegarde préférences:", error);
   }
 };
 
@@ -170,7 +169,6 @@ export const consumeFreeRoll = async (): Promise<{
       error: result.error,
     };
   } catch (error) {
-    console.error("❌ Erreur consumeFreeRoll:", error);
     // En cas d'erreur, bloquer l'accès
     return {
       success: false,
@@ -205,7 +203,6 @@ export const saveLifetimeStatus = async (
     // Cache local OK dans tous les cas
     return { success: true };
   } catch (error) {
-    console.error("❌ Erreur saveLifetimeStatus:", error);
     return {
       success: false,
       error: "Erreur de sauvegarde",
@@ -243,7 +240,6 @@ export const getLifetimeStatus = async (): Promise<boolean> => {
 
     return firebaseStatus;
   } catch (error) {
-    console.error("❌ Erreur getLifetimeStatus:", error);
     // En cas d'erreur Firebase, retourner le cache local
     return await getCachedLifetimeStatus();
   }
@@ -349,7 +345,6 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
     };
     return finalResult;
   } catch (error) {
-    console.error("❌ Erreur getQuotaSummary:", error);
     // En cas d'erreur, bloquer l'accès
     return {
       hasLifetime: false,

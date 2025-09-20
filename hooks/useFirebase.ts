@@ -32,7 +32,6 @@ const grantStarterQuota = async (userId: string) => {
       source: 'anonymous_signup',
     }, { merge: true });
   } catch (error) {
-    console.error('❌ Erreur attribution quota:', error);
   }
 };
 
@@ -103,7 +102,6 @@ export function useAuth() {
         await grantStarterQuota(userId);
       }
     } catch (error) {
-      console.error('❌ Erreur vérification quota:', error);
     }
   };
 
@@ -346,10 +344,8 @@ export const grantLifetimeAccess = async (userId: string) => {
       source: 'premium_purchase',
     }, { merge: true });
     
-    console.log('✅ Accès à vie accordé à:', userId);
     return { success: true };
   } catch (error: any) {
-    console.error('❌ Erreur attribution accès à vie:', error);
     return { success: false, error: error.message };
   }
 };

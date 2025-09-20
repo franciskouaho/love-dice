@@ -378,7 +378,6 @@ export default function HomeScreen() {
               }
             }
           } catch (error) {
-            console.warn("⚠️ SECOUSSE - Erreur Firebase, noms par défaut:", error)
           }
         }
       } catch (error) {
@@ -464,11 +463,8 @@ export default function HomeScreen() {
           // Attendre un peu que l'auth se propage
           await new Promise((resolve) => setTimeout(resolve, 1000))
         } catch (error) {
-          console.error("❌ Erreur création utilisateur:", error)
-          console.warn("⚠️ Continuer quand même avec l'action")
         }
       } else {
-        console.log("ℹ️ Pas besoin de créer d'utilisateur:", { hasUser: !!user, isLoading: authLoading })
       }
 
       // Timeout de sécurité pour débloquer isRolling
@@ -512,22 +508,15 @@ export default function HomeScreen() {
         setCurrentRoll(null)
 
         // TOUJOURS utiliser le cache local directement
-        console.log("🔍 LANCEMENT - allFaces.length:", allFaces.length)
-        console.log("🔍 LANCEMENT - allFaces:", allFaces.slice(0, 3)) // Premières 3 faces
-
         // Récupérer directement depuis le cache local
         const cachedFaces = await cacheService.getDefaultFaces()
-        console.log("🔍 LANCEMENT - Cache direct:", cachedFaces?.length || 0, "faces")
 
         const facesToUse = cachedFaces || allFaces
 
         // Si pas de faces disponibles, ne pas lancer le dé
         if (!facesToUse || facesToUse.length === 0) {
-          console.log("⚠️ LANCEMENT - Aucune face disponible, lancement annulé")
           return
         }
-
-        console.log(`🎯 LANCEMENT - currentPayerDisplay:`, currentPayerDisplay)
         const completeResult = rollCompleteDice(facesToUse, currentRoll || undefined, namesToUse, currentPayerDisplay)
 
         setCurrentRoll(completeResult)
@@ -598,33 +587,24 @@ export default function HomeScreen() {
   }
 
   const handleNamesSubmit = async () => {
-    console.log("🏷️ handleNamesSubmit - DÉBUT - Noms saisis:", playerNames)
-
     if (!playerNames.player1.trim() || !playerNames.player2.trim()) {
-      console.log("❌ handleNamesSubmit - Noms vides, affichage alert")
       Alert.alert("Noms requis", "Veuillez saisir les deux prénoms pour continuer.")
       return
     }
 
-    console.log("✅ handleNamesSubmit - Noms valides, début sauvegarde")
-
     // Créer un utilisateur Firebase si nécessaire pour sauvegarder les noms
     if (!user && !authLoading) {
-      console.log("🔧 Sauvegarde des noms - création d'un utilisateur Firebase...")
       try {
         await createAnonymousUser()
-        console.log("✅ Utilisateur créé pour sauvegarder les noms")
         // Attendre un peu que l'auth se propage
         await new Promise((resolve) => setTimeout(resolve, 1000))
       } catch (error) {
-        console.warn("⚠️ Erreur création utilisateur, continuer quand même:", error)
+        // Erreur création utilisateur ignorée
       }
     }
 
     // Sauvegarder les noms dans Firebase
-    console.log("🏷️ handleNamesSubmit - Sauvegarde des noms:", playerNames)
     await savePlayerNamesLocal(playerNames)
-    console.log("✅ Noms sauvegardés dans Firebase")
 
     // Marquer qu'on vient de sauvegarder pour éviter de recharger
     setJustSavedNames(true)
@@ -633,7 +613,6 @@ export default function HomeScreen() {
     updateCurrentPayerDisplay(playerNames, true)
 
     // PAS de rechargement - on garde les noms qui viennent d'être saisis
-    console.log("✅ Noms conservés localement, pas de rechargement depuis Firebase")
 
     // Noms sauvegardés avec succès
     setIsNamesModalVisible(false)
@@ -642,7 +621,6 @@ export default function HomeScreen() {
     // Réinitialiser le flag après 3 secondes
     setTimeout(() => {
       setJustSavedNames(false)
-      console.log("🔄 Flag justSavedNames réinitialisé")
     }, 3000)
 
     // NE PAS lancer les dés ici - seulement sauvegarder
@@ -655,14 +633,12 @@ export default function HomeScreen() {
 
     // Créer un utilisateur Firebase si nécessaire pour sauvegarder les noms par défaut
     if (!user && !authLoading) {
-      console.log("🔧 Sauvegarde des noms par défaut - création d'un utilisateur Firebase...")
       try {
         await createAnonymousUser()
-        console.log("✅ Utilisateur créé pour sauvegarder les noms par défaut")
         // Attendre un peu que l'auth se propage
         await new Promise((resolve) => setTimeout(resolve, 1000))
       } catch (error) {
-        console.warn("⚠️ Erreur création utilisateur, continuer quand même:", error)
+        // Erreur création utilisateur ignorée
       }
     }
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Marker, Region } from 'react-native-maps';
 import { Restaurant } from '../types/restaurant';
 
 interface RestaurantMapProps {
@@ -150,7 +150,6 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
     <View style={[styles.container, { height }]}>
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{
           latitude: coordinates.latitude,

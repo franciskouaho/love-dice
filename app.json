@@ -19,6 +19,9 @@
         },
         "UIBackgroundModes": ["remote-notification", "background-processing"],
         "NSUserNotificationsUsageDescription": "Love Dice vous envoie des rappels personnalisés pour vos soirées romantiques."
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyAXrDxGHxOgHcFxRfHEL2Qi82KpE29CJMY"
       }
     },
     "android": {
@@ -35,10 +38,17 @@
         "INTERNET",
         "NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "VIBRATE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ],
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAXrDxGHxOgHcFxRfHEL2Qi82KpE29CJMY"
+        }
+      }
     },
     "web": {
       "output": "static",

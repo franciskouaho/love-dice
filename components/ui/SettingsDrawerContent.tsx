@@ -146,7 +146,6 @@ export default function SettingsDrawerContent({
         "Diagnostic Notifications 🔔",
         "Les notifications sont configurées et fonctionnelles.",
         [{ text: "OK" }],
-        { style: "default" },
       );
     } catch (error) {
       Alert.alert(

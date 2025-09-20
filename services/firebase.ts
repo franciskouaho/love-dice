@@ -1,17 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApps, initializeApp } from "firebase/app";
 import {
-  getAuth,
-  getReactNativePersistence,
-  initializeAuth,
-  onAuthStateChanged,
-  signInAnonymously
+    getAuth,
+    getReactNativePersistence,
+    initializeAuth,
+    onAuthStateChanged,
+    signInAnonymously
 } from "firebase/auth";
 import { doc, getFirestore, setDoc, Timestamp } from "firebase/firestore";
 import {
-  fetchAndActivate,
-  getRemoteConfig,
-  getValue,
+    fetchAndActivate,
+    getRemoteConfig,
+    getValue,
 } from "firebase/remote-config";
 
 // Configuration Firebase - Expo va automatiquement utiliser les credentials natifs
@@ -38,29 +38,20 @@ let _auth: any = null;
 export const getAuthInstance = () => {
   if (!_auth) {
     try {
-      console.log("🔧 Tentative d'initialisation getAuth...");
-      console.log("🔧 App instance:", app ? "✅" : "❌");
-      console.log("🔧 App name:", app?.name);
-      console.log("🔧 App options:", app?.options?.projectId);
-
       // 🔥 Utiliser initializeAuth avec AsyncStorage pour VRAIE persistance
       try {
         _auth = initializeAuth(app, {
           persistence: getReactNativePersistence(AsyncStorage)
         });
-        console.log("✅ Auth instance créée avec persistance AsyncStorage");
       } catch (error) {
-        console.log("⚠️ initializeAuth échoué, fallback vers getAuth:", error);
         _auth = getAuth(app);
       }
-      console.log("✅ Auth app:", _auth?.app?.name);
-      
       // Écouter les changements d'authentification pour debug
       onAuthStateChanged(_auth, (user) => {
         if (user) {
-          console.log("🔥 Utilisateur persisté détecté:", user.uid);
+          // console.log("🔥 Utilisateur persisté détecté:", user.uid);
         } else {
-          console.log("👤 Aucun utilisateur persisté");
+          // console.log("👤 Aucun utilisateur persisté");
         }
       });
     } catch (error) {
@@ -185,26 +176,12 @@ let authPromise: Promise<any> | null = null;
 // Fonction pour créer explicitement un nouvel utilisateur anonyme
 export const createAnonymousUser = async () => {
   try {
-    console.log("🔧 Début création utilisateur anonyme...");
     const authInstance = getAuthInstance();
-    console.log("🔍 Auth instance disponible:", !!authInstance);
-    
     if (!authInstance) {
       console.error("❌ Instance Auth non disponible");
       throw new Error("Instance Auth non disponible");
     }
-
-    console.log("🔧 Appel signInAnonymously...");
     const result = await signInAnonymously(authInstance);
-    console.log("✅ Utilisateur anonyme créé:", result.user.uid);
-    console.log("🔍 Utilisateur détails:", {
-      uid: result.user.uid,
-      isAnonymous: result.user.isAnonymous,
-      providerId: result.user.providerId
-    });
-
-    // 🔥 CRÉER LE QUOTA IMMÉDIATEMENT
-    console.log("🔧 Création du quota pour:", result.user.uid);
     const db = getFirestore();
     const docRef = doc(db, 'user_settings', result.user.uid);
     await setDoc(docRef, {
@@ -216,74 +193,57 @@ export const createAnonymousUser = async () => {
       grantedAt: Timestamp.now(),
       source: 'anonymous_signup',
     }, { merge: true });
-    console.log("✅ Quota de 50 lancers créé pour:", result.user.uid);
-
     return result.user;
   } catch (error) {
     console.error("❌ Erreur création utilisateur anonyme:", error);
     console.error("❌ Type d'erreur:", error?.constructor?.name);
-    console.error("❌ Message:", error?.message);
+    console.error("❌ Message:", (error as Error)?.message);
     throw error;
   }
 };
 
 export const initAuth = () => {
-  // Si une authentification est déjà en cours, retourner la même promesse
   if (authPromise) {
-    console.log("🔄 initAuth déjà en cours, réutilisation de la promesse existante");
     return authPromise;
   }
-
   authPromise = new Promise((resolve, reject) => {
     try {
       const authInstance = getAuthInstance();
       if (!authInstance) {
-        authPromise = null; // Reset pour permettre un retry plus tard
+        authPromise = null;
         resolve(null);
         return;
       }
-
-      // Vérifier d'abord si un utilisateur est déjà connecté
       if (authInstance.currentUser) {
-        console.log("✅ Utilisateur déjà connecté:", authInstance.currentUser.uid);
-        authPromise = null; // Reset pour les futurs appels
+        authPromise = null;
         resolve(authInstance.currentUser);
         return;
       }
-
       let isSigningIn = false;
       const unsubscribe = onAuthStateChanged(authInstance, (user) => {
         if (user) {
-          console.log("✅ Utilisateur Firebase après state change:", user.uid);
           unsubscribe();
-          authPromise = null; // Reset pour les futurs appels
+          authPromise = null;
           resolve(user);
         } else if (!isSigningIn) {
-          // NE PLUS créer automatiquement un utilisateur anonyme
-          console.log("ℹ️ Aucun utilisateur détecté, mais ne pas créer automatiquement");
-          unsubscribe();
-          authPromise = null; // Reset pour les futurs appels
-          resolve(null);
-        }
-      });
-
-      // Timeout de sécurité
-      setTimeout(() => {
-        if (authPromise) {
-          console.warn("⚠️ Timeout initAuth, résolution avec null");
           unsubscribe();
           authPromise = null;
           resolve(null);
         }
-      }, 10000); // 10 secondes maximum
-
+      });
+      setTimeout(() => {
+        if (authPromise) {
+          unsubscribe();
+          authPromise = null;
+          resolve(null);
+        }
+      }, 10000);
     } catch (error) {
       console.error("❌ Erreur dans initAuth:", error);
-      authPromise = null; // Reset pour permettre un retry
+      authPromise = null;
       resolve(null);
     }
   });
-
   return authPromise;
 };
 

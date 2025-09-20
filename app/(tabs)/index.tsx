@@ -85,25 +85,19 @@ export default function HomeScreen() {
     if (names.player1.trim() && names.player2.trim()) {
       // Si on a déjà un nom stable et qu'on ne force pas la mise à jour, garder le même
       if (stablePayerName && !forceUpdate) {
-        console.log(`🎯 updateCurrentPayerDisplay - Garde le nom stable: ${stablePayerName}`)
         setCurrentPayerDisplay(`${stablePayerName} paie`)
         return
       }
 
       // Sinon, choisir un nouveau nom et le garder stable
       const chosenName = Math.random() < 0.5 ? names.player1.trim() : names.player2.trim()
-      console.log(`🎯 updateCurrentPayerDisplay - Nouveau nom choisi:`, names, `→ Choisi: ${chosenName}`)
       setStablePayerName(chosenName)
       setCurrentPayerDisplay(`${chosenName} paie`)
     } else {
-      console.log(`🎯 updateCurrentPayerDisplay - Noms incomplets:`, names)
       // Ne vider stablePayerName que si on force vraiment
       if (forceUpdate) {
         setCurrentPayerDisplay("")
         setStablePayerName("")
-      } else {
-        // Garder l'affichage actuel si on ne force pas
-        console.log(`🎯 updateCurrentPayerDisplay - Garde l'affichage actuel: ${currentPayerDisplay}`)
       }
     }
   }
@@ -111,23 +105,14 @@ export default function HomeScreen() {
   // Fonction pour charger les noms sauvegardés depuis Firebase
   const loadPlayerNames = async () => {
     try {
-      console.log("🔄 loadPlayerNames - DÉBUT", {
-        justSavedNames,
-        userUid: user?.uid,
-        authLoading,
-        playerNamesLoaded,
-      })
-
       // Ne pas recharger si on vient de sauvegarder des noms
       if (justSavedNames) {
-        console.log("🛑 loadPlayerNames - Éviter le rechargement, noms viennent d'être sauvegardés")
         setPlayerNamesLoaded(true)
         return
       }
 
       // Utiliser l'utilisateur du hook useAuth au lieu de getCurrentUserId
       if (!user?.uid) {
-        console.log("ℹ️ loadPlayerNames - Pas d'utilisateur connecté, utilisation des noms par défaut")
         const defaultNames = { player1: "Mon cœur", player2: "Mon amour" }
         setPlayerNames(defaultNames)
         const randomName = Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2
@@ -136,33 +121,31 @@ export default function HomeScreen() {
         return
       }
 
-      console.log("📖 loadPlayerNames - Lecture Firebase pour:", user.uid)
-      const firebaseNames = await FirestoreService.getPlayerNames(user.uid)
-      console.log("📖 loadPlayerNames - Résultat Firebase:", firebaseNames)
+      if (user.uid) {
+        const firebaseNames = await FirestoreService.getPlayerNames(user.uid)
 
-      if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
-        // Nettoyer les noms dès le chargement
-        const cleanNames = {
-          player1: firebaseNames.player1.trim(),
-          player2: firebaseNames.player2.trim(),
+        if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
+          // Nettoyer les noms dès le chargement
+          const cleanNames = {
+            player1: firebaseNames.player1.trim(),
+            player2: firebaseNames.player2.trim(),
+          }
+          setPlayerNames(cleanNames)
+          // Créer un nom par défaut stable pour l'affichage
+          const randomName = Math.random() < 0.5 ? cleanNames.player1 : cleanNames.player2
+          setDefaultPayerName(`${randomName} paie`)
+          // Mettre à jour l'affichage du payeur dans le modal
+          updateCurrentPayerDisplay(cleanNames, true)
+        } else {
+          // Pas de noms sauvegardés, utiliser des noms par défaut
+          const defaultNames = { player1: "Mon cœur", player2: "Mon amour" }
+          setPlayerNames(defaultNames)
+          // Créer un nom par défaut stable
+          const randomName = Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2
+          setDefaultPayerName(`${randomName} paie`)
+          // Mettre à jour l'affichage du payeur dans le modal
+          updateCurrentPayerDisplay(defaultNames, true)
         }
-        console.log("✅ loadPlayerNames - Noms Firebase trouvés:", cleanNames)
-        setPlayerNames(cleanNames)
-        // Créer un nom par défaut stable pour l'affichage
-        const randomName = Math.random() < 0.5 ? cleanNames.player1 : cleanNames.player2
-        setDefaultPayerName(`${randomName} paie`)
-        // Mettre à jour l'affichage du payeur dans le modal
-        updateCurrentPayerDisplay(cleanNames, true)
-      } else {
-        // Pas de noms sauvegardés, utiliser des noms par défaut
-        console.log("⚠️ loadPlayerNames - Pas de noms Firebase, utilisation des défauts")
-        const defaultNames = { player1: "Mon cœur", player2: "Mon amour" }
-        setPlayerNames(defaultNames)
-        // Créer un nom par défaut stable
-        const randomName = Math.random() < 0.5 ? defaultNames.player1 : defaultNames.player2
-        setDefaultPayerName(`${randomName} paie`)
-        // Mettre à jour l'affichage du payeur dans le modal
-        updateCurrentPayerDisplay(defaultNames, true)
       }
     } catch (error) {
       // Erreur lors du chargement des noms depuis Firebase - utiliser des noms par défaut
@@ -185,15 +168,11 @@ export default function HomeScreen() {
     try {
       // Sauvegarder dans le cache local d'abord
       const { cacheService } = await import("../../services/cache")
-      await cacheService.setCache("player_names", names, 24 * 60 * 60 * 1000) // 24h cache
-      console.log("💾 Noms sauvegardés dans le cache local:", names)
+      await cacheService.setCache("player_names", names, "local") // 24h cache
 
       if (user?.uid) {
         // Sauvegarder aussi dans Firebase
         const success = await FirestoreService.savePlayerNames(user.uid, names)
-        console.log("🔥 Noms sauvegardés dans Firebase:", success)
-      } else {
-        console.log("ℹ️ Pas d'utilisateur connecté, sauvegarde locale seulement")
       }
     } catch (error) {
       console.error("❌ Erreur lors de la sauvegarde des noms:", error)
@@ -251,27 +230,15 @@ export default function HomeScreen() {
     }
     checkPaywallFlag()
 
-    // Demander les permissions de notifications si pas encore accordées
-    if (notificationsInitialized && !hasPermissions) {
-      requestPermissions()
-    }
-  }, [hasPermissions, notificationsInitialized, requestPermissions])
+    // Ne plus demander automatiquement les permissions ici
+    // Elles seront demandées dans l'onboarding notifications
+  }, [])
 
   // Charger les noms des joueurs quand l'utilisateur est disponible
   // SEULEMENT au premier chargement, pas quand user change pendant une session
   useEffect(() => {
-    console.log("🔄 useEffect loadPlayerNames - Conditions:", {
-      authLoading,
-      playerNamesLoaded,
-      userUid: user?.uid,
-      shouldLoad: !authLoading && !playerNamesLoaded,
-    })
-
     if (!authLoading && !playerNamesLoaded) {
-      console.log("✅ useEffect - Déclenchement loadPlayerNames")
       loadPlayerNames()
-    } else {
-      console.log("❌ useEffect - loadPlayerNames NON déclenché")
     }
   }, [user?.uid, authLoading, playerNamesLoaded])
 
@@ -291,7 +258,6 @@ export default function HomeScreen() {
   // Garder currentPayerDisplay stable même après fermeture du modal
   useEffect(() => {
     if (stablePayerName && !currentPayerDisplay) {
-      console.log(`🎯 Restauration currentPayerDisplay depuis stablePayerName: ${stablePayerName}`)
       setCurrentPayerDisplay(`${stablePayerName} paie`)
     }
   }, [stablePayerName, currentPayerDisplay])
@@ -353,26 +319,20 @@ export default function HomeScreen() {
       // VÉRIFIER LES QUOTAS DIRECTEMENT DEPUIS FIREBASE (valeurs en temps réel)
       const userId = getCurrentUserId()
       if (!userId) {
-        console.log("❌ SHAKE - Pas d'utilisateur connecté")
         return
       }
 
       // Récupérer le statut lifetime d'abord
       const hasLifetime = await getLifetimeStatus()
-      console.log("🔍 SHAKE - Statut lifetime:", hasLifetime)
 
       // Récupérer les quotas directement depuis Firebase
       const quotaSummary = await getQuotaSummary(hasLifetime)
-      console.log("🔍 SHAKE - Quotas Firebase directs:", quotaSummary)
 
       // Vérifier si l'utilisateur peut lancer
       if (!quotaSummary.canRoll && !quotaSummary.hasLifetime) {
-        console.log("❌ SHAKE - QUOTA BLOQUÉ - Redirection paywall")
         router.push("/paywall")
         return
       }
-
-      console.log("✅ SHAKE - QUOTA OK - CONTINUE")
 
       // Déclencher l'animation de secousse des dés
       setIsShakingDice(true)
@@ -399,45 +359,35 @@ export default function HomeScreen() {
             player1: cachedNames.player1.trim(),
             player2: cachedNames.player2.trim(),
           }
-          console.log("🎯 SECOUSSE - Noms depuis le cache local:", finalNames)
         } else if (playerNames.player1.trim() && playerNames.player2.trim()) {
           // Fallback: état React local
           finalNames = {
             player1: playerNames.player1.trim(),
             player2: playerNames.player2.trim(),
           }
-          console.log("🎯 SECOUSSE - Noms depuis l'état React:", finalNames)
         } else {
           // Fallback: Firebase
           try {
             if (user?.uid) {
-              console.log("🔄 SECOUSSE - Lecture depuis Firebase car pas de noms locaux")
               const firebaseNames = await FirestoreService.getPlayerNames(user.uid)
               if (firebaseNames && firebaseNames.player1 && firebaseNames.player2) {
                 finalNames = {
                   player1: firebaseNames.player1.trim() || "Mon cœur",
                   player2: firebaseNames.player2.trim() || "Mon amour",
                 }
-                console.log("🎯 SECOUSSE - Noms depuis Firebase:", finalNames)
-              } else {
-                console.log("⚠️ SECOUSSE - Pas de noms Firebase, noms par défaut")
               }
-            } else {
-              console.log("⚠️ SECOUSSE - Pas d'utilisateur, noms par défaut")
             }
           } catch (error) {
             console.warn("⚠️ SECOUSSE - Erreur Firebase, noms par défaut:", error)
           }
         }
       } catch (error) {
-        console.error("❌ Erreur lors de la récupération du cache local:", error)
         // Fallback vers l'état React
         if (playerNames.player1.trim() && playerNames.player2.trim()) {
           finalNames = {
             player1: playerNames.player1.trim(),
             player2: playerNames.player2.trim(),
           }
-          console.log("🎯 SECOUSSE - Noms depuis l'état React (fallback):", finalNames)
         }
       }
 
@@ -508,19 +458,11 @@ export default function HomeScreen() {
       setIsRolling(true)
 
       // Créer un utilisateur Firebase si nécessaire SEULEMENT au moment du premier lancer
-      console.log("🔍 État avant création utilisateur:", { user: !!user, authLoading, userUid: user?.uid })
       if (!user && !authLoading) {
-        console.log("🔧 Premier lancer détecté - création d'un utilisateur Firebase...")
         try {
           const newUser = await createAnonymousUser()
-          console.log("✅ Utilisateur créé pour le premier lancer:", newUser?.uid)
           // Attendre un peu que l'auth se propage
           await new Promise((resolve) => setTimeout(resolve, 1000))
-          console.log("🔍 État après création:", {
-            user: !!user,
-            userUid: user?.uid || "non défini",
-            newUserUid: newUser?.uid || "non défini",
-          })
         } catch (error) {
           console.error("❌ Erreur création utilisateur:", error)
           console.warn("⚠️ Continuer quand même avec l'action")

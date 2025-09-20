@@ -1,54 +1,68 @@
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
     GestureHandlerRootView,
     PanGestureHandler,
 } from "react-native-gesture-handler";
 import useAnalytics from "../../hooks/useAnalytics";
-import useNotifications from "../../hooks/useNotifications";
+import { useNotifications } from "../../hooks/useNotifications";
 import { nav } from "../../utils/navigation";
 
 export default function OnboardingNotifications() {
   const { logOnboardingView } = useAnalytics();
-  const { requestPermissions, hasPermissions } = useNotifications();
+  const { requestPermissions } = useNotifications();
+  const [actionCompleted, setActionCompleted] = useState(false);
+  const [isRequestingPermissions, setIsRequestingPermissions] = useState(false);
 
   useEffect(() => {
     logOnboardingView(4, "Notifications");
   }, [logOnboardingView]);
 
   const handleSwipeLeft = async () => {
+    // Bloquer le swipe si aucune action n'a été effectuée
+    if (!actionCompleted) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
     await Haptics.selectionAsync();
     nav.onboarding.features();
   };
 
   const handleSwipeRight = async () => {
+    // TOUJOURS permettre de revenir en arrière
     await Haptics.selectionAsync();
-    nav.back();
+    // Naviguer explicitement vers la page experience (page précédente)
+    nav.onboarding.experience();
   };
 
   const handleEnableNotifications = async () => {
     await Haptics.selectionAsync();
     
     try {
-      console.log("🔔 Demande des permissions de notifications...");
+      setIsRequestingPermissions(true);
       await requestPermissions();
-      console.log("✅ Permissions de notifications accordées");
       
-      // Continuer vers features après un court délai
-      setTimeout(() => {
-        nav.onboarding.features();
-      }, 1000);
-    } catch (error) {
-      console.error("❌ Erreur lors de la demande de permissions:", error);
+      // Marquer l'action comme terminée
+      setActionCompleted(true);
+      
+      // Continuer vers features immédiatement
+      nav.onboarding.features();
+    } catch {
+      // Marquer l'action comme terminée même en cas d'erreur
+      setActionCompleted(true);
       // Continuer quand même vers features
       nav.onboarding.features();
+    } finally {
+      setIsRequestingPermissions(false);
     }
   };
 
   const handleSkip = async () => {
     await Haptics.selectionAsync();
+    // Marquer l'action comme terminée
+    setActionCompleted(true);
     nav.onboarding.features();
   };
 
@@ -80,7 +94,10 @@ export default function OnboardingNotifications() {
         style={styles.gradient}
       >
         <View style={styles.safeArea}>
-          <PanGestureHandler onGestureEvent={onGestureEvent}>
+          <PanGestureHandler 
+            onGestureEvent={onGestureEvent}
+            enabled={true}
+          >
             <View style={styles.main}>
               <View style={styles.content}>
                 {/* Icône notifications */}
@@ -134,17 +151,29 @@ export default function OnboardingNotifications() {
                 </View>
               </View>
 
+              {/* Message d'instruction si aucune action n'a été effectuée */}
+              {!actionCompleted && (
+                <View style={styles.instructionContainer}>
+                  <Text style={styles.instructionText}>
+                    👆 Choisissez une option ci-dessous pour continuer
+                  </Text>
+                </View>
+              )}
+
               {/* Boutons d'action */}
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                  style={styles.enableButton}
+                  style={[styles.enableButton, isRequestingPermissions && styles.buttonDisabled]}
                   onPress={handleEnableNotifications}
                   activeOpacity={0.8}
+                  disabled={isRequestingPermissions}
                 >
                   <View style={styles.glassBackground}>
                     <View style={styles.glassInner}>
                       <View style={styles.glassHighlight} />
-                      <Text style={styles.buttonText}>Activer les notifications</Text>
+                      <Text style={styles.buttonText}>
+                        {isRequestingPermissions ? "Demande en cours..." : "Activer les notifications"}
+                      </Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -154,7 +183,7 @@ export default function OnboardingNotifications() {
                   onPress={handleSkip}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.skipButtonText}>Passer pour l'instant</Text>
+                  <Text style={styles.skipButtonText}>Passer pour l&apos;instant</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -283,6 +312,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#F4C869",
     width: 24,
   },
+  instructionContainer: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    marginBottom: 8,
+  },
+  instructionText: {
+    fontSize: 14,
+    color: "#FFF3F6",
+    textAlign: "center",
+    fontStyle: "italic",
+    opacity: 0.8,
+  },
   buttonContainer: {
     paddingHorizontal: 32,
     paddingBottom: 48,
@@ -299,6 +340,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     marginBottom: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   glassBackground: {
     borderRadius: 48,

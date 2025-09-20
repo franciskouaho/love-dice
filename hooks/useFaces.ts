@@ -69,8 +69,6 @@ export const useFaces = (): UseFacesReturn => {
       const allFacesData = [...defaultFacesData, ...userFacesData];
       const pool = createWeightedPool(allFacesData);
 
-      console.log(`📱 Faces chargées depuis le cache: ${allFacesData.length} total (${defaultFacesData.length} par défaut + ${userFacesData.length} personnalisées)`);
-
       setDefaultFaces(defaultFacesData);
       setUserFaces(userFacesData);
       setAllFaces(allFacesData);
@@ -230,7 +228,6 @@ export const useFaces = (): UseFacesReturn => {
   useEffect(() => {
     const userId = getCurrentUserId();
     if (userId) {
-      console.log("👤 Utilisateur connecté, rechargement des faces...");
       loadFaces();
     }
   }, [loadFaces]);

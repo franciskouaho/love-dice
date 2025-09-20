@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect } from "react";
 import {
@@ -31,7 +32,8 @@ export default function OnboardingStep3() {
 
   const handleSwipeRight = async () => {
     await Haptics.selectionAsync();
-    nav.back();
+    // Naviguer explicitement vers la page how-it-works (page précédente)
+    nav.onboarding.howItWorks();
   };
 
   const onGestureEvent = (event: any) => {
@@ -67,7 +69,11 @@ export default function OnboardingStep3() {
                 {/* Animation du dé */}
                 <View style={styles.diceContainer}>
                   <View style={styles.diceAnimation}>
-                    <Text style={styles.diceEmoji}>🎲</Text>
+                    <Image
+                      source={require("../../assets/images/image-splash.png")}
+                      style={styles.diceImage}
+                      contentFit="contain"
+                    />
                     <View style={styles.sparkles}>
                       <Text style={styles.sparkle}>✨</Text>
                       <Text style={styles.sparkle}>✨</Text>
@@ -93,7 +99,7 @@ export default function OnboardingStep3() {
                   <View style={styles.instructionItem}>
                     <Text style={styles.instructionEmoji}>📳</Text>
                     <Text style={styles.instructionText}>
-                      Secouez d'avant en arrière
+                      Secouez d&apos;avant en arrière
                     </Text>
                   </View>
                   <View style={styles.instructionItem}>
@@ -176,6 +182,10 @@ const styles = StyleSheet.create({
   diceEmoji: {
     fontSize: 80,
     textAlign: "center",
+  },
+  diceImage: {
+    width: 80,
+    height: 80,
   },
   sparkles: {
     position: "absolute",

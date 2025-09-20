@@ -134,32 +134,21 @@ export class LocalCacheService {
    */
   async getCache<T>(key: string, maxAge: number): Promise<T | null> {
     try {
-      console.log(`🔍 getCache - Recherche de la clé: ${key}`);
       const cachedDataJson = await AsyncStorage.getItem(key);
-      console.log(`🔍 getCache - Données trouvées:`, !!cachedDataJson, 'taille:', cachedDataJson?.length || 0);
-      
+
       if (!cachedDataJson) {
-        console.log(`❌ getCache - Aucune donnée pour la clé: ${key}`);
         return null;
       }
 
       const cachedData: CachedData<T> = JSON.parse(cachedDataJson);
-      console.log(`🔍 getCache - Données parsées:`, {
-        hasData: !!cachedData.data,
-        dataLength: Array.isArray(cachedData.data) ? cachedData.data.length : 'N/A',
-        metadata: cachedData.metadata
-      });
-      
+
       // Vérifier la validité du cache
       const isValid = this.isCacheValid(key, maxAge);
-      console.log(`🔍 getCache - Cache valide:`, isValid);
-      
+
       if (!isValid) {
-        console.log(`❌ getCache - Cache expiré pour la clé: ${key}`);
         return null;
       }
 
-      console.log(`✅ getCache - Retour des données du cache pour: ${key}`);
       return cachedData.data;
     } catch (error) {
       console.warn(`❌ getCache - Erreur pour ${key}:`, error);
@@ -332,4 +321,3 @@ export const cacheService = LocalCacheService.getInstance();
 
 // Export des clés pour usage externe
 export { CACHE_DURATION, CACHE_KEYS };
-

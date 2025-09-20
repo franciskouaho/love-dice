@@ -234,9 +234,7 @@ export const initializeDefaultFaces = async (): Promise<boolean> => {
 
 // Récupérer toutes les faces par défaut depuis Firebase (avec cache)
 export const getDefaultFaces = async (forceRefresh: boolean = false): Promise<DiceFace[]> => {
-  console.log("🔄 getDefaultFaces - Début, forceRefresh:", forceRefresh);
   const result = await syncService.syncDefaultFaces(forceRefresh);
-  console.log("✅ getDefaultFaces - Résultat:", result.length, "faces");
   return result;
 };
 

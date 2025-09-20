@@ -1,5 +1,5 @@
-import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import * as functions from "firebase-functions";
 import fetch from "node-fetch";
 
 // Initialiser Firebase Admin
@@ -55,7 +55,7 @@ async function verifyAppleReceipt(
       body: JSON.stringify(payload),
     });
 
-    let result = await response.json();
+    let result: any = await response.json();
 
     // Si erreur sandbox, essayer sandbox
     if (result.status === 21007) {

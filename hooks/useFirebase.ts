@@ -1,23 +1,40 @@
 import {
-  onAuthStateChanged,
-  signInAnonymously,
-  signOut,
-  User,
+    onAuthStateChanged,
+    signInAnonymously,
+    signOut,
+    User,
 } from 'firebase/auth';
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  setDoc,
-  Timestamp,
-  where,
+    addDoc,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    orderBy,
+    query,
+    setDoc,
+    Timestamp,
+    where,
 } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { auth, db } from '../config/firebase';
+
+// Fonction pour attribuer un quota de 50 lancers à un utilisateur
+const grantStarterQuota = async (userId: string) => {
+  try {
+    await setDoc(doc(db, 'user_settings', userId), {
+      hasLifetime: false,
+      unlimited: false,
+      dailyQuota: 50,
+      remainingRolls: 50,
+      lastReset: Timestamp.now(),
+      grantedAt: Timestamp.now(),
+      source: 'anonymous_signup',
+    }, { merge: true });
+  } catch (error) {
+    console.error('❌ Erreur attribution quota:', error);
+  }
+};
 
 // Hook pour gérer l'authentification anonyme
 export function useAuth() {
@@ -48,27 +65,6 @@ export function useAuth() {
     }
   };
 
-  // Fonction pour attribuer un quota de 50 lancers à un utilisateur
-  const grantStarterQuota = async (userId: string) => {
-    try {
-      console.log('🔧 grantStarterQuota - Début pour:', userId);
-      const docRef = doc(db, 'user_settings', userId);
-      console.log('🔧 grantStarterQuota - DocRef créé, écriture en cours...');
-      await setDoc(docRef, {
-        hasLifetime: false,
-        unlimited: false,
-        dailyQuota: 50,
-        remainingRolls: 50,
-        lastReset: Timestamp.now(),
-        grantedAt: Timestamp.now(),
-        source: 'anonymous_signup',
-      }, { merge: true });
-      console.log('✅ Quota de 50 lancers attribué à:', userId);
-    } catch (error) {
-      console.error('❌ Erreur attribution quota:', error);
-    }
-  };
-
   const logout = async () => {
     try {
       await signOut(auth);
@@ -90,7 +86,6 @@ export function useAuth() {
       }
       
       // Retourner un état "pas d'utilisateur" au lieu de créer automatiquement
-      console.log("⚠️ Aucun utilisateur Firebase détecté, mais ne pas créer automatiquement");
       return { success: false, error: "Aucun utilisateur connecté", needsSignIn: true };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -115,7 +110,6 @@ export function useAuth() {
   // Fonction explicite pour créer un utilisateur uniquement quand c'est voulu
   const createNewUser = async () => {
     try {
-      console.log("🔧 Création explicite d'un nouvel utilisateur...");
       return await signInAnonymous();
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -177,7 +171,6 @@ export function useFirestore() {
           lastUsed: Timestamp.now(),
         }, { merge: true });
         
-        console.log(`✅ Quota décrémenté pour ${userId}: ${newRemainingRolls} restants`);
         return { success: true, remainingRolls: newRemainingRolls };
       }
       
@@ -254,7 +247,6 @@ export function useFirestore() {
         return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
       } else {
         // Si l'utilisateur n'existe pas, créer son quota avec grantStarterQuota
-        console.log("🔧 Utilisateur pas trouvé dans user_settings, création du quota...");
         await grantStarterQuota(userId);
         
         // Relire après création

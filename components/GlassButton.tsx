@@ -76,7 +76,7 @@ export interface GlassButtonProps {
   /**
    * Override gradient colors (only for variant="gradient")
    */
-  gradientColors?: string[];
+  gradientColors?: [string, string, ...string[]];
   /**
    * Accessibility label; falls back to title text.
    */
@@ -108,7 +108,7 @@ export const GlassButton: React.FC<GlassButtonProps> = ({
   contentStyle,
   textStyle,
   testID,
-  gradientColors = ["#F4C869", "#E0115F"],
+  gradientColors = ["#F4C869", "#E0115F"] as [string, string],
   accessibilityLabel,
 }) => {
   const preset = SIZE_PRESETS[size];

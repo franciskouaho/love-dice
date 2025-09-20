@@ -3,13 +3,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect } from "react";
 import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
-    GestureHandlerRootView,
-    PanGestureHandler,
+  GestureHandlerRootView,
+  PanGestureHandler,
 } from "react-native-gesture-handler";
 import useAnalytics from "../../hooks/useAnalytics";
 import { createAnonymousUser, initAuth } from "../../services/firebase";
 import * as FirestoreService from "../../services/firestore";
 import { nav } from "../../utils/navigation";
+import { markOnboardingCompleted } from "../../utils/onboarding";
 
 export default function OnboardingFeatures() {
   const { logOnboardingView } = useAnalytics();
@@ -18,47 +19,38 @@ export default function OnboardingFeatures() {
     logOnboardingView(4, "Fonctionnalités avancées");
   }, [logOnboardingView]);
 
-  const handleSwipeLeft = async () => {
+  const handleStartAdventure = async () => {
     await Haptics.selectionAsync();
-    
-    console.log("🚀 DEBUT handleSwipeLeft - Création utilisateur");
 
     try {
       // Vérifier l'état initial
-      console.log("🔍 État initial Firebase...");
-      const initialUserId = FirestoreService.getCurrentUserId();
-      console.log("📍 UserId initial:", initialUserId || "AUCUN");
+      FirestoreService.getCurrentUserId();
 
       // Vérifier l'état Firebase
-      console.log("🔧 Vérification Firebase Auth...");
-      const authResult = await initAuth();
-      console.log("🔧 Résultat initAuth:", authResult);
+      await initAuth();
 
       // Vérifier si un utilisateur existe déjà
       const userId = FirestoreService.getCurrentUserId();
-      console.log("✅ Utilisateur Firebase:", userId || "AUCUN");
 
       // Créer un utilisateur Firebase si nécessaire
       if (!userId) {
-        console.log("🔧 Création d'un utilisateur Firebase...");
         try {
-          const newUser = await createAnonymousUser();
-          console.log("✅ Utilisateur créé:", newUser?.uid);
+          await createAnonymousUser();
           // Attendre que l'auth se propage
           await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-          console.warn("⚠️ Erreur création utilisateur:", error);
-          console.log("ℹ️ L'app continuera quand même");
+        } catch {
+          // Erreur création utilisateur ignorée
         }
-      } else {
-        console.log("ℹ️ Utilisateur déjà existant, pas de création nécessaire");
       }
 
+      // Marquer l'onboarding comme terminé
+      await markOnboardingCompleted();
+      
       // Rediriger vers l'app principale
-      console.log("🎯 Redirection vers l'app principale...");
       nav.goTabs();
-    } catch (error) {
-      console.error("❌ Erreur lors de la création de l'utilisateur anonyme:", error);
+    } catch {
+      // Marquer l'onboarding comme terminé même en cas d'erreur
+      await markOnboardingCompleted();
       // Rediriger quand même vers l'app principale
       nav.goTabs();
     }
@@ -66,21 +58,19 @@ export default function OnboardingFeatures() {
 
   const handleSwipeRight = async () => {
     await Haptics.selectionAsync();
-    nav.back();
+    // Naviguer explicitement vers la page notifications (page précédente)
+    nav.onboarding.notifications();
   };
 
   const onGestureEvent = (event: any) => {
+    // Seul le swipe à droite est autorisé (pour revenir en arrière)
     if (
-      event.nativeEvent.translationX < -150 &&
-      event.nativeEvent.velocityX < -800
-    ) {
-      handleSwipeLeft();
-    } else if (
       event.nativeEvent.translationX > 150 &&
       event.nativeEvent.velocityX > 800
     ) {
       handleSwipeRight();
     }
+    // Swipe à gauche bloqué - seul le bouton peut terminer l'onboarding
   };
 
   return (
@@ -122,7 +112,7 @@ export default function OnboardingFeatures() {
                     <Text style={styles.featureEmoji}>⚙️</Text>
                     <Text style={styles.featureTitle}>Paramètres</Text>
                     <Text style={styles.featureDescription}>
-                      Ajustez l'expérience à vos préférences
+                      Ajustez l&apos;expérience à vos préférences
                     </Text>
                   </View>
 
@@ -158,19 +148,29 @@ export default function OnboardingFeatures() {
                   <View style={styles.progressDot} />
                   <View style={[styles.progressDot, styles.activeDot]} />
                 </View>
+
+                {/* Instruction de navigation */}
+                <View style={styles.instructionContainer}>
+                  <Text style={styles.instructionText}>
+                    👆 Cliquez sur le bouton pour commencer
+                  </Text>
+                  <Text style={styles.instructionText}>
+                    👈 Glissez vers la droite pour revenir en arrière
+                  </Text>
+                </View>
               </View>
 
               {/* Bouton Commencer */}
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={styles.commencerButton}
-                  onPress={handleSwipeLeft}
+                  onPress={handleStartAdventure}
                   activeOpacity={0.8}
                 >
                   <View style={styles.glassBackground}>
                     <View style={styles.glassInner}>
                       <View style={styles.glassHighlight} />
-                      <Text style={styles.buttonText}>Commencer l'aventure</Text>
+                      <Text style={styles.buttonText}>Commencer l&apos;aventure</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -280,6 +280,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
+  },
+  instructionContainer: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  instructionText: {
+    fontSize: 14,
+    color: "#FFF3F6",
+    textAlign: "center",
+    fontStyle: "italic",
+    opacity: 0.8,
   },
   progressDot: {
     width: 8,

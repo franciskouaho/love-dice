@@ -164,11 +164,18 @@ export const nav = {
   goCustomFaces: () => _push(Routes.customFaces),
 
   onboarding: {
-    welcome: () => _push(Routes.onboarding.welcome),
-    howItWorks: () => _push(Routes.onboarding.howItWorks),
-    experience: () => _push(Routes.onboarding.experience),
-    notifications: () => _push(Routes.onboarding.notifications),
-    features: () => _push(Routes.onboarding.features),
+    welcome: () => _replace(Routes.onboarding.welcome),
+    howItWorks: () => _replace(Routes.onboarding.howItWorks),
+    experience: () => _replace(Routes.onboarding.experience),
+    notifications: () => _replace(Routes.onboarding.notifications),
+    features: () => _replace(Routes.onboarding.features),
+    // Fonction pour revenir en arrière dans l'onboarding
+    back: () => {
+      // Logique pour déterminer la page précédente dans l'onboarding
+      // Pour l'instant, on utilise router.back() mais on pourrait implémenter
+      // une logique plus robuste si nécessaire
+      _back();
+    },
   },
 };
 

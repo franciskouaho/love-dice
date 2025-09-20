@@ -1,10 +1,11 @@
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect } from "react";
 import { SafeAreaView, StatusBar, StyleSheet, Text, View } from "react-native";
 import {
-    GestureHandlerRootView,
-    PanGestureHandler,
+  GestureHandlerRootView,
+  PanGestureHandler,
 } from "react-native-gesture-handler";
 import useAnalytics from "../../hooks/useAnalytics";
 import { nav } from "../../utils/navigation";
@@ -48,8 +49,11 @@ export default function OnboardingStep1() {
               <View style={styles.content}>
                 {/* Icône principale */}
                 <View style={styles.iconContainer}>
-                  <Text style={styles.diceIcon}>🎲</Text>
-                  <Text style={styles.heartIcon}>💕</Text>
+                  <Image
+                    source={require("../../assets/images/image-splash.png")}
+                    style={styles.mainIcon}
+                    contentFit="contain"
+                  />
                 </View>
 
                 {/* Titre principal */}
@@ -127,17 +131,11 @@ const styles = StyleSheet.create({
   iconContainer: {
     marginBottom: 48,
     alignItems: "center",
-    position: "relative",
+    justifyContent: "center",
   },
-  diceIcon: {
-    fontSize: 80,
-    marginBottom: 8,
-  },
-  heartIcon: {
-    fontSize: 32,
-    position: "absolute",
-    top: -8,
-    right: -16,
+  mainIcon: {
+    width: 120,
+    height: 120,
   },
   title: {
     fontSize: 32,

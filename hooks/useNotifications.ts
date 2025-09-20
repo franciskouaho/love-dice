@@ -41,7 +41,11 @@ const defaultPreferences: NotificationPreferences = {
   reminderTime: "19:00",
 };
 
-export const useNotifications = (): NotificationState & NotificationActions => {
+export const useNotifications = (): NotificationState & NotificationActions & {
+  isReminderEnabled: boolean;
+  isMilestoneEnabled: boolean;
+  reminderCount: number;
+} => {
   const [state, setState] = useState<NotificationState>({
     isInitialized: false,
     hasPermissions: false,

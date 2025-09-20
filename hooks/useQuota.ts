@@ -48,32 +48,22 @@ const useQuota = (): QuotaState & QuotaActions => {
   // Initialiser et charger l'état du quota
   const loadQuotaState = useCallback(async () => {
     try {
-      console.log("🔄 useQuota: Chargement des quotas...");
-      console.log("🔄 useQuota: État auth - user:", !!user, "loading:", authLoading);
-      
       // Attendre que l'authentification soit complète
       if (authLoading) {
-        console.log("⏳ useQuota: En attente de l'authentification...");
         return;
       }
       
       // Si pas d'utilisateur après l'auth, utiliser getCurrentUserId directement
       if (!user) {
-        console.log("🔧 useQuota: Pas d'utilisateur dans useAuth, vérification directe...");
         const { getCurrentUserId } = await import("../services/firestore");
         const currentUserId = getCurrentUserId();
         
         if (!currentUserId) {
-          console.log("🔧 useQuota: Vraiment pas d'utilisateur, création en cours...");
           const { createAnonymousUser } = await import("../services/firebase");
           await createAnonymousUser();
-          console.log("✅ useQuota: Utilisateur créé, on recharge...");
           // Attendre que l'état se mette à jour puis recharger
           setTimeout(() => loadQuotaState(), 2000);
           return;
-        } else {
-          console.log("✅ useQuota: Utilisateur trouvé directement:", currentUserId);
-          // Continuer avec le chargement normal
         }
       }
       
@@ -99,7 +89,6 @@ const useQuota = (): QuotaState & QuotaActions => {
 
       // Obtenir le résumé complet du quota
       const summary = await getQuotaSummary(hasLifetime);
-      console.log("🔄 useQuota: Mise à jour état avec:", summary);
 
       setQuotaState({
         hasLifetime: summary.hasLifetime,
@@ -109,10 +98,8 @@ const useQuota = (): QuotaState & QuotaActions => {
         remaining: summary.remaining,
         canRoll: summary.canRoll,
         isLoading: false,
-        error: summary.error,
+        error: 'error' in summary ? summary.error || undefined : undefined,
       });
-      
-      console.log("✅ useQuota: État mis à jour - canRoll:", summary.canRoll, "remaining:", summary.remaining);
     } catch (error) {
       setQuotaState((prev) => ({
         ...prev,
@@ -232,8 +219,6 @@ const useQuota = (): QuotaState & QuotaActions => {
     await loadQuotaState();
   }, [loadQuotaState]);
 
-  // SUPPRIMÉ - on charge via l'effet de dépendance auth ci-dessus
-
   // Rafraîchir périodiquement depuis Firebase (toutes les 2 minutes)
   useEffect(() => {
     const interval = setInterval(
@@ -257,11 +242,6 @@ const useQuota = (): QuotaState & QuotaActions => {
       if (prev.canRoll !== current.canRoll || 
           prev.remaining !== current.remaining || 
           prev.hasLifetime !== current.hasLifetime) {
-        console.log("📤 useQuota: État mis à jour:", {
-          canRoll: current.canRoll,
-          remaining: current.remaining,
-          hasLifetime: current.hasLifetime
-        });
       }
     }
     prevStateRef.current = quotaState;

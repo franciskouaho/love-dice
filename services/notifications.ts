@@ -1,7 +1,6 @@
-import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 
 // Configuration des notifications
 Notifications.setNotificationHandler({
@@ -311,7 +310,7 @@ export const getScheduledNotifications = async (): Promise<
 
       return {
         id: notification.identifier,
-        type: notification.content.data?.type || "unknown",
+        type: (notification.content.data?.type as string) || "unknown",
         scheduledDate,
         title: notification.content.title || "",
         body: notification.content.body || "",
@@ -428,11 +427,12 @@ export const initializeNotifications = async (): Promise<boolean> => {
     // Configurer les channels Android
     await setupNotificationChannels();
 
-    // Demander les permissions
-    const hasPermissions = await requestNotificationPermissions();
+    // Vérifier les permissions existantes sans les demander
+    const { status } = await Notifications.getPermissionsAsync();
+    const hasPermissions = status === "granted";
 
     if (hasPermissions) {
-      // Programmer les rappels du soir par défaut
+      // Programmer les rappels du soir par défaut seulement si déjà autorisé
       await scheduleEveningReminder();
     }
 

@@ -35,6 +35,31 @@ const defaultPreferences: UserPreferences = {
   },
 };
 
+// Clés pour les préférences utilisateur
+const PREFERENCES_KEY = "user_preferences";
+
+// Récupérer les préférences utilisateur
+export const getUserPreferences = async (): Promise<UserPreferences> => {
+  try {
+    const prefsJson = await AsyncStorage.getItem(PREFERENCES_KEY);
+    if (prefsJson) {
+      return JSON.parse(prefsJson);
+    }
+    return defaultPreferences;
+  } catch (error) {
+    return defaultPreferences;
+  }
+};
+
+// Sauvegarder les préférences utilisateur
+export const saveUserPreferences = async (preferences: UserPreferences): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+  } catch (error) {
+    console.warn("Erreur sauvegarde préférences:", error);
+  }
+};
+
 // Obtenir la clé du jour actuel
 export const getCurrentDayKey = (): string => {
   return new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
@@ -275,9 +300,7 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
 
     // 🔥 NOUVEAU : Utiliser le système user_settings 
     const userId = getCurrentUserId();
-    console.log("🔍 getQuotaSummary - UserId:", userId);
     if (!userId) {
-      console.log("❌ getQuotaSummary - Pas d'utilisateur, retour remaining: 0");
       return {
         hasLifetime: false,
         unlimited: false,
@@ -290,9 +313,7 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
 
     // 🔥 Importer la fonction de vérification du nouveau système
     const { canUserRoll } = await import("../hooks/useFirebase");
-    console.log("🔍 getQuotaSummary - Appel canUserRoll pour:", userId);
     const rollResult = await canUserRoll(userId);
-    console.log("📊 getQuotaSummary - Résultat canUserRoll:", rollResult);
 
     if (!rollResult.canRoll) {
       return {
@@ -326,7 +347,6 @@ export const getQuotaSummary = async (hasLifetime: boolean = false) => {
       remaining: rollResult.remainingRolls || 0,
       canRoll: rollResult.canRoll,
     };
-    console.log("📋 getQuotaSummary - Résultat final:", finalResult);
     return finalResult;
   } catch (error) {
     console.error("❌ Erreur getQuotaSummary:", error);

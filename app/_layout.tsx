@@ -12,9 +12,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   useEffect(() => {
     // Initialiser tous les services Firebase
-    initializeApp().catch((error) => {
-      console.error('Erreur lors de l\'initialisation de l\'app:', error);
-    });
+    initializeApp();
   }, []);
 
   return (

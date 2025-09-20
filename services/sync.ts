@@ -64,18 +64,13 @@ export class SyncService {
       this.setSyncInProgress(syncKey, true);
 
       // 1. Essayer de récupérer depuis le cache d'abord
-      console.log('🔍 syncDefaultFaces - Vérification du cache LOCAL uniquement...');
       const cached = await cacheService.getDefaultFaces();
-      console.log('🔍 syncDefaultFaces - Cache trouvé:', !!cached, 'longueur:', cached?.length || 0);
-      
+
       if (cached && cached.length > 0) {
-        console.log('📱 Faces par défaut récupérées depuis le cache LOCAL:', cached.length, 'faces');
-        console.log('📱 Première face du cache:', cached[0]);
         return cached;
       }
 
       // 2. Si pas de cache, retourner un tableau vide (pas de Firebase)
-      console.log('⚠️ Aucune donnée dans le cache local, retour tableau vide');
       return [];
     } catch (error) {
       console.error('❌ Erreur lors de la synchronisation des faces par défaut:', error);
@@ -83,12 +78,10 @@ export class SyncService {
       // Fallback vers le cache même si expiré
       const cached = await cacheService.getDefaultFaces();
       if (cached) {
-        console.log('🔄 Fallback vers le cache expiré');
         return cached;
       }
 
       // Dernier recours : faces par défaut statiques
-      console.log('⚠️ Utilisation des faces par défaut statiques');
       return this.getFallbackDefaultFaces();
     } finally {
       this.setSyncInProgress(syncKey, false);
@@ -113,19 +106,16 @@ export class SyncService {
       if (!forceRefresh) {
         const cached = await cacheService.getUserProfile(uid);
         if (cached) {
-          console.log('📱 Profil utilisateur récupéré depuis le cache');
           return cached;
         }
       }
 
       // 2. Récupérer depuis Firebase
-      console.log('🔥 Récupération du profil utilisateur depuis Firebase...');
       const profile = await fetchUserProfile(uid);
       
       if (profile) {
         // 3. Mettre en cache
         await cacheService.setUserProfile(uid, profile);
-        console.log('💾 Profil utilisateur mis en cache');
       }
 
       return profile;
@@ -135,7 +125,6 @@ export class SyncService {
       // Fallback vers le cache
       const cached = await cacheService.getUserProfile(uid);
       if (cached) {
-        console.log('🔄 Fallback vers le cache expiré');
         return cached;
       }
 
@@ -163,18 +152,15 @@ export class SyncService {
       if (!forceRefresh) {
         const cached = await cacheService.getUserFaces(uid);
         if (cached) {
-          console.log('📱 Faces personnalisées récupérées depuis le cache');
           return cached;
         }
       }
 
       // 2. Récupérer depuis Firebase
-      console.log('🔥 Récupération des faces personnalisées depuis Firebase...');
       const faces = await fetchCustomFaces(uid);
       
       // 3. Mettre en cache
       await cacheService.setUserFaces(uid, faces);
-      console.log('💾 Faces personnalisées mises en cache');
 
       return faces;
     } catch (error) {
@@ -183,7 +169,6 @@ export class SyncService {
       // Fallback vers le cache
       const cached = await cacheService.getUserFaces(uid);
       if (cached) {
-        console.log('🔄 Fallback vers le cache expiré');
         return cached;
       }
 
@@ -211,18 +196,15 @@ export class SyncService {
       if (!forceRefresh) {
         const cached = await cacheService.getUserHistory(uid);
         if (cached) {
-          console.log('📱 Historique récupéré depuis le cache');
           return cached;
         }
       }
 
       // 2. Récupérer depuis Firebase
-      console.log('🔥 Récupération de l\'historique depuis Firebase...');
       const history = await fetchUserHistory(uid, limit);
       
       // 3. Mettre en cache
       await cacheService.setUserHistory(uid, history);
-      console.log('💾 Historique mis en cache');
 
       return history;
     } catch (error) {
@@ -231,7 +213,6 @@ export class SyncService {
       // Fallback vers le cache
       const cached = await cacheService.getUserHistory(uid);
       if (cached) {
-        console.log('🔄 Fallback vers le cache expiré');
         return cached;
       }
 
@@ -259,18 +240,15 @@ export class SyncService {
       if (!forceRefresh) {
         const cached = await cacheService.getAppConfig();
         if (cached) {
-          console.log('📱 Configuration récupérée depuis le cache');
           return cached;
         }
       }
 
       // 2. Récupérer depuis Firebase
-      console.log('🔥 Récupération de la configuration depuis Firebase...');
       const config = await fetchAppConfig();
       
       // 3. Mettre en cache
       await cacheService.setAppConfig(config);
-      console.log('💾 Configuration mise en cache');
 
       return config;
     } catch (error) {
@@ -279,12 +257,10 @@ export class SyncService {
       // Fallback vers le cache
       const cached = await cacheService.getAppConfig();
       if (cached) {
-        console.log('🔄 Fallback vers le cache expiré');
         return cached;
       }
 
       // Dernier recours : configuration par défaut
-      console.log('⚠️ Utilisation de la configuration par défaut');
       return this.getFallbackAppConfig();
     } finally {
       this.setSyncInProgress(syncKey, false);

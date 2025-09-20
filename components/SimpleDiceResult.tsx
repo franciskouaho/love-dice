@@ -1,13 +1,29 @@
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from "expo-router";
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CompleteDiceResult } from '../utils/dice';
+import { createRestaurantFilterUrl, extractCuisineFromDiceLabel } from "../utils/restaurantUtils";
 
 interface SimpleDiceResultProps {
   result: CompleteDiceResult;
 }
 
 export const SimpleDiceResult: React.FC<SimpleDiceResultProps> = ({ result }) => {
+  const handleShowRestaurants = () => {
+    const cuisineType = extractCuisineFromDiceLabel(result.repas.label);
+    
+    if (cuisineType) {
+      const url = createRestaurantFilterUrl({ cuisine_type: cuisineType });
+      router.push(url as any);
+    } else {
+      // Si on ne peut pas extraire le type de cuisine, faire une recherche générale
+      const url = createRestaurantFilterUrl({ search_query: result.repas.label });
+      router.push(url as any);
+    }
+  };
+
   const diceData = [
     { 
       emoji: result.payer.emoji, 
@@ -19,7 +35,8 @@ export const SimpleDiceResult: React.FC<SimpleDiceResultProps> = ({ result }) =>
       emoji: result.repas.emoji, 
       label: result.repas.label, 
       color: '#FF4F7B',
-      category: 'Repas'
+      category: 'Repas',
+      showRestaurantsButton: true
     },
     { 
       emoji: result.activite.emoji, 
@@ -63,6 +80,25 @@ export const SimpleDiceResult: React.FC<SimpleDiceResultProps> = ({ result }) =>
           
           {/* Face du haut pour effet 3D simple */}
           <View style={[styles.sideTop, { backgroundColor: `${dice.color}CC` }]} />
+          
+          {/* Bouton restaurants pour le dé repas */}
+          {dice.showRestaurantsButton && (
+            <TouchableOpacity 
+              style={styles.restaurantButton} 
+              onPress={handleShowRestaurants}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#FFD700', '#FFA500']}
+                style={styles.restaurantButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name="restaurant" size={16} color="#FFFFFF" />
+                <Text style={styles.restaurantButtonText}>Voir restaurants</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
         </View>
       ))}
     </View>
@@ -150,5 +186,36 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 6,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
+  },
+  restaurantButton: {
+    position: 'absolute',
+    bottom: -20,
+    left: '50%',
+    transform: [{ translateX: -50 }],
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  restaurantButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  restaurantButtonText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 });

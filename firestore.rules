@@ -38,6 +38,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Collection restaurants - lecture publique
+    match /restaurants/{restaurantId} {
+      allow read: if true;
+      allow write: if false; // Seuls les admins peuvent modifier
+    }
+
     // Bloquer tout le reste
     match /{document=**} {
       allow read, write: if false;

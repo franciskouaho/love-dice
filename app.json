@@ -60,8 +60,7 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static",
-            "deploymentTarget": "13.4"
+            "useFrameworks": "static"
           },
           "android": {
             "permissions": ["com.android.vending.BILLING"]

@@ -8,17 +8,17 @@ import { LinearGradient } from "expo-linear-gradient"
 import { router } from "expo-router"
 import { useEffect, useRef, useState } from "react"
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  Modal,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    Dimensions,
+    Modal,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native"
 import { AnimatedDice } from "../../components/AnimatedDice"
 import BottomDrawer from "../../components/ui/BottomDrawer"
@@ -765,11 +765,6 @@ export default function HomeScreen() {
                   </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.sideButton}>
-                  <View style={styles.sideBlur}>
-                    <Text style={styles.sideEmoji}>💕</Text>
-                  </View>
-                </TouchableOpacity>
               </>
             )}
           </View>
@@ -781,28 +776,27 @@ export default function HomeScreen() {
 
       {/* Bottom Controls */}
       <View style={styles.bottomControls}>
-        {/* Bouton Premium à gauche */}
-        <TouchableOpacity
-          style={styles.bottomButton}
+        {/* Bouton Restaurants */}
+        <TouchableOpacity 
+          style={styles.bottomButton} 
           onPress={async () => {
             await Haptics.selectionAsync()
-            router.push("/paywall")
+            router.push("/restaurants")
           }}
         >
           <View style={styles.bottomBlur}>
-            <Text style={styles.bottomButtonText}>💎</Text>
+            <Ionicons name="restaurant" size={20} color="#FFFFFF" />
           </View>
         </TouchableOpacity>
 
-            {/* Bouton Noms au milieu */}
-            <TouchableOpacity style={styles.bottomButton} onPress={() => setIsNamesModalVisible(true)}>
-              <View style={styles.bottomBlur}>
-                <Ionicons name="people" size={20} color="#FFFFFF" />
-              </View>
-            </TouchableOpacity>
+        {/* Bouton Noms */}
+        <TouchableOpacity style={styles.bottomButton} onPress={() => setIsNamesModalVisible(true)}>
+          <View style={styles.bottomBlur}>
+            <Ionicons name="people" size={20} color="#FFFFFF" />
+          </View>
+        </TouchableOpacity>
 
-
-        {/* Bouton compteur de lancers à droite */}
+        {/* Bouton compteur de lancers */}
         <TouchableOpacity style={styles.bottomButton}>
           <View style={[styles.bottomBlur, isBlocked && styles.blockedBlur]}>
             <Text style={[styles.remainingText, isBlocked && styles.blockedText]}>
@@ -1099,7 +1093,7 @@ const styles = StyleSheet.create({
   },
   bottomControls: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     alignItems: "center",
     paddingHorizontal: 40,
     paddingBottom: 20,

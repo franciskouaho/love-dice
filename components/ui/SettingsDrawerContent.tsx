@@ -2,25 +2,26 @@ import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Linking,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import useAnalytics from "../../hooks/useAnalytics";
 
 import { useInAppReview } from "../../hooks/useInAppReview";
 import useNotifications from "../../hooks/useNotifications";
 import {
-  getUserPreferences,
-  saveUserPreferences,
-  UserPreferences,
+    getUserPreferences,
+    saveUserPreferences,
+    UserPreferences,
 } from "../../utils/quota";
 
 interface SettingsDrawerContentProps {
@@ -156,6 +157,18 @@ export default function SettingsDrawerContent({
     }
   };
 
+  const handlePremiumPress = async () => {
+    try {
+      if (preferences.haptics) {
+        await Haptics.selectionAsync();
+      }
+      onClose(); // Fermer le drawer d'abord
+      router.push("/paywall");
+    } catch (error) {
+      // Erreur navigation paywall ignorée
+    }
+  };
+
   const handleReviewApp = async () => {
     try {
       if (preferences.haptics) {
@@ -210,6 +223,35 @@ export default function SettingsDrawerContent({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Premium Section */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.premiumButton}
+            onPress={handlePremiumPress}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={["#F4C869", "#E0115F"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumGradient}
+            >
+              <View style={styles.premiumContent}>
+                <View style={styles.premiumIcon}>
+                  <Ionicons name="diamond" size={24} color="#FFFFFF" />
+                </View>
+                <View style={styles.premiumTextContainer}>
+                  <Text style={styles.premiumTitle}>Accès à vie 💎</Text>
+                  <Text style={styles.premiumSubtitle}>
+                    Lancers illimités • Dés personnalisables • Aucune pub
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
         {/* Configuration Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>⚙️ Configuration</Text>
@@ -567,5 +609,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#A50848",
     fontWeight: "500",
+  },
+  premiumButton: {
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 8,
+    shadowColor: "#E0115F",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  premiumGradient: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
+  premiumContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  premiumIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  premiumTextContainer: {
+    flex: 1,
+  },
+  premiumTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  premiumSubtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.9)",
+    lineHeight: 20,
   },
 });

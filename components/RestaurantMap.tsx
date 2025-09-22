@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
 // import MapView, { Marker, Region } from 'react-native-maps';
 import { Restaurant } from '../types/restaurant';

@@ -17,7 +17,7 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         },
-        "UIBackgroundModes": ["remote-notification", "background-processing"],
+        "UIBackgroundModes": ["remote-notification"],
         "NSUserNotificationsUsageDescription": "Love Dice vous envoie des rappels personnalisés pour vos soirées romantiques."
       },
     },
@@ -67,12 +67,6 @@
           }
         }
       ],
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": "AIzaSyCRZPqnSHTVf2MuHvUCuwdcUXo3Zpm0CLI"
-        }
-      ]
     ],
     "experiments": {
       "typedRoutes": true,

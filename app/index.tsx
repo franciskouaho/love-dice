@@ -178,7 +178,11 @@ export default function SplashScreen() {
         }
       } catch (error) {
         // Error during app initialization - default to onboarding on error
-        router.replace("/(onboarding)/welcome");
+        console.error("App initialization error:", error);
+        // Attendre que le layout soit monté avant de naviguer
+        setTimeout(() => {
+          router.replace("/(onboarding)/welcome");
+        }, 100);
       } finally {
         setIsLoading(false);
       }

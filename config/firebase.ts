@@ -1,20 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FirebaseApp, getApps, initializeApp } from "firebase/app";
 import {
-    Auth,
-    getAuth,
-    getReactNativePersistence,
-    initializeAuth,
-    onAuthStateChanged,
-    signInAnonymously,
-    User
+  Auth,
+  getAuth,
+  getReactNativePersistence,
+  initializeAuth,
+  onAuthStateChanged,
+  signInAnonymously,
+  User
 } from "firebase/auth";
 import { doc, Firestore, getFirestore, setDoc, Timestamp } from "firebase/firestore";
 import {
-    fetchAndActivate,
-    getRemoteConfig,
-    getValue,
-    RemoteConfig
+  fetchAndActivate,
+  getRemoteConfig,
+  getValue,
+  RemoteConfig
 } from "firebase/remote-config";
 
 // Configuration Firebase - Expo va automatiquement utiliser les credentials natifs
@@ -46,15 +46,22 @@ export const getAuthInstance = (): Auth | null => {
         _auth = initializeAuth(app, {
           persistence: getReactNativePersistence(AsyncStorage)
         });
-      } catch {
+      } catch (error) {
+        // Si initializeAuth échoue, essayer getAuth
+        console.log("initializeAuth failed, trying getAuth:", error);
         _auth = getAuth(app);
       }
+      
       // Écouter les changements d'authentification pour debug
-      onAuthStateChanged(_auth, (user: User | null) => {
-        if (user) {
-        } else {
-        }
-      });
+      if (_auth) {
+        onAuthStateChanged(_auth, (user: User | null) => {
+          if (user) {
+            console.log("✅ User authenticated:", user.uid);
+          } else {
+            console.log("❌ User not authenticated");
+          }
+        });
+      }
     } catch (error) {
       console.error("❌ Erreur getAuth:", error);
       console.error("❌ Type d'erreur:", typeof error);

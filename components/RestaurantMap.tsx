@@ -1,7 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
 import { Restaurant } from '../types/restaurant';
+
+// Import conditionnel pour react-native-maps
+let MapView: any = null;
+let Marker: any = null;
+let Region: any = null;
+
+try {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  Region = maps.Region;
+} catch (error) {
+  console.log('react-native-maps not available in Expo Go');
+}
+
+// Types pour TypeScript
+type MapViewType = typeof MapView;
+type MarkerType = typeof Marker;
+type RegionType = typeof Region;
 
 interface RestaurantMapProps {
   restaurant: Restaurant;
@@ -16,7 +34,7 @@ interface Coordinates {
 }
 
 export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) {
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<MapViewType>(null);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,8 +120,8 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
 
   // Centrer la carte sur le restaurant quand les coordonnées sont chargées
   useEffect(() => {
-    if (coordinates && mapRef.current) {
-      const region: Region = {
+    if (coordinates && mapRef.current && MapView) {
+      const region: RegionType = {
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
         latitudeDelta: 0.01,
@@ -128,6 +146,23 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
       <View style={[styles.container, { height }]}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>❌ Impossible de localiser le restaurant</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Si MapView n'est pas disponible (Expo Go), afficher un placeholder
+  if (!MapView) {
+    return (
+      <View style={[styles.container, { height }]}>
+        <View style={styles.mapPlaceholder}>
+          <Text style={styles.placeholderText}>🗺️ Carte temporairement indisponible</Text>
+          <Text style={styles.placeholderSubtext}>
+            {restaurant.address}
+          </Text>
+          <Text style={styles.placeholderNote}>
+            Disponible dans le build complet
+          </Text>
         </View>
       </View>
     );
@@ -225,5 +260,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     opacity: 0.8,
+    marginBottom: 8,
+  },
+  placeholderNote: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    textAlign: 'center',
+    opacity: 0.6,
+    fontStyle: 'italic',
   },
 });

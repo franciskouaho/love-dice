@@ -67,6 +67,12 @@
           }
         }
       ],
+      [
+        "react-native-maps",
+        {
+          "googleMapsApiKey": "AIzaSyCRZPqnSHTVf2MuHvUCuwdcUXo3Zpm0CLI"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

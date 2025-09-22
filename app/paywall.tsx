@@ -1,7 +1,7 @@
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -39,8 +39,8 @@ export default function PaywallScreen() {
   const [isRestoring, setIsRestoring] = useState(false);
 
   // URLs for legal documents
-  const TERMS_URL = "https://love-dice-7a878.web.app/terms";
-  const PRIVACY_URL = "https://love-dice-7a878.web.app/privacy";
+  const TERMS_URL = "https://emplica.fr/terms-of-use";
+  const PRIVACY_URL = "https://emplica.fr/privacy-policy/";
 
   const openTerms = async () => {
     try {
@@ -300,20 +300,34 @@ export default function PaywallScreen() {
           {/* Prix et CTA */}
           <View style={styles.priceContainer}>
             <View style={styles.priceBadge}>
-              <Text style={styles.priceBadgeText}>OFFRE LIMITÉE</Text>
+              <Text style={styles.priceBadgeText}>🔥 OFFRE LIMITÉE</Text>
             </View>
             
-            {/* Titre de l'abonnement - REQUIS par Apple */}
-            <Text style={styles.subscriptionTitle}>Love Dice Premium</Text>
-            
-            {/* Durée de l'abonnement - REQUIS par Apple */}
-            <Text style={styles.subscriptionDuration}>1 an</Text>
-            
-            {/* Prix - REQUIS par Apple */}
-            <Text style={styles.priceText}>{price}</Text>
-            <Text style={styles.priceSubtext}>Abonnement annuel • 1 an • Renouvellement automatique</Text>
-            <View style={styles.savingsContainer}>
-              <Text style={styles.savingsText}>Économisez 70% par rapport aux abonnements mensuels</Text>
+            {/* Carte d'abonnement moderne */}
+            <View style={styles.subscriptionCard}>
+              <View style={styles.subscriptionHeader}>
+                <Text style={styles.subscriptionTitle}>💎 Love Dice Premium</Text>
+                <Text style={styles.subscriptionSubtitle}>Accès complet à toutes les fonctionnalités</Text>
+              </View>
+              
+              <View style={styles.priceSection}>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Prix :</Text>
+                  <Text style={styles.priceText}>{price}</Text>
+                </View>
+                <View style={styles.durationRow}>
+                  <Text style={styles.durationLabel}>Durée :</Text>
+                  <Text style={styles.durationText}>1 an (12 mois)</Text>
+                </View>
+                <View style={styles.renewalRow}>
+                  <Text style={styles.renewalLabel}>Renouvellement :</Text>
+                  <Text style={styles.renewalText}>Automatique</Text>
+                </View>
+              </View>
+              
+              <View style={styles.savingsContainer}>
+                <Text style={styles.savingsText}>💰 Économisez 70% par rapport aux abonnements mensuels</Text>
+              </View>
             </View>
           </View>
 
@@ -331,7 +345,7 @@ export default function PaywallScreen() {
               <View style={styles.buttonGlassInner}>
                 <View style={styles.buttonGlassHighlight} />
                 <Text style={styles.buttonText}>
-                  {isPurchasing ? "Achat en cours..." : "Débloquer maintenant →"}
+                  {isPurchasing ? "⏳ Achat en cours..." : "💎 Débloquer Premium maintenant →"}
                 </Text>
               </View>
             </View>
@@ -348,7 +362,7 @@ export default function PaywallScreen() {
             </View>
             <View style={styles.testimonialCard}>
               <Text style={styles.testimonialText}>
-                "5,99€ pour des années de soirées parfaites ? C'est le meilleur investissement qu'on ait fait !"
+                "5,99€ pour des années de soirées parfaites ? C&apos;est le meilleur investissement qu&apos;on ait fait !"
               </Text>
               <Text style={styles.testimonialAuthor}>- Emma & Tom</Text>
             </View>
@@ -546,36 +560,104 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: 0.5,
   },
+  subscriptionCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 20,
+    padding: 20,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: "rgba(244, 200, 105, 0.3)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  subscriptionHeader: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
   subscriptionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#FFFFFF",
     textAlign: "center",
-    marginTop: 8,
-    marginBottom: 4,
+    marginBottom: 6,
     fontFamily: "System",
   },
-  subscriptionDuration: {
+  subscriptionSubtitle: {
     fontSize: 14,
-    fontWeight: "600",
     color: "#F4C869",
     textAlign: "center",
-    marginBottom: 8,
+    opacity: 0.9,
+    fontFamily: "System",
+  },
+  priceSection: {
+    marginBottom: 16,
+  },
+  priceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(244, 200, 105, 0.1)",
+    borderRadius: 12,
+  },
+  priceLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
     fontFamily: "System",
   },
   priceText: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#F4C869",
-    textAlign: "center",
-    marginBottom: 4,
     fontFamily: "System",
   },
-  priceSubtext: {
-    fontSize: 12,
-    color: "#FFF3F6",
-    textAlign: "center",
-    opacity: 0.8,
+  durationRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+  },
+  durationLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    fontFamily: "System",
+  },
+  durationText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#F4C869",
+    fontFamily: "System",
+  },
+  renewalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+  },
+  renewalLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    fontFamily: "System",
+  },
+  renewalText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#F4C869",
     fontFamily: "System",
   },
   savingsContainer: {
@@ -621,11 +703,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   buttonGlassInner: {
-    paddingVertical: 14,
-    paddingHorizontal: 36,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 50,
+    minHeight: 44,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
     position: "relative",
   },
@@ -640,7 +722,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 48,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "bold",
     color: "#FFFFFF",
     fontFamily: "System",

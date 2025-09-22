@@ -7931,7 +7931,7 @@ __metadata:
     react-native: "npm:0.81.4"
     react-native-confetti-cannon: "npm:^1.5.2"
     react-native-gesture-handler: "npm:~2.28.0"
-    react-native-maps: "npm:^1.26.6"
+    react-native-maps: "npm:1.20.1"
     react-native-purchases: "npm:^8.3.0"
     react-native-reanimated: "npm:~4.1.0"
     react-native-safe-area-context: "npm:~5.6.0"
@@ -9530,19 +9530,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-maps@npm:^1.26.6":
-  version: 1.26.6
-  resolution: "react-native-maps@npm:1.26.6"
+"react-native-maps@npm:1.20.1":
+  version: 1.20.1
+  resolution: "react-native-maps@npm:1.20.1"
   dependencies:
     "@types/geojson": "npm:^7946.0.13"
   peerDependencies:
-    react: ">= 18.3.1"
-    react-native: ">= 0.76.0"
+    react: ">= 17.0.1"
+    react-native: ">= 0.64.3"
     react-native-web: ">= 0.11"
   peerDependenciesMeta:
     react-native-web:
       optional: true
-  checksum: 10c0/79214909e1ff268f061b42ebcb2d60b500e5944587168fb0458ead0198aee2e85912f03242564407851c41650f9bae08df8e330280287e183608f8f82ef76357
+  checksum: 10c0/59c8d5600feb907df179c675b7185ef3bf205bdc85391c7ef530bb17d56d44d03ffd9ab3ae08dcc00cfabe9b14e37041327c7446114104b141efb2c8d4c3e797
   languageName: node
   linkType: hard
 

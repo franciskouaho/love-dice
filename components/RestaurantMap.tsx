@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+// import MapView, { Marker, Region } from 'react-native-maps';
 import { Restaurant } from '../types/restaurant';
 
 interface RestaurantMapProps {
@@ -16,7 +16,7 @@ interface Coordinates {
 }
 
 export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) {
-  const mapRef = useRef<MapView>(null);
+  // const mapRef = useRef<MapView>(null);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,17 +101,17 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
   }, [restaurant.id, restaurant.address, restaurant.latitude, restaurant.longitude]);
 
   // Centrer la carte sur le restaurant quand les coordonnées sont chargées
-  useEffect(() => {
-    if (coordinates && mapRef.current) {
-      const region: Region = {
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
-      mapRef.current.animateToRegion(region, 1000);
-    }
-  }, [coordinates]);
+  // useEffect(() => {
+  //   if (coordinates && mapRef.current) {
+  //     const region: Region = {
+  //       latitude: coordinates.latitude,
+  //       longitude: coordinates.longitude,
+  //       latitudeDelta: 0.01,
+  //       longitudeDelta: 0.01,
+  //     };
+  //     mapRef.current.animateToRegion(region, 1000);
+  //   }
+  // }, [coordinates]);
 
   if (loading) {
     return (
@@ -135,40 +135,12 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
 
   return (
     <View style={[styles.container, { height }]}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        initialRegion={{
-          latitude: coordinates.latitude,
-          longitude: coordinates.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-        showsUserLocation={false}
-        showsMyLocationButton={false}
-        showsCompass={false}
-        showsScale={false}
-        mapType="standard"
-        loadingEnabled={true}
-        loadingIndicatorColor="#E0115F"
-        loadingBackgroundColor="rgba(255, 255, 255, 0.1)"
-        onMapReady={() => {
-          // Map ready
-        }}
-        onError={(error) => {
-          console.error('Map error:', error);
-        }}
-      >
-        <Marker
-          coordinate={{
-            latitude: coordinates.latitude,
-            longitude: coordinates.longitude,
-          }}
-          title={restaurant.name}
-          description={restaurant.address}
-          pinColor="#E0115F"
-        />
-      </MapView>
+      <View style={styles.mapPlaceholder}>
+        <Text style={styles.placeholderText}>🗺️ Carte temporairement indisponible</Text>
+        <Text style={styles.placeholderSubtext}>
+          {restaurant.name} - {restaurant.address}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -205,5 +177,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  mapPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 20,
+  },
+  placeholderText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  placeholderSubtext: {
+    color: '#F4C869',
+    fontSize: 14,
+    textAlign: 'center',
+    opacity: 0.8,
   },
 });

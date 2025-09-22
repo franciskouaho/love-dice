@@ -1,23 +1,23 @@
 import {
-    onAuthStateChanged,
-    signInAnonymously,
-    signOut,
-    User,
+  onAuthStateChanged,
+  signInAnonymously,
+  signOut,
+  User,
 } from 'firebase/auth';
 import {
-    addDoc,
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    orderBy,
-    query,
-    setDoc,
-    Timestamp,
-    where,
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+  Timestamp,
+  where,
 } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { auth, db } from '../config/firebase';
+import { auth, db } from '../services/firebase';
 
 // Fonction pour attribuer un quota de 50 lancers à un utilisateur
 const grantStarterQuota = async (userId: string) => {

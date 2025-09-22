@@ -1,7 +1,7 @@
-import * as StoreReview from "expo-store-review";
-import { Linking, Platform, AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as StoreReview from "expo-store-review";
 import { useEffect, useRef } from "react";
+import { AppState, Linking, Platform } from "react-native";
 import useAnalytics from "./useAnalytics";
 
 const HAS_REVIEWED_KEY = "@love_dice_has_reviewed";
@@ -131,7 +131,7 @@ export const useInAppReview = () => {
 
       if (Platform.OS === "ios") {
         // TODO: Remplacer par l'ID réel de l'app Love Dice sur l'App Store
-        const itunesItemId = "LOVE_DICE_APP_ID";
+        const itunesItemId = "6752723935";
         const url = `https://apps.apple.com/app/apple-store/id${itunesItemId}?action=write-review`;
         // Ouverture App Store pour review
         logReviewOpened("store_redirect");

@@ -24,7 +24,7 @@ function useRevenueCat() {
     false;
 
   useEffect(() => {
-    const initRevenueCat = async () => {
+    const fetchData = async () => {
       try {
         // Configuration de l'API key selon la plateforme
         if (Platform.OS === "android") {
@@ -45,13 +45,13 @@ function useRevenueCat() {
         setCustomerInfo(customerInfo);
         setCurrentOffering(offerings.current);
       } catch (error) {
-        // Erreur lors de l'initialisation de RevenueCat ignorée
+        console.error("Erreur lors de l'initialisation de RevenueCat:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    initRevenueCat();
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -88,8 +88,9 @@ function useRevenueCat() {
         return { success: false, error: "Achat non confirmé" };
       }
     } catch (error) {
-      // Erreur lors de l'achat ignorée
-      return { success: false, error };
+      console.error("Erreur lors de l'achat:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -103,13 +104,14 @@ function useRevenueCat() {
         false;
       return { success: true, hasLifetime: hasLifetimeAfterRestore };
     } catch (error) {
-      // Erreur lors de la restauration ignorée
-      return { success: false, error };
+      console.error("Erreur lors de la restauration:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+      return { success: false, error: errorMessage };
     }
   };
 
   const getLifetimePrice = () => {
-    return currentOffering?.lifetime?.product?.priceString || "12,99 €";
+    return currentOffering?.lifetime?.product?.priceString || "5,99 €";
   };
 
   return {

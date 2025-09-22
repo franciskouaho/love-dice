@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Linking,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -36,6 +37,26 @@ export default function PaywallScreen() {
 
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+
+  // URLs for legal documents
+  const TERMS_URL = "https://love-dice-7a878.web.app/terms";
+  const PRIVACY_URL = "https://love-dice-7a878.web.app/privacy";
+
+  const openTerms = async () => {
+    try {
+      await Linking.openURL(TERMS_URL);
+    } catch (error) {
+      console.error("Erreur lors de l'ouverture des conditions d'utilisation:", error);
+    }
+  };
+
+  const openPrivacy = async () => {
+    try {
+      await Linking.openURL(PRIVACY_URL);
+    } catch (error) {
+      console.error("Erreur lors de l'ouverture de la politique de confidentialité:", error);
+    }
+  };
 
   // Valeurs configurables via Remote Config
   const [paywallTitle, setPaywallTitle] = useState("Débloquez l'amour illimité 💕");
@@ -114,18 +135,20 @@ export default function PaywallScreen() {
         nav.goTabs();
       } else {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        const errorMessage = result.error || "Impossible de finaliser l'achat. Veuillez réessayer.";
         Alert.alert(
           "Erreur d'achat",
-          "Impossible de finaliser l'achat. Veuillez réessayer.",
+          errorMessage,
           [{ text: "OK" }],
         );
       }
     } catch (error) {
-      // Erreur achat ignorée
+      console.error("Erreur lors de l'achat:", error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const errorMessage = error instanceof Error ? error.message : "Une erreur inattendue s'est produite. Veuillez réessayer.";
       Alert.alert(
-        "Erreur",
-        "Une erreur est survenue. Veuillez vérifier votre connexion et réessayer.",
+        "Erreur d'achat",
+        errorMessage,
         [{ text: "OK" }],
       );
     } finally {
@@ -279,8 +302,16 @@ export default function PaywallScreen() {
             <View style={styles.priceBadge}>
               <Text style={styles.priceBadgeText}>OFFRE LIMITÉE</Text>
             </View>
+            
+            {/* Titre de l'abonnement - REQUIS par Apple */}
+            <Text style={styles.subscriptionTitle}>Love Dice Premium</Text>
+            
+            {/* Durée de l'abonnement - REQUIS par Apple */}
+            <Text style={styles.subscriptionDuration}>1 an</Text>
+            
+            {/* Prix - REQUIS par Apple */}
             <Text style={styles.priceText}>{price}</Text>
-            <Text style={styles.priceSubtext}>Achat unique • Accès à vie • Aucun renouvellement</Text>
+            <Text style={styles.priceSubtext}>Abonnement annuel • 1 an • Renouvellement automatique</Text>
             <View style={styles.savingsContainer}>
               <Text style={styles.savingsText}>Économisez 70% par rapport aux abonnements mensuels</Text>
             </View>
@@ -311,7 +342,7 @@ export default function PaywallScreen() {
             <Text style={styles.testimonialsTitle}>💕 Ce qu'ils disent</Text>
             <View style={styles.testimonialCard}>
               <Text style={styles.testimonialText}>
-                "Love Dice a transformé nos soirées ! On ne se demande plus jamais quoi faire. C'est devenu notre rituel quotidien !"
+                "Love Dice a transformé nos soirées ! On ne se demande plus jamais quoi faire. C&apos;est devenu notre rituel quotidien !"
               </Text>
               <Text style={styles.testimonialAuthor}>- Sarah & Marc</Text>
             </View>
@@ -338,8 +369,14 @@ export default function PaywallScreen() {
           {/* Informations légales */}
           <View style={styles.legalContainer}>
             <Text style={styles.legalText}>
-              En achetant, vous acceptez nos conditions d&apos;utilisation et
-              notre politique de confidentialité.
+              En achetant, vous acceptez nos{" "}
+              <Text style={styles.legalLink} onPress={openTerms}>
+                conditions d&apos;utilisation
+              </Text>{" "}
+              et notre{" "}
+              <Text style={styles.legalLink} onPress={openPrivacy}>
+                politique de confidentialité
+              </Text>.
             </Text>
           </View>
         </ScrollView>
@@ -509,6 +546,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: 0.5,
   },
+  subscriptionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginTop: 8,
+    marginBottom: 4,
+    fontFamily: "System",
+  },
+  subscriptionDuration: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#F4C869",
+    textAlign: "center",
+    marginBottom: 8,
+    fontFamily: "System",
+  },
   priceText: {
     fontSize: 22,
     fontWeight: "bold",
@@ -649,6 +703,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 16,
     fontFamily: "System",
+  },
+  legalLink: {
+    color: "#F4C869",
+    textDecorationLine: "underline",
+    fontWeight: "600",
   },
   infoCard: {
     marginBottom: 12,

@@ -1,9 +1,11 @@
 # Description App Store – Love Dice
 
 ## Titre
+
 **Love Dice – Décidez vos soirées en un lancer de dé**
 
 ## Description courte (170 caractères max)
+
 Vous ne savez jamais quoi faire le soir avec votre partenaire ? Disputes sur "qui paie", "où manger" ou "quelle activité choisir" ? Avec Love Dice, laissez le hasard décider à votre place et transformez chaque soirée en moment unique, amusant et romantique.
 
 ## Description complète (4000 caractères max)
@@ -61,16 +63,30 @@ Essayez gratuitement et découvrez pourquoi déjà de nombreux couples adoptent 
 
 **Love Dice – Laissez le hasard décider, aimez sans hésiter.**
 
+## Informations légales
+
+**Confidentialité**
+Votre vie privée est notre priorité : aucune donnée ne sera partagée avec des tiers ou utilisée à des fins publicitaires.
+
+**Conditions d'utilisation**
+
+- Conditions d'utilisation Apple : https://www.apple.com/legal/internet-services/itunes/dev/stdeula
+- Conditions générales : https://emplica.fr/terms-of-use
+
 ---
 
 ## Mots-clés App Store
+
 couple, décision, soirée, romantique, dé, hasard, restaurant, activité, amour, spontanéité, jeu, divertissement, lifestyle, relation, complicité
 
 ## Catégorie
+
 Lifestyle
 
 ## Âge recommandé
+
 4+ (Tout public)
 
 ## Langues supportées
+
 Français (principal), Anglais

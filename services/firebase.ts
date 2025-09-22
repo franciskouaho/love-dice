@@ -1,17 +1,17 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApps, initializeApp } from "firebase/app";
 import {
-    getAuth,
-    getReactNativePersistence,
-    initializeAuth,
-    onAuthStateChanged,
-    signInAnonymously
+  getAuth,
+  getReactNativePersistence,
+  initializeAuth,
+  onAuthStateChanged,
+  signInAnonymously,
 } from "firebase/auth";
 import { doc, getFirestore, setDoc, Timestamp } from "firebase/firestore";
 import {
-    fetchAndActivate,
-    getRemoteConfig,
-    getValue,
+  fetchAndActivate,
+  getRemoteConfig,
+  getValue,
 } from "firebase/remote-config";
 
 // Configuration Firebase - Expo va automatiquement utiliser les credentials natifs
@@ -41,7 +41,7 @@ export const getAuthInstance = () => {
       // 🔥 Utiliser initializeAuth avec AsyncStorage pour VRAIE persistance
       try {
         _auth = initializeAuth(app, {
-          persistence: getReactNativePersistence(AsyncStorage)
+          persistence: getReactNativePersistence(AsyncStorage),
         });
       } catch (error) {
         _auth = getAuth(app);
@@ -181,16 +181,20 @@ export const createAnonymousUser = async () => {
     }
     const result = await signInAnonymously(authInstance);
     const db = getFirestore();
-    const docRef = doc(db, 'user_settings', result.user.uid);
-    await setDoc(docRef, {
-      hasLifetime: false,
-      unlimited: false,
-      dailyQuota: 50,
-      remainingRolls: 50,
-      lastReset: Timestamp.now(),
-      grantedAt: Timestamp.now(),
-      source: 'anonymous_signup',
-    }, { merge: true });
+    const docRef = doc(db, "user_settings", result.user.uid);
+    await setDoc(
+      docRef,
+      {
+        hasLifetime: false,
+        unlimited: false,
+        dailyQuota: 50,
+        remainingRolls: 50,
+        lastReset: Timestamp.now(),
+        grantedAt: Timestamp.now(),
+        source: "anonymous_signup",
+      },
+      { merge: true },
+    );
     return result.user;
   } catch (error) {
     console.error("❌ Erreur création utilisateur anonyme:", error);

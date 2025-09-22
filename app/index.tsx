@@ -4,11 +4,11 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  StyleSheet,
-  Text,
-  View
+    Animated,
+    Dimensions,
+    StyleSheet,
+    Text,
+    View
 } from "react-native";
 import { SPLASH_CONFIG } from "../constants/SplashConfig";
 import { hasCompletedOnboarding } from "../utils/onboarding";
@@ -171,11 +171,14 @@ export default function SplashScreen() {
         // Check if user has completed onboarding
         const onboardingCompleted = await hasCompletedOnboarding();
 
-        if (onboardingCompleted) {
-          router.replace("/(tabs)");
-        } else {
-          router.replace("/(onboarding)/welcome");
-        }
+        // Utiliser un délai pour s'assurer que le layout est monté
+        setTimeout(() => {
+          if (onboardingCompleted) {
+            router.replace("/(tabs)");
+          } else {
+            router.replace("/(onboarding)/welcome");
+          }
+        }, 200);
       } catch (error) {
         // Error during app initialization - default to onboarding on error
         console.error("App initialization error:", error);

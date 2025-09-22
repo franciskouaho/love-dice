@@ -6,6 +6,8 @@ import {
   initializeAuth,
   onAuthStateChanged,
   signInAnonymously,
+  User,
+  Auth,
 } from "firebase/auth";
 import { doc, getFirestore, setDoc, Timestamp } from "firebase/firestore";
 import {
@@ -33,7 +35,7 @@ const app =
 export const db = getFirestore(app);
 
 // Auth will be initialized lazily to avoid Expo Go issues
-let _auth: any = null;
+let _auth: Auth | null = null;
 
 export const getAuthInstance = () => {
   if (!_auth) {
@@ -41,17 +43,24 @@ export const getAuthInstance = () => {
       // 🔥 Utiliser initializeAuth avec AsyncStorage pour VRAIE persistance
       try {
         _auth = initializeAuth(app, {
-          persistence: getReactNativePersistence(AsyncStorage),
+          persistence: getReactNativePersistence(AsyncStorage)
         });
       } catch (error) {
+        // Si initializeAuth échoue, essayer getAuth
+        console.log("initializeAuth failed, trying getAuth:", error);
         _auth = getAuth(app);
       }
+      
       // Écouter les changements d'authentification pour debug
-      onAuthStateChanged(_auth, (user) => {
-        if (user) {
-        } else {
-        }
-      });
+      if (_auth) {
+        onAuthStateChanged(_auth, (user: User | null) => {
+          if (user) {
+            console.log("✅ User authenticated:", user.uid);
+          } else {
+            console.log("❌ User not authenticated");
+          }
+        });
+      }
     } catch (error) {
       console.error("❌ Erreur getAuth:", error);
       console.error("❌ Type d'erreur:", typeof error);
@@ -64,13 +73,13 @@ export const getAuthInstance = () => {
 };
 
 // Legacy export for backward compatibility - but this will be lazy loaded
-export const auth = new Proxy({} as any, {
+export const auth = new Proxy({} as Auth, {
   get(target, prop) {
     const authInstance = getAuthInstance();
     if (!authInstance) {
       return undefined;
     }
-    return authInstance[prop];
+    return (authInstance as any)[prop];
   },
 });
 

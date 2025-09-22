@@ -66,12 +66,6 @@
             "permissions": ["com.android.vending.BILLING"]
           }
         }
-      ],
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": "AIzaSyCRZPqnSHTVf2MuHvUCuwdcUXo3Zpm0CLI"
-        }
       ]
     ],
     "experiments": {

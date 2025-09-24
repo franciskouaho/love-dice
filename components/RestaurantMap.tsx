@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Dimensions, StyleSheet, Text, View, TouchableOpacity, Linking } from 'react-native';
+import { Dimensions, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Restaurant } from '../types/restaurant';
 
 // Import conditionnel de react-native-maps
@@ -7,19 +7,13 @@ let MapView: any = null;
 let Marker: any = null;
 let PROVIDER_GOOGLE: any = null;
 
-// Vérifier si on est en mode Expo Go
-const isExpoGo = __DEV__ && typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
-
-if (!isExpoGo) {
-  try {
-    // Import dynamique pour éviter les erreurs en mode Expo Go
-    const maps = require('react-native-maps');
-    MapView = maps.default;
-    Marker = maps.Marker;
-    PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
-  } catch (error) {
-    console.log('react-native-maps not available');
-  }
+try {
+  const maps = require('react-native-maps');
+  MapView = maps.default;
+  Marker = maps.Marker;
+  PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+} catch (error) {
+  console.log('react-native-maps not available in Expo Go');
 }
 
 interface RestaurantMapProps {

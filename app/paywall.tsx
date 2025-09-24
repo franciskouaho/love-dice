@@ -39,8 +39,8 @@ export default function PaywallScreen() {
   const [isRestoring, setIsRestoring] = useState(false);
 
   // URLs for legal documents
-  const TERMS_URL = "https://emplica.fr/terms-of-use";
-  const PRIVACY_URL = "https://emplica.fr/privacy-policy/";
+  const TERMS_URL = "https://lovedice.emplica.fr/terms";
+  const PRIVACY_URL = "https://lovedice.emplica.fr/privacy";
 
   const openTerms = async () => {
     try {

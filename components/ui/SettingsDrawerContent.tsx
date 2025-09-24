@@ -3,25 +3,25 @@ import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-    Alert,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import useAnalytics from "../../hooks/useAnalytics";
 
 import { useInAppReview } from "../../hooks/useInAppReview";
 import useNotifications from "../../hooks/useNotifications";
 import {
-    getUserPreferences,
-    saveUserPreferences,
-    UserPreferences,
+  getUserPreferences,
+  saveUserPreferences,
+  UserPreferences,
 } from "../../utils/quota";
 
 interface SettingsDrawerContentProps {
@@ -118,6 +118,38 @@ export default function SettingsDrawerContent({
       Alert.alert(
         "Erreur",
         "Impossible d'ouvrir l'application email. Vous pouvez nous contacter directement à contact@emplica.fr",
+        [{ text: "OK" }],
+      );
+    }
+  };
+
+  const handlePrivacyPolicy = async () => {
+    if (preferences.haptics) {
+      await Haptics.selectionAsync();
+    }
+
+    try {
+      await Linking.openURL("https://lovedice.emplica.fr/privacy");
+    } catch (error) {
+      Alert.alert(
+        "Erreur",
+        "Impossible d'ouvrir la politique de confidentialité.",
+        [{ text: "OK" }],
+      );
+    }
+  };
+
+  const handleTermsOfService = async () => {
+    if (preferences.haptics) {
+      await Haptics.selectionAsync();
+    }
+
+    try {
+      await Linking.openURL("https://lovedice.emplica.fr/terms");
+    } catch (error) {
+      Alert.alert(
+        "Erreur",
+        "Impossible d'ouvrir les conditions d'utilisation.",
         [{ text: "OK" }],
       );
     }
@@ -454,6 +486,52 @@ export default function SettingsDrawerContent({
                 <Text style={styles.settingLabel}>Nous contacter</Text>
                 <Text style={styles.settingSubtext}>
                   Questions, suggestions ou problèmes
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#A50848" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handlePrivacyPolicy}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingContent}>
+              <View style={styles.settingIcon}>
+                <Ionicons
+                  name="shield-checkmark"
+                  size={20}
+                  color="#E0115F"
+                />
+              </View>
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingLabel}>Politique de confidentialité</Text>
+                <Text style={styles.settingSubtext}>
+                  Comment nous protégeons vos données
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#A50848" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleTermsOfService}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingContent}>
+              <View style={styles.settingIcon}>
+                <Ionicons
+                  name="document-text"
+                  size={20}
+                  color="#E0115F"
+                />
+              </View>
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingLabel}>Conditions d&apos;utilisation</Text>
+                <Text style={styles.settingSubtext}>
+                  Termes et conditions d&apos;usage
                 </Text>
               </View>
             </View>

@@ -57,8 +57,10 @@ async function verifyAppleReceipt(
 
     let result: any = await response.json();
 
-    // Si erreur sandbox, essayer sandbox
-    if (result.status === 21007) {
+    // Si erreur sandbox (21007), essayer sandbox
+    // Si erreur de reçu de test en production (21008), essayer sandbox
+    if (result.status === 21007 || result.status === 21008) {
+      console.log(`Production validation failed with status ${result.status}, trying sandbox`);
       response = await fetch(APPLE_SANDBOX_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,6 +92,7 @@ async function verifyAppleReceipt(
         };
       }
     } else {
+      console.error(`Apple receipt validation failed with status: ${result.status}`);
       return {
         success: false,
         error: `Erreur Apple: ${result.status}`,

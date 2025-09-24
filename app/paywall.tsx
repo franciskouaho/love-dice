@@ -38,26 +38,6 @@ export default function PaywallScreen() {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  // URLs for legal documents
-  const TERMS_URL = "https://emplica.fr/terms-of-use";
-  const PRIVACY_URL = "https://emplica.fr/privacy-policy/";
-
-  const openTerms = async () => {
-    try {
-      await Linking.openURL(TERMS_URL);
-    } catch (error) {
-      console.error("Erreur lors de l'ouverture des conditions d'utilisation:", error);
-    }
-  };
-
-  const openPrivacy = async () => {
-    try {
-      await Linking.openURL(PRIVACY_URL);
-    } catch (error) {
-      console.error("Erreur lors de l'ouverture de la politique de confidentialité:", error);
-    }
-  };
-
   // Valeurs configurables via Remote Config
   const [paywallTitle, setPaywallTitle] = useState("Débloquez l'amour illimité 💕");
   const [paywallBullets, setPaywallBullets] = useState([
@@ -135,20 +115,18 @@ export default function PaywallScreen() {
         nav.goTabs();
       } else {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        const errorMessage = result.error || "Impossible de finaliser l'achat. Veuillez réessayer.";
         Alert.alert(
           "Erreur d'achat",
-          errorMessage,
+          "Impossible de finaliser l'achat. Veuillez réessayer.",
           [{ text: "OK" }],
         );
       }
     } catch (error) {
-      console.error("Erreur lors de l'achat:", error);
+      // Erreur achat ignorée
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      const errorMessage = error instanceof Error ? error.message : "Une erreur inattendue s'est produite. Veuillez réessayer.";
       Alert.alert(
-        "Erreur d'achat",
-        errorMessage,
+        "Erreur",
+        "Une erreur est survenue. Veuillez vérifier votre connexion et réessayer.",
         [{ text: "OK" }],
       );
     } finally {
@@ -300,34 +278,12 @@ export default function PaywallScreen() {
           {/* Prix et CTA */}
           <View style={styles.priceContainer}>
             <View style={styles.priceBadge}>
-              <Text style={styles.priceBadgeText}>🔥 OFFRE LIMITÉE</Text>
+              <Text style={styles.priceBadgeText}>OFFRE LIMITÉE</Text>
             </View>
-            
-            {/* Carte d'abonnement moderne */}
-            <View style={styles.subscriptionCard}>
-              <View style={styles.subscriptionHeader}>
-                <Text style={styles.subscriptionTitle}>💎 Love Dice Premium</Text>
-                <Text style={styles.subscriptionSubtitle}>Accès complet à toutes les fonctionnalités</Text>
-              </View>
-              
-              <View style={styles.priceSection}>
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Prix :</Text>
-                  <Text style={styles.priceText}>{price}</Text>
-                </View>
-                <View style={styles.durationRow}>
-                  <Text style={styles.durationLabel}>Durée :</Text>
-                  <Text style={styles.durationText}>1 an (12 mois)</Text>
-                </View>
-                <View style={styles.renewalRow}>
-                  <Text style={styles.renewalLabel}>Renouvellement :</Text>
-                  <Text style={styles.renewalText}>Automatique</Text>
-                </View>
-              </View>
-              
-              <View style={styles.savingsContainer}>
-                <Text style={styles.savingsText}>💰 Économisez 70% par rapport aux abonnements mensuels</Text>
-              </View>
+            <Text style={styles.priceText}>{price}</Text>
+            <Text style={styles.priceSubtext}>Achat unique • Accès à vie • Aucun renouvellement</Text>
+            <View style={styles.savingsContainer}>
+              <Text style={styles.savingsText}>Économisez 70% par rapport aux abonnements mensuels</Text>
             </View>
           </View>
 
@@ -345,7 +301,7 @@ export default function PaywallScreen() {
               <View style={styles.buttonGlassInner}>
                 <View style={styles.buttonGlassHighlight} />
                 <Text style={styles.buttonText}>
-                  {isPurchasing ? "⏳ Achat en cours..." : "💎 Débloquer Premium maintenant →"}
+                  {isPurchasing ? "Achat en cours..." : "Débloquer maintenant →"}
                 </Text>
               </View>
             </View>
@@ -356,13 +312,13 @@ export default function PaywallScreen() {
             <Text style={styles.testimonialsTitle}>💕 Ce qu'ils disent</Text>
             <View style={styles.testimonialCard}>
               <Text style={styles.testimonialText}>
-                "Love Dice a transformé nos soirées ! On ne se demande plus jamais quoi faire. C&apos;est devenu notre rituel quotidien !"
+                "Love Dice a transformé nos soirées ! On ne se demande plus jamais quoi faire. C'est devenu notre rituel quotidien !"
               </Text>
               <Text style={styles.testimonialAuthor}>- Sarah & Marc</Text>
             </View>
             <View style={styles.testimonialCard}>
               <Text style={styles.testimonialText}>
-                "5,99€ pour des années de soirées parfaites ? C&apos;est le meilleur investissement qu&apos;on ait fait !"
+                "5,99€ pour des années de soirées parfaites ? C'est le meilleur investissement qu'on ait fait !"
               </Text>
               <Text style={styles.testimonialAuthor}>- Emma & Tom</Text>
             </View>
@@ -384,11 +340,17 @@ export default function PaywallScreen() {
           <View style={styles.legalContainer}>
             <Text style={styles.legalText}>
               En achetant, vous acceptez nos{" "}
-              <Text style={styles.legalLink} onPress={openTerms}>
+              <Text 
+                style={styles.legalLink}
+                onPress={() => Linking.openURL("https://lovedice.emplica.fr/terms")}
+              >
                 conditions d&apos;utilisation
               </Text>{" "}
               et notre{" "}
-              <Text style={styles.legalLink} onPress={openPrivacy}>
+              <Text 
+                style={styles.legalLink}
+                onPress={() => Linking.openURL("https://lovedice.emplica.fr/privacy")}
+              >
                 politique de confidentialité
               </Text>.
             </Text>
@@ -560,104 +522,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: 0.5,
   },
-  subscriptionCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: 20,
-    padding: 20,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: "rgba(244, 200, 105, 0.3)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  subscriptionHeader: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  subscriptionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    textAlign: "center",
-    marginBottom: 6,
-    fontFamily: "System",
-  },
-  subscriptionSubtitle: {
-    fontSize: 14,
-    color: "#F4C869",
-    textAlign: "center",
-    opacity: 0.9,
-    fontFamily: "System",
-  },
-  priceSection: {
-    marginBottom: 16,
-  },
-  priceRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "rgba(244, 200, 105, 0.1)",
-    borderRadius: 12,
-  },
-  priceLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    fontFamily: "System",
-  },
   priceText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#F4C869",
+    textAlign: "center",
+    marginBottom: 4,
     fontFamily: "System",
   },
-  durationRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
-  },
-  durationLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    fontFamily: "System",
-  },
-  durationText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#F4C869",
-    fontFamily: "System",
-  },
-  renewalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
-  },
-  renewalLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FFFFFF",
-    fontFamily: "System",
-  },
-  renewalText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#F4C869",
+  priceSubtext: {
+    fontSize: 12,
+    color: "#FFF3F6",
+    textAlign: "center",
+    opacity: 0.8,
     fontFamily: "System",
   },
   savingsContainer: {
@@ -703,11 +580,11 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   buttonGlassInner: {
-    paddingVertical: 10,
-    paddingHorizontal: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 36,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 44,
+    minHeight: 50,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
     position: "relative",
   },
@@ -722,7 +599,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 48,
   },
   buttonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#FFFFFF",
     fontFamily: "System",
@@ -787,9 +664,9 @@ const styles = StyleSheet.create({
     fontFamily: "System",
   },
   legalLink: {
-    color: "#F4C869",
+    color: "#FFF3F6",
     textDecorationLine: "underline",
-    fontWeight: "600",
+    fontWeight: "500",
   },
   infoCard: {
     marginBottom: 12,

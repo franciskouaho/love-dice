@@ -1,7 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import { Dimensions, StyleSheet, Text, View, TouchableOpacity, Linking } from 'react-native';
 import { Restaurant } from '../types/restaurant';
+
+// Import conditionnel de react-native-maps
+let MapView: any = null;
+let Marker: any = null;
+let PROVIDER_GOOGLE: any = null;
+
+// Vérifier si on est en mode Expo Go
+const isExpoGo = __DEV__ && typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+
+if (!isExpoGo) {
+  try {
+    // Import dynamique pour éviter les erreurs en mode Expo Go
+    const maps = require('react-native-maps');
+    MapView = maps.default;
+    Marker = maps.Marker;
+    PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+  } catch (error) {
+    console.log('react-native-maps not available');
+  }
+}
 
 interface RestaurantMapProps {
   restaurant: Restaurant;
@@ -133,6 +152,28 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
     );
   }
 
+  // Si react-native-maps n'est pas disponible (Expo Go), afficher un fallback
+  if (!MapView) {
+    return (
+      <View style={[styles.container, { height }]}>
+        <View style={styles.fallbackContainer}>
+          <Text style={styles.fallbackTitle}>📍 {restaurant.name}</Text>
+          <Text style={styles.fallbackAddress}>{restaurant.address}</Text>
+          <TouchableOpacity 
+            style={styles.fallbackButton}
+            onPress={() => {
+              const address = encodeURIComponent(restaurant.address);
+              const url = `https://maps.google.com/?q=${address}`;
+              Linking.openURL(url);
+            }}
+          >
+            <Text style={styles.fallbackButtonText}>Ouvrir dans Google Maps</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { height }]}>
       <MapView
@@ -200,5 +241,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
+  },
+  fallbackContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 20,
+  },
+  fallbackTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  fallbackAddress: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  fallbackButton: {
+    backgroundColor: 'rgba(224, 17, 95, 0.8)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  fallbackButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

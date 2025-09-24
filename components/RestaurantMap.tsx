@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Dimensions, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Restaurant } from '../types/restaurant';
 
 // Import conditionnel de react-native-maps
@@ -162,7 +162,7 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
             }}
           >
             <Text style={styles.fallbackButtonText}>Ouvrir dans Google Maps</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     );

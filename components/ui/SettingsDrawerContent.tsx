@@ -3,25 +3,25 @@ import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-    Alert,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import useAnalytics from "../../hooks/useAnalytics";
 
 import { useInAppReview } from "../../hooks/useInAppReview";
 import useNotifications from "../../hooks/useNotifications";
 import {
-    getUserPreferences,
-    saveUserPreferences,
-    UserPreferences,
+  getUserPreferences,
+  saveUserPreferences,
+  UserPreferences,
 } from "../../utils/quota";
 
 interface SettingsDrawerContentProps {

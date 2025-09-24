@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Dimensions, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Restaurant } from '../types/restaurant';
 
 // Import conditionnel de react-native-maps
@@ -15,6 +15,21 @@ try {
 } catch (error) {
   console.log('react-native-maps not available in Expo Go');
 }
+
+// Composant MapView personnalisé qui gère les erreurs
+const SafeMapView = ({ children, ...props }: any) => {
+  if (!MapView) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
+        <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '500' }}>
+          📍 Maps non disponibles en mode développement
+        </Text>
+      </View>
+    );
+  }
+  
+  return <MapView {...props}>{children}</MapView>;
+};
 
 interface RestaurantMapProps {
   restaurant: Restaurant;
@@ -146,31 +161,12 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
     );
   }
 
-  // Si react-native-maps n'est pas disponible (Expo Go), afficher un fallback
-  if (!MapView) {
-    return (
-      <View style={[styles.container, { height }]}>
-        <View style={styles.fallbackContainer}>
-          <Text style={styles.fallbackTitle}>📍 {restaurant.name}</Text>
-          <Text style={styles.fallbackAddress}>{restaurant.address}</Text>
-          <TouchableOpacity 
-            style={styles.fallbackButton}
-            onPress={() => {
-              const address = encodeURIComponent(restaurant.address);
-              const url = `https://maps.google.com/?q=${address}`;
-              Linking.openURL(url);
-            }}
-          >
-            <Text style={styles.fallbackButtonText}>Ouvrir dans Google Maps</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
+  // Toujours essayer d'afficher la map, même si react-native-maps n'est pas disponible
+  // Si MapView n'est pas disponible, on affichera une erreur dans le composant MapView lui-même
 
   return (
     <View style={[styles.container, { height }]}>
-      <MapView
+      <SafeMapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={styles.map}
@@ -189,16 +185,18 @@ export function RestaurantMap({ restaurant, height = 200 }: RestaurantMapProps) 
         loadingIndicatorColor="#E0115F"
         loadingBackgroundColor="rgba(255, 255, 255, 0.1)"
       >
-        <Marker
-          coordinate={{
-            latitude: coordinates.latitude,
-            longitude: coordinates.longitude,
-          }}
-          title={restaurant.name}
-          description={restaurant.address}
-          pinColor="#E0115F"
-        />
-      </MapView>
+        {Marker && (
+          <Marker
+            coordinate={{
+              latitude: coordinates.latitude,
+              longitude: coordinates.longitude,
+            }}
+            title={restaurant.name}
+            description={restaurant.address}
+            pinColor="#E0115F"
+          />
+        )}
+      </SafeMapView>
     </View>
   );
 }

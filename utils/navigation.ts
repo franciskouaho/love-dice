@@ -43,7 +43,6 @@ export const Routes = {
     notifications: "/(onboarding)/notifications" as const,
     features: "/(onboarding)/features" as const,
   },
-  paywall: "/paywall" as const,
   history: "/history" as const,
   customFaces: "/custom-faces" as const,
 } as const;
@@ -61,7 +60,6 @@ type OnboardingPaths = ValueOf<typeof Routes.onboarding>;
  */
 export type AppPath =
   | typeof Routes.root
-  | typeof Routes.paywall
   | typeof Routes.history
   | typeof Routes.customFaces
   | OnboardingPaths;
@@ -87,7 +85,6 @@ export type AnyPath = AppPath | LegacyPath | (string & {});
 export function isAppPath(p: string): p is AppPath {
   switch (p) {
     case Routes.root:
-    case Routes.paywall:
     case Routes.history:
     case Routes.customFaces:
     case Routes.onboarding.welcome:
@@ -159,7 +156,7 @@ export const nav = {
   // Semantic shortcuts
   goTabs: () => _replace(Routes.root),
   goPaywall: (replace = false) =>
-    replace ? _replace(Routes.paywall) : _push(Routes.paywall),
+    replace ? _replace(Routes.tabs) : _push(Routes.tabs),
   goHistory: () => _push(Routes.history),
   goCustomFaces: () => _push(Routes.customFaces),
 
@@ -191,7 +188,6 @@ export const nav = {
 function _assertAllRoutesAreAppPath() {
   const all: AppPath[] = [
     Routes.root,
-    Routes.paywall,
     Routes.history,
     Routes.customFaces,
     Routes.onboarding.welcome,
@@ -217,7 +213,7 @@ nav.goTabs();
 // From inside onboarding step2 -> step3:
 +nav.onboarding.experience();
 
-// Replace current screen with paywall:
+// Replace current screen with tabs (anciennement paywall):
 nav.goPaywall(true);
 
 // Generic:

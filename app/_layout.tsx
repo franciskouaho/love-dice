@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { initializeApp } from "../services/initialization";
@@ -68,15 +68,6 @@ export default function RootLayout() {
           }}
         />
 
-        {/* Paywall */}
-        <Stack.Screen
-          name="paywall"
-          options={{
-            headerShown: false,
-            presentation: "modal",
-            gestureEnabled: true,
-          }}
-        />
 
         {/* Main App */}
         <Stack.Screen

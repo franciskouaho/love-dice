@@ -8,17 +8,17 @@ import { LinearGradient } from "expo-linear-gradient"
 import { router } from "expo-router"
 import { useEffect, useRef, useState } from "react"
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    Modal,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Dimensions,
+  Modal,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native"
 import { AnimatedDice } from "../../components/AnimatedDice"
 import BottomDrawer from "../../components/ui/BottomDrawer"
@@ -29,32 +29,21 @@ import { useFaces } from "../../hooks/useFaces"
 import { useAuth } from "../../hooks/useFirebase"
 import { useInAppReview } from "../../hooks/useInAppReview"
 import useNotifications from "../../hooks/useNotifications"
-import useQuota from "../../hooks/useQuota"
-import useRevenueCat from "../../hooks/useRevenueCat"
 import { useShake } from "../../hooks/useShake"
 
 import { cacheService } from "../../services/cache"
 import { createAnonymousUser } from "../../services/firebase"
 import * as FirestoreService from "../../services/firestore"
-import { getCurrentUserId } from "../../services/firestore"
 import { type CompleteDiceResult, rollCompleteDice } from "../../utils/dice"
-import { getLastRoll, getLifetimeStatus, getQuotaSummary, saveLastRoll } from "../../utils/quota"
 
 const { width } = Dimensions.get("window")
 
 export default function HomeScreen() {
   const { user, loading: authLoading } = useAuth()
-  const { logDiceRoll, logFreeLimitHit } = useAnalytics()
-  const { remaining, canRoll, consumeRoll, hasLifetime, refreshQuota } = useQuota()
-  const { hasLifetime: rcHasLifetime } = useRevenueCat()
+  const { logDiceRoll } = useAnalytics()
   const { triggerReviewAfterSuccess } = useInAppReview()
   const { allFaces, loading: facesLoading } = useFaces()
-  const {
-    hasPermissions,
-    notifyMilestone,
-    requestPermissions,
-    isInitialized: notificationsInitialized,
-  } = useNotifications()
+  const { notifyMilestone } = useNotifications()
 
   const [currentRoll, setCurrentRoll] = useState<CompleteDiceResult | null>(null)
   const [isRolling, setIsRolling] = useState(false)
@@ -66,8 +55,6 @@ export default function HomeScreen() {
   const [playerNamesLoaded, setPlayerNamesLoaded] = useState(false)
   const [defaultPayerName, setDefaultPayerName] = useState("")
   const [rollCount, setRollCount] = useState(0)
-  const [hasSeenPaywallToday, setHasSeenPaywallToday] = useState(false)
-  const [isBlocked, setIsBlocked] = useState(false)
   const [justSavedNames, setJustSavedNames] = useState(false) // Pour éviter de recharger après sauvegarde
   const [currentPayerDisplay, setCurrentPayerDisplay] = useState("") // Nom affiché pour qui paie
   const [stablePayerName, setStablePayerName] = useState("") // Nom stable du payeur (pas de random)
@@ -172,7 +159,7 @@ export default function HomeScreen() {
 
       if (user?.uid) {
         // Sauvegarder aussi dans Firebase
-        const success = await FirestoreService.savePlayerNames(user.uid, names)
+        await FirestoreService.savePlayerNames(user.uid, names)
       }
     } catch (error) {
       console.error("❌ Erreur lors de la sauvegarde des noms:", error)
@@ -180,11 +167,6 @@ export default function HomeScreen() {
   }
 
   useEffect(() => {
-    // Charger le dernier lancer au démarrage
-    loadLastRoll()
-    refreshQuota()
-
-
     // Afficher automatiquement la modal des noms SEULEMENT au premier lancement
     const checkFirstLaunch = async () => {
       try {
@@ -204,31 +186,12 @@ export default function HomeScreen() {
           // Marquer comme vu pour ne plus jamais le reproposer automatiquement
           await AsyncStorage.setItem("has_seen_names_modal", "true")
         }
-      } catch (error) {
-        // Erreur vérification premier lancement ignorée
-      }
+    } catch {
+      // Erreur vérification premier lancement ignorée
+    }
     }
 
     checkFirstLaunch()
-
-    // Réinitialiser le flag paywall chaque jour
-    const checkPaywallFlag = async () => {
-      try {
-        const today = new Date().toISOString().split("T")[0]
-        const lastPaywallDate = await AsyncStorage.getItem("last_paywall_date")
-
-        if (lastPaywallDate !== today) {
-          setHasSeenPaywallToday(false)
-          await AsyncStorage.setItem("last_paywall_date", today)
-        } else {
-          const hasSeenToday = await AsyncStorage.getItem("has_seen_paywall_today")
-          setHasSeenPaywallToday(hasSeenToday === "true")
-        }
-      } catch (error) {
-        // Erreur gestion paywall flag ignorée
-      }
-    }
-    checkPaywallFlag()
 
     // Ne plus demander automatiquement les permissions ici
     // Elles seront demandées dans l'onboarding notifications
@@ -297,13 +260,6 @@ export default function HomeScreen() {
     ).start()
   }, [])
 
-  const loadLastRoll = async () => {
-    try {
-      await getLastRoll()
-    } catch (error) {
-      // Erreur chargement dernier roll ignorée
-    }
-  }
 
   // Hook pour détecter la secousse du téléphone
   // Hook pour détecter la secousse et lancer le dé
@@ -311,26 +267,8 @@ export default function HomeScreen() {
     threshold: 2.5, // 🔧 Seuil encore moins sensible (1.5 → 2.5)
     timeWindow: 3000, // 🔧 Délai réduit (5s → 3s) car moins de faux positifs
     onShake: async () => {
-      // Éviter les multiples secousses pendant un lancement ou si déjà bloqué
-      if (isRolling || isBlocked) {
-        return
-      }
-
-      // VÉRIFIER LES QUOTAS DIRECTEMENT DEPUIS FIREBASE (valeurs en temps réel)
-      const userId = getCurrentUserId()
-      if (!userId) {
-        return
-      }
-
-      // Récupérer le statut lifetime d'abord
-      const hasLifetime = await getLifetimeStatus()
-
-      // Récupérer les quotas directement depuis Firebase
-      const quotaSummary = await getQuotaSummary(hasLifetime)
-
-      // Vérifier si l'utilisateur peut lancer
-      if (!quotaSummary.canRoll && !quotaSummary.hasLifetime) {
-        router.push("/paywall")
+      // Éviter les multiples secousses pendant un lancement
+      if (isRolling) {
         return
       }
 
@@ -377,10 +315,10 @@ export default function HomeScreen() {
                 }
               }
             }
-          } catch (error) {
+          } catch {
           }
         }
-      } catch (error) {
+      } catch {
         // Fallback vers l'état React
         if (playerNames.player1.trim() && playerNames.player2.trim()) {
           finalNames = {
@@ -402,44 +340,6 @@ export default function HomeScreen() {
     return performRollWithNames(namesToUse)
   }
 
-  const handleRoll = async () => {
-    if (isRolling || isBlocked) {
-      return
-    }
-
-    // Vérifier si les faces sont chargées (mais ne pas bloquer)
-    if (facesLoading || allFaces.length === 0) {
-      // Ne pas bloquer, continuer avec des faces par défaut
-    }
-
-    // Vérifier si l'utilisateur peut lancer
-    if (!hasLifetime && !rcHasLifetime && !canRoll) {
-      // Bloquer temporairement pour éviter le spam
-      setIsBlocked(true)
-      setTimeout(() => setIsBlocked(false), 3000) // 3 secondes de blocage
-
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-      logFreeLimitHit(0, "home_button")
-
-      // Ne rediriger vers le paywall que si pas encore vu aujourd'hui
-      if (!hasSeenPaywallToday) {
-        setHasSeenPaywallToday(true)
-        AsyncStorage.setItem("has_seen_paywall_today", "true")
-        router.push("/paywall")
-      } else {
-        // Afficher un message simple si déjà vu le paywall
-        Alert.alert(
-          "Quota épuisé",
-          "Vous avez utilisé votre lancer gratuit quotidien. Achetez l'accès illimité pour continuer !",
-          [{ text: "Plus tard" }, { text: "Acheter", onPress: () => router.push("/paywall") }],
-        )
-      }
-      return
-    }
-
-    // Les noms sont maintenant gérés avant l'appel à handleRoll
-    performRollWithNames(playerNames)
-  }
 
   const handleDiceAnimationComplete = () => {
     setIsRolling(false)
@@ -459,12 +359,11 @@ export default function HomeScreen() {
       // Créer un utilisateur Firebase si nécessaire SEULEMENT au moment du premier lancer
       if (!user && !authLoading) {
         try {
-          const newUser = await createAnonymousUser()
+          await createAnonymousUser()
           // Attendre un peu que l'auth se propage
           await new Promise((resolve) => setTimeout(resolve, 1000))
-        } catch (error) {
+        } catch {
         }
-      } else {
       }
 
       // Timeout de sécurité pour débloquer isRolling
@@ -521,8 +420,7 @@ export default function HomeScreen() {
 
         setCurrentRoll(completeResult)
 
-        // Sauvegarder le résultat
-        await saveLastRoll(completeResult.id)
+        // Sauvegarder le résultat (plus de quota, donc pas de sauvegarde nécessaire)
 
         // Afficher le résultat avec une animation
         setTimeout(() => {
@@ -561,14 +459,7 @@ export default function HomeScreen() {
           roll_number_today: rollCount + 1,
         })
 
-        // Consommer un lancer si pas premium
-        if (!hasLifetime && !rcHasLifetime) {
-          const consumed = await consumeRoll()
-          if (!consumed) {
-            router.push("/paywall")
-            return
-          }
-        }
+        // Plus de système de quota - accès illimité pour tous
 
         // Trigger notification pour milestones
         const newCount = rollCount + 1
@@ -578,7 +469,7 @@ export default function HomeScreen() {
         // Trigger review après succès
         triggerReviewAfterSuccess()
       })
-    } catch (error) {
+    } catch {
       if (safetyTimeoutRef.current) {
         clearTimeout(safetyTimeoutRef.current)
       }
@@ -598,7 +489,7 @@ export default function HomeScreen() {
         await createAnonymousUser()
         // Attendre un peu que l'auth se propage
         await new Promise((resolve) => setTimeout(resolve, 1000))
-      } catch (error) {
+      } catch {
         // Erreur création utilisateur ignorée
       }
     }
@@ -637,7 +528,7 @@ export default function HomeScreen() {
         await createAnonymousUser()
         // Attendre un peu que l'auth se propage
         await new Promise((resolve) => setTimeout(resolve, 1000))
-      } catch (error) {
+      } catch {
         // Erreur création utilisateur ignorée
       }
     }
@@ -665,12 +556,10 @@ export default function HomeScreen() {
   }
 
   const openHistory = () => {
-    if (hasLifetime || rcHasLifetime) {
-      router.push("/history")
-    }
+    router.push("/history")
   }
 
-  const remainingText = hasLifetime || rcHasLifetime ? "∞" : `${remaining}`
+  const remainingText = "∞" // Accès illimité pour tous
 
   return (
     <SafeAreaView style={styles.container}>
@@ -757,16 +646,11 @@ export default function HomeScreen() {
         <View style={styles.sideControls}>
           {/* Left Side */}
           <View style={styles.leftControls}>
-            {(hasLifetime || rcHasLifetime) && (
-              <>
-                <TouchableOpacity style={styles.sideButton} onPress={openHistory}>
-                  <View style={styles.sideBlur}>
-                    <Text style={styles.sideEmoji}>📝</Text>
-                  </View>
-                </TouchableOpacity>
-
-              </>
-            )}
+            <TouchableOpacity style={styles.sideButton} onPress={openHistory}>
+              <View style={styles.sideBlur}>
+                <Text style={styles.sideEmoji}>📝</Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Right Side */}
@@ -798,9 +682,9 @@ export default function HomeScreen() {
 
         {/* Bouton compteur de lancers */}
         <TouchableOpacity style={styles.bottomButton}>
-          <View style={[styles.bottomBlur, isBlocked && styles.blockedBlur]}>
-            <Text style={[styles.remainingText, isBlocked && styles.blockedText]}>
-              {isBlocked ? "⏳" : remainingText}
+          <View style={styles.bottomBlur}>
+            <Text style={styles.remainingText}>
+              {remainingText}
             </Text>
           </View>
         </TouchableOpacity>
@@ -1319,12 +1203,5 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
     marginTop: 300,
-  },
-  blockedBlur: {
-    backgroundColor: "rgba(255, 107, 107, 0.3)",
-    borderColor: "rgba(255, 107, 107, 0.5)",
-  },
-  blockedText: {
-    color: "#FF6B6B",
   },
 })

@@ -2,26 +2,25 @@ import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Linking,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import useAnalytics from "../../hooks/useAnalytics";
 
 import { useInAppReview } from "../../hooks/useInAppReview";
 import useNotifications from "../../hooks/useNotifications";
 import {
-  getUserPreferences,
-  saveUserPreferences,
-  UserPreferences,
+    getUserPreferences,
+    saveUserPreferences,
+    UserPreferences,
 } from "../../utils/quota";
 
 interface SettingsDrawerContentProps {
@@ -195,7 +194,12 @@ export default function SettingsDrawerContent({
         await Haptics.selectionAsync();
       }
       onClose(); // Fermer le drawer d'abord
-      router.push("/paywall");
+      // Plus de paywall - l'app est gratuite
+      Alert.alert(
+        "Application gratuite",
+        "Love Dice est maintenant entièrement gratuit ! Profitez de toutes les fonctionnalités sans limite.",
+        [{ text: "OK" }]
+      );
     } catch (error) {
       // Erreur navigation paywall ignorée
     }

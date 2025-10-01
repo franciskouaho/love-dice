@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  fetchConfig,
-  getConfigValue,
-  getFeatureFlags,
-  isFeatureEnabled,
-  refreshConfig,
-  AppConfig,
+    AppConfig,
+    fetchConfig,
+    getConfigValue,
+    getFeatureFlags,
+    isFeatureEnabled,
+    refreshConfig,
 } from "../services/config";
 
 export interface UseConfigReturn {
@@ -26,8 +26,6 @@ export interface UseConfigReturn {
   // Quick access to common values
   freeRollsPerDay: number;
   lifetimePrice: string;
-  paywallTitle: string;
-  paywallBullets: string[];
   features: AppConfig["FEATURE_FLAGS"] | null;
 }
 
@@ -97,12 +95,6 @@ export const useConfig = (): UseConfigReturn => {
   // Quick access values
   const freeRollsPerDay = config?.FREE_ROLLS_PER_DAY || 3;
   const lifetimePrice = config?.LIFETIME_PRICE || "12,99 €";
-  const paywallTitle = config?.PAYWALL_TITLE || "Accès à vie 💕";
-  const paywallBullets = config?.PAYWALL_BULLETS?.split("|") || [
-    "Lancers illimités",
-    "Dés personnalisables",
-    "Aucune pub",
-  ];
   const features = config?.FEATURE_FLAGS || null;
 
   return {
@@ -122,8 +114,6 @@ export const useConfig = (): UseConfigReturn => {
     // Quick access
     freeRollsPerDay,
     lifetimePrice,
-    paywallTitle,
-    paywallBullets,
     features,
   };
 };

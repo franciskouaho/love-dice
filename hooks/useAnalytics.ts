@@ -3,9 +3,6 @@ import { useCallback } from "react";
 // Types d'événements selon les spécifications
 export type AnalyticsEvent =
   | "onboarding_view"
-  | "paywall_view"
-  | "paywall_purchase_attempt"
-  | "paywall_purchase_success"
   | "dice_roll"
   | "dice_result_payer"
   | "dice_result_repas"
@@ -76,36 +73,6 @@ const useAnalytics = () => {
     [logAnalyticsEvent],
   );
 
-  // Événements du paywall
-  const logPaywallView = useCallback(
-    (params: PaywallParams) => {
-      logAnalyticsEvent("paywall_view", {
-        ...params,
-        timestamp: Date.now(),
-      });
-    },
-    [logAnalyticsEvent],
-  );
-
-  const logPaywallPurchaseAttempt = useCallback(
-    (params: PaywallParams) => {
-      logAnalyticsEvent("paywall_purchase_attempt", {
-        ...params,
-        timestamp: Date.now(),
-      });
-    },
-    [logAnalyticsEvent],
-  );
-
-  const logPaywallPurchaseSuccess = useCallback(
-    (params: PurchaseParams) => {
-      logAnalyticsEvent("paywall_purchase_success", {
-        ...params,
-        timestamp: Date.now(),
-      });
-    },
-    [logAnalyticsEvent],
-  );
 
   // Événements du dé
   const logDiceRoll = useCallback(
@@ -297,9 +264,6 @@ const useAnalytics = () => {
 
     // Événements spécifiques
     logOnboardingView,
-    logPaywallView,
-    logPaywallPurchaseAttempt,
-    logPaywallPurchaseSuccess,
     logDiceRoll,
     logFreeLimitHit,
     logCustomFaceAdd,

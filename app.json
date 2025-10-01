@@ -61,9 +61,6 @@
         {
           "ios": {
             "useFrameworks": "static"
-          },
-          "android": {
-            "permissions": ["com.android.vending.BILLING"]
           }
         }
       ]

@@ -4,24 +4,60 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import useAnalytics from "../../hooks/useAnalytics";
 
 import { useInAppReview } from "../../hooks/useInAppReview";
-import useNotifications from "../../hooks/useNotifications";
-import {
-    getUserPreferences,
-    saveUserPreferences,
-    UserPreferences,
-} from "../../utils/quota";
+import { useNotifications } from "../../hooks/useNotifications";
+// Types pour les préférences utilisateur
+interface UserPreferences {
+  haptics: boolean;
+  notifications: boolean;
+  sound: boolean;
+  weights?: {
+    payer: number;
+    repas: number;
+    activite: number;
+  };
+}
+
+// Fonctions pour gérer les préférences utilisateur
+const getUserPreferences = async (): Promise<UserPreferences> => {
+  try {
+    const { cacheService } = await import("../../services/cache");
+    const cached = await cacheService.getCache<UserPreferences>("user_preferences", 24 * 60 * 60 * 1000);
+    return cached || {
+      haptics: true,
+      notifications: true,
+      sound: true,
+      weights: { payer: 0.2, repas: 0.2, activite: 0.6 },
+    };
+  } catch {
+    return {
+      haptics: true,
+      notifications: true,
+      sound: true,
+      weights: { payer: 0.2, repas: 0.2, activite: 0.6 },
+    };
+  }
+};
+
+const saveUserPreferences = async (preferences: UserPreferences): Promise<void> => {
+  try {
+    const { cacheService } = await import("../../services/cache");
+    await cacheService.setCache("user_preferences", preferences, "local");
+  } catch {
+    console.error("Erreur lors de la sauvegarde des préférences");
+  }
+};
 
 interface SettingsDrawerContentProps {
   onClose: () => void;
@@ -43,6 +79,8 @@ export default function SettingsDrawerContent({
 
   const [preferences, setPreferences] = useState<UserPreferences>({
     haptics: true,
+    notifications: true,
+    sound: true,
     weights: { payer: 0.2, repas: 0.2, activite: 0.6 },
   });
 
@@ -54,7 +92,7 @@ export default function SettingsDrawerContent({
     try {
       const prefs = await getUserPreferences();
       setPreferences(prefs);
-    } catch (error) {
+    } catch {
       // Erreur chargement préférences ignorée
     }
   };
@@ -68,7 +106,7 @@ export default function SettingsDrawerContent({
           Haptics.NotificationFeedbackType.Success,
         );
       }
-    } catch (error) {
+    } catch {
       // Erreur sauvegarde préférences ignorée
       if (preferences.haptics) {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -113,7 +151,7 @@ export default function SettingsDrawerContent({
 
     try {
       await Linking.openURL(mailto);
-    } catch (error) {
+    } catch {
       Alert.alert(
         "Erreur",
         "Impossible d'ouvrir l'application email. Vous pouvez nous contacter directement à contact@emplica.fr",
@@ -129,7 +167,7 @@ export default function SettingsDrawerContent({
 
     try {
       await Linking.openURL("https://lovedice.emplica.fr/privacy");
-    } catch (error) {
+    } catch {
       Alert.alert(
         "Erreur",
         "Impossible d'ouvrir la politique de confidentialité.",
@@ -145,7 +183,7 @@ export default function SettingsDrawerContent({
 
     try {
       await Linking.openURL("https://lovedice.emplica.fr/terms");
-    } catch (error) {
+    } catch {
       Alert.alert(
         "Erreur",
         "Impossible d'ouvrir les conditions d'utilisation.",
@@ -179,7 +217,7 @@ export default function SettingsDrawerContent({
         "Les notifications sont configurées et fonctionnelles.",
         [{ text: "OK" }],
       );
-    } catch (error) {
+    } catch {
       Alert.alert(
         "Erreur",
         "Impossible d'effectuer le diagnostic des notifications.",
@@ -200,7 +238,7 @@ export default function SettingsDrawerContent({
         "Love Dice est maintenant entièrement gratuit ! Profitez de toutes les fonctionnalités sans limite.",
         [{ text: "OK" }]
       );
-    } catch (error) {
+    } catch {
       // Erreur navigation paywall ignorée
     }
   };
@@ -239,7 +277,7 @@ export default function SettingsDrawerContent({
           ],
         );
       }
-    } catch (error) {
+    } catch {
       // Erreur demande review ignorée
     }
   };
